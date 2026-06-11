@@ -1,2 +1,9 @@
-onlyBuiltDependencies:
-  - esbuild
+# Build scripts permitidos (pnpm 11 substituiu `onlyBuiltDependencies` por `allowBuilds`).
+allowBuilds:
+  esbuild: true
+
+# pnpm 11 passou a recusar, por padrão (1440 min), pacotes publicados há <24h
+# (proteção supply-chain). Como este boilerplate sempre bumpa para o latest,
+# isso travaria install/`pnpm run`/CI por ~24h a cada update. Desligamos
+# explicitamente para manter o comportamento do pnpm 10.
+minimumReleaseAge: 0
