@@ -30,7 +30,7 @@ jobs:
       - name: Setup pnpm (Corepack)
         run: |
           corepack enable
-          corepack prepare pnpm@10.30.3 --activate
+          corepack prepare pnpm@11.5.3 --activate
           pnpm --version
 
       - name: Get pnpm store directory
@@ -111,7 +111,7 @@ jobs:
       - name: Setup pnpm (Corepack)
         run: |
           corepack enable
-          corepack prepare pnpm@10.30.3 --activate
+          corepack prepare pnpm@11.5.3 --activate
           pnpm --version
 
       - name: Get pnpm store directory
