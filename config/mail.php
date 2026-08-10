@@ -113,4 +113,24 @@ return [
         'name'    => env('MAIL_FROM_NAME', 'Example'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Staging Allowlist
+    |--------------------------------------------------------------------------
+    |
+    | Outside production, App\Listeners\EnforceMailAllowlist redirects any
+    | recipient not covered by this allowlist to the test inbox, so staging
+    | e-mails never reach real people. Entries are comma-separated and may be
+    | exact addresses ("ops@example.com") or whole domains ("@example.com").
+    | An empty allowlist disables the guard entirely.
+    |
+    */
+
+    'allowlist' => array_values(array_filter(array_map(
+        'trim',
+        explode(',', (string) env('MAIL_ALLOWLIST', ''))
+    ))),
+
+    'test_inbox' => env('MAIL_TEST_INBOX'),
+
 ];

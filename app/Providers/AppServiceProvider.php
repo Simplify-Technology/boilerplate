@@ -1,28 +1,31 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Providers;
 
 use App\Enum\Permissions;
 use App\Enum\Roles;
-use App\Events\ImpersonateStarted;
-use App\Events\ImpersonateStopped;
-use App\Listeners\LogImpersonateStarted;
-use App\Listeners\LogImpersonateStopped;
 use App\Models\User;
 use App\Policies\UserPolicy;
 use App\Resolvers\ActivityCauserResolver;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Database\Eloquent\MissingAttributeException;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\LazyLoadingViolationException;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Opcodes\LogViewer\Facades\LogViewer;
+use RuntimeException;
 use Spatie\Activitylog\Support\CauserResolver;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->setupLogViewer();
         $this->configModels();
+        $this->configRateLimiting();
         $this->configCommands();
         $this->configUrls();
         $this->configDate();
@@ -43,7 +47,6 @@ class AppServiceProvider extends ServiceProvider
         $this->configGates();
         $this->configPolicies();
         $this->configResources();
-        $this->configEvents();
 
         $this->getComposer();
     }
@@ -55,7 +58,54 @@ class AppServiceProvider extends ServiceProvider
 
     private function configModels(): void
     {
+        // Estrito em todos os ambientes; em produção as três violações são
+        // reportadas (error tracker/log) em vez de estourar 500 ou, pior,
+        // descartar dados silenciosamente.
         Model::shouldBeStrict();
+
+        if (app()->isProduction()) {
+            Model::handleLazyLoadingViolationUsing(
+                static function(Model $model, string $relation): void {
+                    report(new LazyLoadingViolationException($model, $relation));
+                }
+            );
+
+            Model::handleMissingAttributeViolationUsing(
+                static function(Model $model, string $key) {
+                    report(new MissingAttributeException($model, $key));
+
+                    return null;
+                }
+            );
+
+            Model::handleDiscardedAttributeViolationUsing(
+                static function(Model $model, array $keys): void {
+                    report(new RuntimeException(sprintf(
+                        'Atributos [%s] descartados fora do fillable em %s.',
+                        implode(', ', $keys),
+                        $model::class
+                    )));
+                }
+            );
+        }
+    }
+
+    private function configRateLimiting(): void
+    {
+        RateLimiter::for(
+            'auth',
+            static fn(Request $request): Limit => Limit::perMinute(10)->by($request->ip())
+        );
+
+        RateLimiter::for(
+            'impersonate',
+            static fn(Request $request): Limit => Limit::perMinute(10)->by($request->user()->id ?? $request->ip())
+        );
+
+        RateLimiter::for(
+            'verification',
+            static fn(Request $request): Limit => Limit::perMinute(6)->by($request->user()->id ?? $request->ip())
+        );
     }
 
     private function configCommands(): void
@@ -108,12 +158,6 @@ class AppServiceProvider extends ServiceProvider
     private function configResources(): void
     {
         JsonResource::withoutWrapping();
-    }
-
-    private function configEvents(): void
-    {
-        Event::listen(ImpersonateStarted::class, LogImpersonateStarted::class);
-        Event::listen(ImpersonateStopped::class, LogImpersonateStopped::class);
     }
 
     public function getComposer(): void

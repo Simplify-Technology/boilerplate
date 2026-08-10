@@ -1,3 +1,4 @@
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -29,32 +30,30 @@ export default function useUserSearch({ users, initialFilters = {}, routeName, d
 
     const [isSearching, setIsSearching] = useState(false);
 
-    // Debounced search effect
+    const debouncedSearch = useDebouncedValue(searchParams.search, debounceMs);
+
+    // Navega quando a busca "assenta" (debounce), nunca a cada tecla.
     useEffect(() => {
-        if (searchParams.search === initialFilters.search) return;
+        if (debouncedSearch === (initialFilters.search || '')) {
+            return;
+        }
 
         setIsSearching(true);
-        const timer = setTimeout(() => {
-            router.get(
-                route(routeName),
-                {
-                    ...searchParams,
-                    search: searchParams.search || undefined,
-                },
-                {
-                    preserveState: true,
-                    preserveScroll: true,
-                    onFinish: () => setIsSearching(false),
-                },
-            );
-        }, debounceMs);
 
-        return () => {
-            clearTimeout(timer);
-            setIsSearching(false);
-        };
+        router.get(
+            route(routeName),
+            {
+                ...searchParams,
+                search: debouncedSearch || undefined,
+            },
+            {
+                preserveState: true,
+                preserveScroll: true,
+                onFinish: () => setIsSearching(false),
+            },
+        );
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [searchParams.search, debounceMs, routeName]);
+    }, [debouncedSearch, routeName]);
 
     const handleFilterChange = useCallback(
         (key: string, value: string | number | boolean | undefined) => {
@@ -134,10 +133,15 @@ export default function useUserSearch({ users, initialFilters = {}, routeName, d
         });
     }, [users, searchParams.search, searchParams.role_id, searchParams.is_active]);
 
+    const setSearch = useCallback((value: string) => {
+        setSearchParams((current) => ({ ...current, search: value, page: 1 }));
+    }, []);
+
     return {
         searchParams,
         isSearching,
         filteredUsers,
+        setSearch,
         handleFilterChange,
         clearFilters,
         clearSingleFilter,

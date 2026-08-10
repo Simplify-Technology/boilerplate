@@ -12,6 +12,9 @@ class UpdateRolePermissionsRequest extends FormRequest
         return $this->user()?->can('manage_roles') ?? false;
     }
 
+    /**
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
     public function rules(): array
     {
         return [

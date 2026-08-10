@@ -8,11 +8,12 @@ use App\Http\Requests\PermissionRole\UpdateRolePermissionsRequest;
 use App\Models\Permission;
 use App\Models\Role;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 
 class UpdateController extends Controller
 {
-    public function __invoke(UpdateRolePermissionsRequest $request, string $roleName)
+    public function __invoke(UpdateRolePermissionsRequest $request, string $roleName): RedirectResponse
     {
         $allowedRoleNames = array_map(
             static fn(RolesEnum $role) => $role->value,

@@ -16,6 +16,9 @@ class LoginRequest extends FormRequest
         return true;
     }
 
+    /**
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
     public function rules(): array
     {
         return [
@@ -28,7 +31,11 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        if (!Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        // is_active na query impede que conta desativada sequer autentique;
+        // a mensagem continua auth.failed para não revelar o estado da conta.
+        $credentials = [...$this->only('email', 'password'), 'is_active' => true];
+
+        if (!Auth::attempt($credentials, $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
 
             throw ValidationException::withMessages([

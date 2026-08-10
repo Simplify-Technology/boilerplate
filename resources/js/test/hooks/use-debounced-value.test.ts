@@ -1,0 +1,60 @@
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { act, renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+describe('useDebouncedValue', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    it('returns the initial value immediately', () => {
+        const { result } = renderHook(() => useDebouncedValue('initial', 300));
+
+        expect(result.current).toBe('initial');
+    });
+
+    it('only updates after the delay has elapsed', () => {
+        const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 300), {
+            initialProps: { value: 'a' },
+        });
+
+        rerender({ value: 'ab' });
+        expect(result.current).toBe('a');
+
+        act(() => {
+            vi.advanceTimersByTime(299);
+        });
+        expect(result.current).toBe('a');
+
+        act(() => {
+            vi.advanceTimersByTime(1);
+        });
+        expect(result.current).toBe('ab');
+    });
+
+    it('restarts the timer on every change (only the last value settles)', () => {
+        const { result, rerender } = renderHook(({ value }) => useDebouncedValue(value, 300), {
+            initialProps: { value: 'a' },
+        });
+
+        rerender({ value: 'ab' });
+        act(() => {
+            vi.advanceTimersByTime(200);
+        });
+
+        rerender({ value: 'abc' });
+        act(() => {
+            vi.advanceTimersByTime(200);
+        });
+        expect(result.current).toBe('a');
+
+        act(() => {
+            vi.advanceTimersByTime(100);
+        });
+        expect(result.current).toBe('abc');
+    });
+});

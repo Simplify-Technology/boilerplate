@@ -2,9 +2,7 @@ import type { User, UserModalActions, UserModalState, UserModalType } from '@/ty
 import { useCallback, useReducer } from 'react';
 
 type ModalAction =
-    | { type: 'OPEN'; payload: { modalType: UserModalType; user?: User } }
-    | { type: 'CLOSE' }
-    | { type: 'SET_PROCESSING'; payload: boolean };
+    { type: 'OPEN'; payload: { modalType: UserModalType; user?: User } } | { type: 'CLOSE' } | { type: 'SET_PROCESSING'; payload: boolean };
 
 const initialState: UserModalState = {
     type: null,

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Models;
 
 use App\Traits\Models\HasRolesAndPermissions;
@@ -10,9 +12,14 @@ use Illuminate\Notifications\Notifiable;
 use Spatie\Activitylog\Models\Concerns\LogsActivity;
 use Spatie\Activitylog\Support\LogOptions;
 
+/**
+ * @property \Carbon\CarbonImmutable|null $email_verified_at
+ */
 class User extends Authenticatable implements MustVerifyEmail
 {
+    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory;
+
     use Notifiable;
     use HasRolesAndPermissions;
     use LogsActivity;

@@ -22,7 +22,7 @@ jobs:
     # Evita problemas de permissões em PRs do dependabot
     if: (github.actor != 'dependabot[bot]')
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       # Executa o Semgrep e gera relatório
       - name: Run Semgrep
@@ -39,7 +39,7 @@ jobs:
 
       # Publica como artifact para consulta
       - name: Upload Semgrep report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: semgrep-report
@@ -48,7 +48,7 @@ jobs:
       # Publica o SARIF no GitHub Code Scanning (aba Security)
       # Em PRs de forks, o token geralmente não tem permissão para security-events:write
       - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@411c4c9a36b3fca4d674f06b6396b2c6d23522c6 # v3
         if: >
           always() &&
           (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)

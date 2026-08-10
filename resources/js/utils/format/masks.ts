@@ -77,6 +77,24 @@ export function applyMobileMask(value: string): string {
 }
 
 /**
+ * Aplica máscara de telefone escolhendo fixo (10 díg.) ou celular (11 díg.)
+ * automaticamente conforme o comprimento digitado.
+ */
+export function applyPhoneAutoMask(value: string): string {
+    const numbers = removeNonNumeric(value);
+    return numbers.length > 10 ? applyMobileMask(value) : applyPhoneMask(value);
+}
+
+/**
+ * Aplica máscara de CEP (00000-000)
+ */
+export function applyCepMask(value: string): string {
+    const numbers = removeNonNumeric(value).slice(0, 8);
+    if (numbers.length <= 5) return numbers;
+    return `${numbers.slice(0, 5)}-${numbers.slice(5)}`;
+}
+
+/**
  * Remove máscara de uma string, retornando apenas números
  * Útil para enviar dados ao backend
  */

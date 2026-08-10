@@ -2,13 +2,20 @@
 
 namespace App\Http\Resources;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+/**
+ * @mixin User
+ */
 class UserResource extends JsonResource
 {
     public bool $preserveKeys = true;
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(Request $request): array
     {
         $currentUser = $request->user();
@@ -29,7 +36,7 @@ class UserResource extends JsonResource
 
                 $permissions = [];
 
-                if ($this->role->relationLoaded('permissions') && $this->role->permissions) {
+                if ($this->role->relationLoaded('permissions')) {
                     $permissions = $this->role->permissions->map(fn($perm) => [
                         'name'  => $perm->name,
                         'label' => $perm->label,
@@ -43,10 +50,10 @@ class UserResource extends JsonResource
                     'permissions' => $permissions,
                 ];
             }),
-            'permissions' => $this->whenLoaded('permissions', fn() => $this->permissions?->map(fn($perm) => [
+            'permissions' => $this->whenLoaded('permissions', fn() => $this->permissions->map(fn($perm) => [
                 'name'  => $perm->name,
                 'label' => $perm->label,
-            ]) ?? []),
+            ])),
             'custom_permissions_count' => $this->getCustomPermissionsCount(),
             'custom_permissions_list'  => $this->getCustomPermissionsList(),
             'can_impersonate'          => $currentUser ? $currentUser->canImpersonate($this->resource) : false,

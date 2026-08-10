@@ -8,6 +8,7 @@ use App\Http\Resources\UserResource;
 use App\Models\Permission;
 use App\Services\RoleFilterService;
 use Illuminate\Http\Request;
+use Inertia\Response;
 
 class IndexController extends Controller
 {
@@ -16,7 +17,7 @@ class IndexController extends Controller
     ) {
     }
 
-    public function __invoke(Request $request)
+    public function __invoke(Request $request): Response
     {
         $this->authorize('manage_roles');
 

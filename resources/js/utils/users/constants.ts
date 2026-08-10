@@ -46,9 +46,3 @@ export const USER_AVATAR_SIZE = {
 
 export const TABLE_ROW_HOVER_CLASSES =
     'group transition-all duration-200 ease-in-out will-change-transform hover:bg-muted/40 dark:hover:bg-muted/20 hover:shadow-sm';
-
-// ============================================================================
-// Validation Constants
-// ============================================================================
-
-export const INVALID_FILTER_VALUES = ['all', '', null, undefined] as const;

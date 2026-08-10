@@ -21,6 +21,8 @@
     "require-dev": {
         "fakerphp/faker": "^1.23",
         "laradumps/laradumps": "^5.3",
+        "larastan/larastan": "^3.10",
+        "laravel-lang/common": "^6.8",
         "laravel/boost": "^2.4",
         "laravel/pail": "^1.2.2",
         "laravel/pint": "^1.18",
@@ -73,9 +75,11 @@
         "ci:test": "vendor/bin/pest",
         "ci:lint": "vendor/bin/pint --test",
         "ci:rector": "vendor/bin/rector process --dry-run --config ./rector.php",
+        "ci:stan": "vendor/bin/phpstan analyse --memory-limit=1G",
         "ci:check": [
             "@ci:lint",
             "@ci:rector",
+            "@ci:stan",
             "@ci:test"
         ],
         "horizon:terminate": "@php artisan horizon:terminate",

@@ -25,8 +25,8 @@ test('updating role permissions invalidates affected users caches but not unaffe
     ]);
 
     $role = Role::create([
-        'name'     => 'finance_manager',
-        'label'    => 'Finance Manager',
+        'name'     => 'manager',
+        'label'    => 'Manager',
         'priority' => 10,
     ]);
 
@@ -103,8 +103,8 @@ test('invalid permissions payload does not change role permissions or invalidate
     ]);
 
     $role = Role::create([
-        'name'     => 'finance_manager',
-        'label'    => 'Finance Manager',
+        'name'     => 'manager',
+        'label'    => 'Manager',
         'priority' => 10,
     ]);
 
