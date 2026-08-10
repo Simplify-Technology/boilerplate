@@ -58,13 +58,13 @@ sorteiopix é **fonte** de vários itens da harvest — não re-portar, apenas r
 
 ## 5. Estado
 
-- ⬜ Fatia 0 — Baseline (reconciliar ci.yml: SHA-pin, concurrency, security job)
-- ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate MySQL, smoke browser do sorteio/pagamento)
-- ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.5.3, dependabot, `.ai/rules` antecipado)
-- ⬜ Fatia 3a — Laravel 12→13 (compat Reverb/Horizon/webpush/Socialite/auditing)
-- ⬜ Fatia 3b — Inertia 2→3 (receita `fad56c0` herdada do ctjuris)
-- ⬜ Fatia 4 — Hardening (CSP report-only c/ wss, EnsureUserIsActive, strict+report, Sentry)
-- ⬜ Fatia 5 — Kit BR/dedupe (⚠️ diff `currency.ts`/centavos antes do merge)
-- ⬜ Fatia 6 — Convenções (rate limiters, Form Requests, RBAC sync, composer name)
+- [ ] ⬜ Fatia 0 — Baseline (reconciliar ci.yml: SHA-pin, concurrency, security job)
+- [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate MySQL, smoke browser do sorteio/pagamento)
+- [ ] ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.5.3, dependabot, `.ai/rules` antecipado)
+- [ ] ⬜ Fatia 3a — Laravel 12→13 (compat Reverb/Horizon/webpush/Socialite/auditing)
+- [ ] ⬜ Fatia 3b — Inertia 2→3 (receita `fad56c0` herdada do ctjuris)
+- [ ] ⬜ Fatia 4 — Hardening (CSP report-only c/ wss, EnsureUserIsActive, strict+report, Sentry)
+- [ ] ⬜ Fatia 5 — Kit BR/dedupe (⚠️ diff `currency.ts`/centavos antes do merge)
+- [ ] ⬜ Fatia 6 — Convenções (rate limiters, Form Requests, RBAC sync, composer name)
 
 Última atualização: 2026-08-10 (gap-report inicial)

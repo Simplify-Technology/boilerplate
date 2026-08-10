@@ -59,11 +59,11 @@ Projeto **#3** na ordem do [PLAYBOOK](../PLAYBOOK.md) (§2). Fork direto deste b
 
 ## 5. Estado
 
-- ⬜ Fatia 0 — Baseline (paridade do CI + baseline documentado)
-- ⬜ Fatia 2 — Tooling/CI (dependabot, mise, `.ai/rules` + CLAUDE.md antecipados)
-- ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate MySQL, smoke browser)
-- ⬜ Fatia 4 — Hardening (CSP report-only → enforce, middlewares, PiiScrubber)
-- ⬜ Fatia 5 — Kit BR/dedupe (masks/format/clipboard)
-- ⬜ Fatia 6 — Convenções (validação inline, limiters, lang/pt_BR, RBAC sync)
+- [ ] ⬜ Fatia 0 — Baseline (paridade do CI + baseline documentado)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, mise, `.ai/rules` + CLAUDE.md antecipados)
+- [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate MySQL, smoke browser)
+- [ ] ⬜ Fatia 4 — Hardening (CSP report-only → enforce, middlewares, PiiScrubber)
+- [ ] ⬜ Fatia 5 — Kit BR/dedupe (masks/format/clipboard)
+- [ ] ⬜ Fatia 6 — Convenções (validação inline, limiters, lang/pt_BR, RBAC sync)
 
 Última atualização: 2026-08-10 (gap-report inicial)

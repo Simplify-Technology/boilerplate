@@ -53,11 +53,11 @@ Fork direto do boilerplate (`composer.json` ainda se chama `simplify-technology/
 
 ## 5. Estado
 
-- ⬜ Fatia 0 — Baseline (paridade do ci.yml: SHA-pinning, concurrency, job security)
-- ⬜ Fatia 1 — Redes de segurança (Larastan + baseline, gate MySQL, smoke browser)
-- ⬜ Fatia 2 — Tooling/CI (dependabot, .mise.toml, minimumReleaseAge, .ai/rules antecipado)
-- ⬜ Fatia 4 — Hardening (headers, PiiScrubber, EnsureUserIsActive, error pages, Sentry)
-- ⬜ Fatia 5 — Kit BR / dedupe (Support/Br + utils/format + masked-input, deletar locais)
-- ⬜ Fatia 6 — Convenções (validação inline restante, rate limiters, RBAC sync, rename do pacote)
+- [ ] ⬜ Fatia 0 — Baseline (paridade do ci.yml: SHA-pinning, concurrency, job security)
+- [ ] ⬜ Fatia 1 — Redes de segurança (Larastan + baseline, gate MySQL, smoke browser)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, .mise.toml, minimumReleaseAge, .ai/rules antecipado)
+- [ ] ⬜ Fatia 4 — Hardening (headers, PiiScrubber, EnsureUserIsActive, error pages, Sentry)
+- [ ] ⬜ Fatia 5 — Kit BR / dedupe (Support/Br + utils/format + masked-input, deletar locais)
+- [ ] ⬜ Fatia 6 — Convenções (validação inline restante, rate limiters, RBAC sync, rename do pacote)
 
 Última atualização: 2026-08-10 (gap-report inicial)

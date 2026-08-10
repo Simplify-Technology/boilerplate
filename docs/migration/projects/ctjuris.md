@@ -56,12 +56,12 @@ ctjuris é a **fonte** de boa parte da harvest — não re-portar, apenas reconc
 
 ## 5. Estado
 
-- ⬜ Fatia 0 — Baseline (CI reativado, service PostgreSQL)
-- ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate pgsql, smoke browser)
-- ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.5.3, dependabot, `.ai/rules` antecipado)
-- ⬜ Fatia 3b — Inertia 2→3 (estreia da receita `fad56c0`)
-- ⬜ Fatia 4 — Hardening (CSP report-only, EnsureUserIsActive, error pages)
-- ⬜ Fatia 5 — Kit BR/dedupe (⚠️ compat `CpfHasher` antes do merge)
-- ⬜ Fatia 6 — Convenções (rate limiters, Form Requests, RBAC sync)
+- [ ] ⬜ Fatia 0 — Baseline (CI reativado, service PostgreSQL)
+- [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate pgsql, smoke browser)
+- [ ] ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.5.3, dependabot, `.ai/rules` antecipado)
+- [ ] ⬜ Fatia 3b — Inertia 2→3 (estreia da receita `fad56c0`)
+- [ ] ⬜ Fatia 4 — Hardening (CSP report-only, EnsureUserIsActive, error pages)
+- [ ] ⬜ Fatia 5 — Kit BR/dedupe (⚠️ compat `CpfHasher` antes do merge)
+- [ ] ⬜ Fatia 6 — Convenções (rate limiters, Form Requests, RBAC sync)
 
 Última atualização: 2026-08-10 (gap-report inicial)

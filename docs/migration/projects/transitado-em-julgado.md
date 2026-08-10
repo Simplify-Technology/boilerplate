@@ -21,7 +21,7 @@ Projeto piloto da rodada (posição 1 na ordem do [PLAYBOOK](../PLAYBOOK.md) §2
 ## 2. Já em conformidade
 
 - Laravel 13 + PHP 8.4 + Inertia v3 (backend e frontend) + React 19 + Tailwind 4 — nenhum upgrade de framework pendente.
-- Pest 4 com 23 arquivos em `tests/Feature` (Auth, Capitulos, Musicas, PermissionRole, Permissions, Settings, WhatsApp, Impersonate, Horizon, Dashboard), incluindo `Laravel13ConfigurationDefaultsTest`.
+- Pest 4 com 21 arquivos de teste em `tests/Feature` (Auth, Capitulos, Musicas, PermissionRole, Permissions, Settings, WhatsApp, Impersonate, Horizon, Dashboard), incluindo `Laravel13ConfigurationDefaultsTest`.
 - `pint.json`, `rector.php`, scripts `ci:*` no `composer.json` e `package.json` (`ci:check` composer = lint + rector + test; pnpm = lint + format + types + vitest + build).
 - Husky completo (`pre-commit`, `pre-push`, `commit-msg`, `prepare-commit-msg`) + `scripts/format/format-dirty.mjs`.
 - `.github/workflows/ci.yml` (jobs frontend + backend + pint + rector) e `semgrep.yml`.
@@ -57,7 +57,7 @@ Projeto piloto da rodada (posição 1 na ordem do [PLAYBOOK](../PLAYBOOK.md) §2
 
 | Fatia | Aplica? | Notas para este projeto |
 | ----- | ------- | ----------------------- |
-| **0 — Baseline** | Sim | CI já existe; a fatia é levar `ci.yml` à paridade estrutural (jobs `quality`/`security`, concurrency, SHA-pinning) e documentar o verde atual (23 arquivos Feature). |
+| **0 — Baseline** | Sim | CI já existe; a fatia é levar `ci.yml` à paridade estrutural (jobs `quality`/`security`, concurrency, SHA-pinning) e documentar o verde atual (21 arquivos Feature). |
 | **1 — Redes de segurança** | Sim | Larastan do zero (sem baseline legado grande — projeto pequeno, mirar zero erros como o boilerplate, não baseline). Gate MySQL 8 no CI. Cobrir fluxos críticos: portão da intimada, desbloqueio por data (com relógio congelado), recados agendados, disparo WhatsApp. Smoke browser mínimo do hub. |
 | **2 — Tooling/CI** | Parcial | Pint/Rector/Husky/scripts já conformes. Falta: `dependabot.yml`, `.mise.toml`, `minimumReleaseAge: 10080`, SHA-pinning. **Antecipar `.ai/rules/` + adaptação de `CLAUDE.md`/`AGENTS.md` para cá** (recomendação da Fatia 6). |
 | **3a — Laravel 12→13** | **Não se aplica** | Já é L13 (v13.21.1). |
@@ -70,11 +70,18 @@ Ordem recomendada: **0 → 1 → 2 → 4 → 5 → 6** (3a/3b puladas).
 
 ## 5. Estado
 
-- [ ] ⬜ Fatia 0 — Baseline (CI em paridade estrutural + verde documentado)
+- [x] ✅ Fatia 0 — Baseline (CI em paridade estrutural + verde documentado) (2026-08-10)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan zero-erros, gate MySQL, fluxos críticos, smoke)
 - [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, mise, minimumReleaseAge, SHA-pinning, `.ai/rules` antecipado)
 - [ ] ⬜ Fatia 4 — Hardening (pacote completo, CSP report-only primeiro)
 - [ ] ⬜ Fatia 5 — Kit BR / dedupe frontend
 - [ ] ⬜ Fatia 6 — Convenções (lang/pt_BR, rate limiters, kebab-case, sync trait RBAC)
 
-Última atualização: 2026-08-10 (gap-report inicial)
+**Baseline verde da Fatia 0 (2026-08-10, medido localmente; branch `chore/3-fatia-0-baseline`, issue #3):**
+
+- Pest: **117 testes / 660 assertions** em 21 arquivos de `tests/Feature` (SQLite `:memory:`), zero skipados. Cobrem os domínios listados em §2; sem `Unit`/`Arch`/browser (gap §3.5, endereçado na Fatia 1).
+- Vitest: **32 testes / 7 arquivos**, zero skipados.
+- `composer ci:check` (pint `--test` + rector dry-run + pest) e `pnpm ci:check` (lint + format:check + types + vitest + build) verdes antes e depois da fatia.
+- **Desvios deliberados no CI novo:** (1) job `quality` sem step de PHPStan — Larastan só entra na Fatia 1; o CI descreve o presente. (2) job `security` com `continue-on-error: true` — os audits acusam advisories reais do lockfile atual (composer: guzzle <7.15.2, 1 high; league/commonmark <2.9.0, 4 high | pnpm: axios <1.18.0 high, transitivo do @inertiajs/react; nanoid <3.3.17 high, transitivo do vite/postcss), rastreados na **issue #4** do projeto; ao resolvê-la, remover o `continue-on-error` para o job bloquear (paridade plena com o boilerplate).
+
+Última atualização: 2026-08-10 (Fatia 0 concluída)

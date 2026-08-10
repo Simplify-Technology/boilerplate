@@ -60,13 +60,13 @@ Projeto #6 na ordem do [PLAYBOOK](../PLAYBOOK.md) (§2): penúltimo, deliberadam
 
 ## 5. Estado
 
-- ⬜ Fatia 0 — Baseline (paridade de CI + documentação da suíte)
-- ⬜ Fatia 1 — Redes de segurança (Larastan + baseline, gate MySQL, smoke billing/LGPD)
-- ⬜ Fatia 2 — Tooling/CI (dependabot, minimumReleaseAge, pnpm 11, `.ai/rules` antecipado)
-- ⬜ Fatia 3a — Upgrade Laravel 12→13
-- ⬜ Fatia 3b — Upgrade Inertia 2→3
-- ⬜ Fatia 4 — Hardening (CSP report-only→enforce, PiiScrubber, Sentry, strict mode)
-- ⬜ Fatia 5 — Kit BR / dedupe (com testes de paridade monetária)
-- ⬜ Fatia 6 — Convenções (Form Requests, limiters nomeados, decisão de auditoria)
+- [ ] ⬜ Fatia 0 — Baseline (paridade de CI + documentação da suíte)
+- [ ] ⬜ Fatia 1 — Redes de segurança (Larastan + baseline, gate MySQL, smoke billing/LGPD)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, minimumReleaseAge, pnpm 11, `.ai/rules` antecipado)
+- [ ] ⬜ Fatia 3a — Upgrade Laravel 12→13
+- [ ] ⬜ Fatia 3b — Upgrade Inertia 2→3
+- [ ] ⬜ Fatia 4 — Hardening (CSP report-only→enforce, PiiScrubber, Sentry, strict mode)
+- [ ] ⬜ Fatia 5 — Kit BR / dedupe (com testes de paridade monetária)
+- [ ] ⬜ Fatia 6 — Convenções (Form Requests, limiters nomeados, decisão de auditoria)
 
 Última atualização: 2026-08-10 (gap-report inicial)

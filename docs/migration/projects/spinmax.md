@@ -58,14 +58,14 @@ spinmax é a maior fonte da harvest — reconciliar drift, não re-portar:
 
 ## 5. Estado
 
-- ⬜ Pré-requisito — smoke de checkout completo verde (bloqueia todas as fatias)
-- ⬜ Fatia 0 — Baseline (SHA-pinning, reconciliar ci.yml, documentar suíte)
-- ⬜ Fatia 1 — Redes de segurança (Larastan baseline; gate MySQL e browser já existem)
-- ⬜ Fatia 2 — Tooling/CI (dependabot, pre-push, `.ai/rules` antecipado; sem downgrade pnpm/Node)
-- ⬜ Fatia 3a — Laravel 12→13 (Horizon/auditing compat, janela de baixo tráfego)
-- ⬜ Fatia 3b — Inertia 2→3 (receita `fad56c0` madura, SSR, sdk MP)
-- ⬜ Fatia 4 — Hardening (CSP report-only + allowlist Mercado Pago)
-- ⬜ Fatia 5 — Kit BR/dedupe (⚠️ compat do hash de CPF antes do merge)
-- ⬜ Fatia 6 — Convenções (Form Requests, rate limiters, exceção auditing/Resend)
+- [ ] ⬜ Pré-requisito — smoke de checkout completo verde (bloqueia todas as fatias)
+- [ ] ⬜ Fatia 0 — Baseline (SHA-pinning, reconciliar ci.yml, documentar suíte)
+- [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline; gate MySQL e browser já existem)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, pre-push, `.ai/rules` antecipado; sem downgrade pnpm/Node)
+- [ ] ⬜ Fatia 3a — Laravel 12→13 (Horizon/auditing compat, janela de baixo tráfego)
+- [ ] ⬜ Fatia 3b — Inertia 2→3 (receita `fad56c0` madura, SSR, sdk MP)
+- [ ] ⬜ Fatia 4 — Hardening (CSP report-only + allowlist Mercado Pago)
+- [ ] ⬜ Fatia 5 — Kit BR/dedupe (⚠️ compat do hash de CPF antes do merge)
+- [ ] ⬜ Fatia 6 — Convenções (Form Requests, rate limiters, exceção auditing/Resend)
 
 Última atualização: 2026-08-10 (gap-report inicial)
