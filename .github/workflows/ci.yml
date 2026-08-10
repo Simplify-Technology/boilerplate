@@ -247,8 +247,9 @@ jobs:
 
       # Ambos os audits leem apenas os lockfiles — não é preciso instalar dependências.
       # composer audit falha em QUALQUER advisory (exit != 0 por padrão).
+      # --locked audita o composer.lock direto — o job não roda composer install.
       - name: Composer audit
-        run: composer audit
+        run: composer audit --locked
 
       # Só high/critical em deps de produção bloqueiam o PR (medium/low não travam).
       - name: pnpm audit (prod, high/critical)

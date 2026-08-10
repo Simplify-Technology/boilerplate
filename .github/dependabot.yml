@@ -7,6 +7,9 @@ updates:
     directory: '/'
     schedule:
       interval: weekly
+    # Espelha o minimumReleaseAge do pnpm: só sugerir versões com 7+ dias.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     groups:
       composer-minor-patch:
@@ -18,6 +21,9 @@ updates:
     directory: '/'
     schedule:
       interval: weekly
+    # Espelha o minimumReleaseAge do pnpm: só sugerir versões com 7+ dias.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     groups:
       npm-minor-patch:
@@ -29,6 +35,9 @@ updates:
     directory: '/'
     schedule:
       interval: weekly
+    # Espelha o minimumReleaseAge do pnpm: só sugerir versões com 7+ dias.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     groups:
       actions-minor-patch:
