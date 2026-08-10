@@ -16,6 +16,9 @@ class StoreUserRequest extends FormRequest
         return $this->user()->can('manage_users');
     }
 
+    /**
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
+     */
     public function rules(): array
     {
         $allowedRoleNames = array_map(

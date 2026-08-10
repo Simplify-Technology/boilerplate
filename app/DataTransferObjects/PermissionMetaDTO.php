@@ -8,6 +8,9 @@ use App\Models\Permission;
 
 readonly class PermissionMetaDTO
 {
+    /**
+     * @param array<string, mixed>|null $meta
+     */
     public function __construct(
         public string $name,
         public string $label,
@@ -24,6 +27,9 @@ readonly class PermissionMetaDTO
         );
     }
 
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(): array
     {
         return [

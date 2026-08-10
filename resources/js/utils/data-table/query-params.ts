@@ -1,5 +1,5 @@
 import type { QueryParams } from '@/types/data-table';
-import { INVALID_FILTER_VALUES } from '../users/constants';
+import { INVALID_FILTER_VALUES } from './constants';
 
 /**
  * Utilitários genéricos para construção e manipulação de query params

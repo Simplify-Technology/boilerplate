@@ -1,21 +1,19 @@
 import '../css/app.css';
 
 import ToastProvider from '@/components/ui/toast-provider';
-import { createInertiaApp, type ResolvedComponent } from '@inertiajs/react';
+import { resolveInertiaPage } from '@/lib/resolve-inertia-page';
+import { createInertiaApp } from '@inertiajs/react';
 import { Theme } from '@radix-ui/themes';
-import { resolvePageComponent } from 'laravel-vite-plugin/inertia-helpers';
 import type { CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
 import { initializeTheme } from './hooks/use-appearance';
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const pages = import.meta.glob('./pages/**/*.tsx');
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
-    resolve: (name) =>
-        resolvePageComponent(`./pages/${name}.tsx`, import.meta.glob<{ default: ResolvedComponent }>('./pages/**/*.tsx')).then(
-            (module) => module.default,
-        ),
+    resolve: (name) => resolveInertiaPage(name, pages).then((module) => module.default),
     setup({ el, App, props }) {
         const root = createRoot(el);
 

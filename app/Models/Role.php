@@ -9,16 +9,25 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int|null $priority Nulo apenas em instâncias ainda não persistidas; no banco tem default 0.
+ */
 class Role extends Model
 {
     protected $fillable = ['name', 'label', 'priority'];
 
+    /**
+     * @return BelongsToMany<Permission, $this>
+     */
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class);
     }
 
-    public function users(): hasMany
+    /**
+     * @return HasMany<User, $this>
+     */
+    public function users(): HasMany
     {
         return $this->hasMany(User::class);
     }

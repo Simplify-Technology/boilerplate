@@ -79,7 +79,7 @@ export function DeleteConfirmationDialog({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="sm:max-w-[500px]">
+            <DialogContent className="sm:max-w-[500px]" role="alertdialog">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-3">
                         <div className={cn('rounded-lg p-2', config.iconBg)}>
@@ -205,7 +205,8 @@ export function DeleteConfirmationDialog({
                 <DialogFooter className="sm:justify-between">
                     <p className="text-muted-foreground text-xs">Pressione ESC para fechar</p>
                     <div className="flex gap-2">
-                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={processing}>
+                        {/* Foco inicial no Cancelar: um Enter reflexo não pode excluir nada. */}
+                        <Button type="button" variant="outline" onClick={() => onOpenChange(false)} disabled={processing} autoFocus>
                             {cancelText}
                         </Button>
                         <Button

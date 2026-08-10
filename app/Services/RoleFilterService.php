@@ -7,7 +7,7 @@ namespace App\Services;
 use App\Enum\Roles as RolesEnum;
 use App\Models\Role;
 use App\Models\User;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 
 final class RoleFilterService
 {
@@ -36,7 +36,7 @@ final class RoleFilterService
      * Use this method for SECURITY VALIDATIONS (e.g., in controllers before actually assigning roles).
      *
      * @param User $user The user who wants to assign roles (may be impersonated)
-     * @return Collection<Role> Filtered roles
+     * @return Collection<int, Role> Filtered roles
      */
     public function getAssignableRoles(User $user): Collection
     {
@@ -50,17 +50,16 @@ final class RoleFilterService
 
         // Se o usuário efetivo não tem permissão, retorna vazio
         if (!$effectiveUser->hasPermissionTo('assign_roles')) {
-            return collect([]);
+            return new Collection();
         }
 
         $userPriority = $effectiveUser->role?->getPriority() ?? 0;
         $isSuperUser  = $effectiveUser->hasRole(RolesEnum::SUPER_USER);
-        $userRoleName = $effectiveUser->role?->name;
 
         return Role::query()
             ->whereIn('name', $this->allowedRoleNames())
             ->get()
-            ->filter(function(Role $role) use ($userPriority, $isSuperUser, $userRoleName) {
+            ->filter(function(Role $role) use ($userPriority, $isSuperUser) {
                 $rolePriority = $role->getPriority();
 
                 // SUPER_USER só pode ser atribuído por SUPER_USER
@@ -74,33 +73,7 @@ final class RoleFilterService
                 }
 
                 // Outros usuários só podem atribuir roles com prioridade menor
-                if ($rolePriority >= $userPriority) {
-                    return false;
-                }
-
-                // SALES_MANAGER só pode atribuir papéis da equipe de vendas
-                if ($userRoleName === RolesEnum::SALES_MANAGER->value) {
-                    try {
-                        $roleEnum = RolesEnum::from($role->name);
-
-                        return $roleEnum->isSalesTeamRole();
-                    } catch (\ValueError) {
-                        return false;
-                    }
-                }
-
-                // FINANCE_MANAGER só pode atribuir papéis da equipe financeira
-                if ($userRoleName === RolesEnum::FINANCE_MANAGER->value) {
-                    try {
-                        $roleEnum = RolesEnum::from($role->name);
-
-                        return $roleEnum->isFinancialTeamRole();
-                    } catch (\ValueError) {
-                        return false;
-                    }
-                }
-
-                return true;
+                return $rolePriority < $userPriority;
             });
     }
 
@@ -113,7 +86,7 @@ final class RoleFilterService
      * For security validations, use getAssignableRoles() instead.
      *
      * @param User $user The current session user (may be impersonated)
-     * @return Collection<Role> Filtered roles
+     * @return Collection<int, Role> Filtered roles
      */
     public function getAssignableRolesForCurrentSession(User $user): Collection
     {
@@ -128,17 +101,16 @@ final class RoleFilterService
 
         // Se o usuário atual não tem permissão, retorna vazio
         if (!$effectiveUser->hasPermissionTo('assign_roles')) {
-            return collect([]);
+            return new Collection();
         }
 
         $userPriority = $effectiveUser->role?->getPriority() ?? 0;
         $isSuperUser  = $effectiveUser->hasRole(RolesEnum::SUPER_USER);
-        $userRoleName = $effectiveUser->role?->name;
 
         return Role::query()
             ->whereIn('name', $this->allowedRoleNames())
             ->get()
-            ->filter(function(Role $role) use ($userPriority, $isSuperUser, $userRoleName) {
+            ->filter(function(Role $role) use ($userPriority, $isSuperUser) {
                 $rolePriority = $role->getPriority();
 
                 // SUPER_USER só pode ser atribuído por SUPER_USER
@@ -152,33 +124,7 @@ final class RoleFilterService
                 }
 
                 // Outros usuários só podem atribuir roles com prioridade menor
-                if ($rolePriority >= $userPriority) {
-                    return false;
-                }
-
-                // SALES_MANAGER só pode atribuir papéis da equipe de vendas
-                if ($userRoleName === RolesEnum::SALES_MANAGER->value) {
-                    try {
-                        $roleEnum = RolesEnum::from($role->name);
-
-                        return $roleEnum->isSalesTeamRole();
-                    } catch (\ValueError) {
-                        return false;
-                    }
-                }
-
-                // FINANCE_MANAGER só pode atribuir papéis da equipe financeira
-                if ($userRoleName === RolesEnum::FINANCE_MANAGER->value) {
-                    try {
-                        $roleEnum = RolesEnum::from($role->name);
-
-                        return $roleEnum->isFinancialTeamRole();
-                    } catch (\ValueError) {
-                        return false;
-                    }
-                }
-
-                return true;
+                return $rolePriority < $userPriority;
             });
     }
 
@@ -193,7 +139,7 @@ final class RoleFilterService
      * If impersonating, uses the original (impersonator) user's permissions instead of the impersonated user.
      *
      * @param User $user The user who wants to see/filter roles (may be impersonated)
-     * @return Collection<Role> Filtered roles
+     * @return Collection<int, Role> Filtered roles
      */
     public function getVisibleRoles(User $user): Collection
     {
@@ -232,7 +178,7 @@ final class RoleFilterService
      * This provides a realistic UX during impersonation - the user sees what the impersonated user would see.
      *
      * @param User $user The current session user (may be impersonated)
-     * @return Collection<Role> Filtered roles
+     * @return Collection<int, Role> Filtered roles
      */
     public function getVisibleRolesForCurrentSession(User $user): Collection
     {

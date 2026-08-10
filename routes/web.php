@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types = 1);
+
 use App\Http\Controllers\PermissionRole;
 use App\Http\Controllers\User;
 use Illuminate\Support\Facades\Route;
@@ -35,7 +37,7 @@ Route::middleware(['auth', 'verified'])->group(function(): void {
 
     // Impersonate start route (after users routes but specific enough)
     Route::post('users/{user}/impersonate', User\StartImpersonateController::class)
-        ->middleware(['throttle:10,1', 'can:impersonate_users'])
+        ->middleware(['throttle:impersonate', 'can:impersonate_users'])
         ->name('users.impersonate');
 
     // endregion

@@ -2,14 +2,21 @@
 
 namespace Database\Factories;
 
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
+/**
+ * @extends Factory<User>
+ */
 class UserFactory extends Factory
 {
     protected static ?string $password;
 
+    /**
+     * @return array<string, mixed>
+     */
     public function definition(): array
     {
         return [
@@ -19,7 +26,7 @@ class UserFactory extends Factory
             'phone'             => fake()->numerify('(##) #####-####'),
             'mobile'            => fake()->numerify('(##) #####-####'),
             'user_notes'        => fake()->text(),
-            'is_active'         => fake()->boolean(),
+            'is_active'         => true,
             'role_id'           => null,
             'email_verified_at' => now(),
             'password'          => static::$password ??= Hash::make('password'),

@@ -2,8 +2,10 @@
 allowBuilds:
   esbuild: true
 
-# pnpm 11 passou a recusar, por padrão (1440 min), pacotes publicados há <24h
-# (proteção supply-chain). Como este boilerplate sempre bumpa para o latest,
-# isso travaria install/`pnpm run`/CI por ~24h a cada update. Desligamos
-# explicitamente para manter o comportamento do pnpm 10.
-minimumReleaseAge: 0
+# Proteção supply-chain do pnpm: só RESOLVE versões publicadas há ≥7 dias
+# (pnpm add/update). Não afeta os installs do CI e do deploy, que usam
+# --frozen-lockfile. A janela de 7 dias cobre o padrão dos ataques a pacotes
+# npm (comprometidos e despublicados em dias).
+# Para uma correção urgente de versão recém-lançada, use:
+#   pnpm add pacote@x.y.z --config.minimum-release-age=0
+minimumReleaseAge: 10080

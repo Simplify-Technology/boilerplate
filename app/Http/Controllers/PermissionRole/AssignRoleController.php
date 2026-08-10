@@ -7,16 +7,15 @@ namespace App\Http\Controllers\PermissionRole;
 use App\Enum\Roles as RolesEnum;
 use App\Events\RoleUserUpdatedEvent;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\PermissionRole\AssignRoleRequest;
 use App\Models\Role;
 use App\Models\User;
 use App\Services\ImpersonationService;
 use App\Services\RoleFilterService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\Rule;
 
 final class AssignRoleController extends Controller
 {
@@ -26,17 +25,8 @@ final class AssignRoleController extends Controller
     ) {
     }
 
-    public function __invoke(Request $request, User $user): RedirectResponse
+    public function __invoke(AssignRoleRequest $request, User $user): RedirectResponse
     {
-        $allowedRoleNames = array_map(
-            static fn(RolesEnum $role) => $role->value,
-            RolesEnum::cases()
-        );
-
-        $request->validate([
-            'role' => ['required', 'exists:roles,name', Rule::in($allowedRoleNames)],
-        ]);
-
         $authUser = $request->user();
 
         if (!$authUser) {
@@ -48,7 +38,7 @@ final class AssignRoleController extends Controller
         $effectiveUser->load('role');
         $authUser->load('role');
 
-        $newRole = Role::where('name', $request->role)->firstOrFail();
+        $newRole = Role::where('name', $request->validated('role'))->firstOrFail();
 
         // Verifica permissão básica usando o usuário efetivo (original se impersonando)
         if (!$effectiveUser->hasPermissionTo('assign_roles')) {

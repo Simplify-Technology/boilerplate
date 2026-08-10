@@ -7,6 +7,7 @@ namespace App\Traits\Models;
 use App\Enum\Permissions;
 use App\Enum\Roles;
 use App\Models\Permission;
+use App\Models\PermissionUser;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -44,9 +45,12 @@ trait HasRolesAndPermissions
         return "user:$this->id:permissions";
     }
 
+    /**
+     * @return Collection<int, Permission>
+     */
     public function getAllPermissions(): Collection
     {
-        $rolePermissions = $this->role?->permissions ?? collect();
+        $rolePermissions = $this->role->permissions ?? collect();
 
         return $rolePermissions
             ->merge($this->permissions)
@@ -63,6 +67,12 @@ trait HasRolesAndPermissions
 
     private function refreshPermissionsCache(): void
     {
+        // As relations podem estar memoizadas de antes da mutação (assignRole/
+        // givePermissionTo); recomputar sem descartá-las gravaria no cache
+        // forever as permissões do papel antigo.
+        $this->unsetRelation('role');
+        $this->unsetRelation('permissions');
+
         Cache::forget($this->getPermissionCacheKey());
         Cache::rememberForever(
             $this->getPermissionCacheKey(),
@@ -78,6 +88,9 @@ trait HasRolesAndPermissions
         $this->refreshPermissionsCache();
     }
 
+    /**
+     * @param array<string, mixed> $meta
+     */
     public function givePermissionTo(Permissions|string $permission, array $meta = []): void
     {
         $permissionValue = $permission instanceof Permissions ? $permission->value : $permission;
@@ -103,9 +116,13 @@ trait HasRolesAndPermissions
         $this->refreshPermissionsCache();
     }
 
+    /**
+     * @return BelongsToMany<Permission, $this, PermissionUser>
+     */
     public function permissions(): BelongsToMany
     {
         return $this->belongsToMany(Permission::class)
+            ->using(PermissionUser::class)
             ->withPivot('meta', 'created_at', 'updated_at')
             ->withTimestamps();
     }
@@ -120,11 +137,17 @@ trait HasRolesAndPermissions
         }
     }
 
+    /**
+     * @return BelongsTo<Role, $this>
+     */
     public function role(): BelongsTo
     {
         return $this->belongsTo(Role::class);
     }
 
+    /**
+     * @return array<string, mixed>|null
+     */
     public function getPermissionMeta(Permissions|string $permission): ?array
     {
         $permissionValue = $permission instanceof Permissions ? $permission->value : $permission;
@@ -181,6 +204,9 @@ trait HasRolesAndPermissions
         return $this->permissions()->count();
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function getCustomPermissionsList(): array
     {
         return $this->permissions()

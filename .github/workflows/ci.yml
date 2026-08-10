@@ -1,10 +1,17 @@
 name: CI
 
+# Sem paths-ignore de propósito: com required checks no branch protection,
+# PR só-docs ficaria preso em "waiting for status" para sempre; o custo de
+# rodar o CI em mudança de markdown é menor que esse risco.
 on:
   push:
     branches: [ main, develop ]
   pull_request:
     branches: [ main, develop ]
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -20,10 +27,10 @@ jobs:
       matrix:
         node: [ 22 ]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node }}
 
@@ -38,7 +45,7 @@ jobs:
         run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
       - name: Cache pnpm
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
@@ -49,6 +56,14 @@ jobs:
         run: pnpm install --frozen-lockfile
         env:
           HUSKY: 0
+
+      - name: Cache Vite dependency cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: node_modules/.vite
+          key: ${{ runner.os }}-vite-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-vite-
 
       - name: Type check
         run: pnpm -s run types
@@ -78,14 +93,32 @@ jobs:
       matrix:
         php: [ 8.4 ]
         node: [ 22 ] # pode expandir para [20, 22] se quiser
+
+    # A suíte roda em SQLite :memory: (phpunit.xml). O MySQL existe só para o gate
+    # de migrations abaixo — pega migration incompatível com MySQL que o SQLite
+    # deixa passar (produção é MySQL).
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: boilerplate_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=15
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
         with:
           php-version: ${{ matrix.php }}
-          extensions: sqlite, pdo_sqlite
+          extensions: sqlite, pdo_sqlite, pdo_mysql
           tools: composer:v2
           coverage: none
 
@@ -93,7 +126,7 @@ jobs:
         run: composer validate --strict
 
       - name: Cache Composer
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.composer/cache/files
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -104,7 +137,7 @@ jobs:
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: ${{ matrix.node }}
 
@@ -119,7 +152,7 @@ jobs:
         run: echo "STORE_PATH=$(pnpm store path --silent)" >> "$GITHUB_OUTPUT"
 
       - name: Cache pnpm
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
           key: ${{ runner.os }}-pnpm-store-${{ hashFiles('pnpm-lock.yaml') }}
@@ -137,6 +170,17 @@ jobs:
       - run: cp .env.example .env
       - run: php artisan key:generate
 
+      # Gate SQLite×MySQL: só as migrations, não a suíte.
+      - name: Migrations (MySQL 8)
+        run: php artisan migrate --force
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: boilerplate_ci
+          DB_USERNAME: root
+          DB_PASSWORD: root
+
       - name: Tests (Pest)
         run: ./vendor/bin/pest
 
@@ -147,10 +191,10 @@ jobs:
     name: Code Quality
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
         with:
           php-version: 8.4
           extensions: sqlite, pdo_sqlite
@@ -159,7 +203,7 @@ jobs:
         run: composer validate --strict
 
       - name: Cache Composer
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/.composer/cache/files
           key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
@@ -171,6 +215,45 @@ jobs:
       - name: Run Pint (check only)
         run: vendor/bin/pint --test
 
+      - name: Run PHPStan (larastan)
+        run: composer ci:stan
+
+  # -----------------------
+  # Security audit
+  # -----------------------
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
+        with:
+          php-version: 8.4
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+
+      - name: Setup pnpm (Corepack)
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.5.3 --activate
+          pnpm --version
+
+      # Ambos os audits leem apenas os lockfiles — não é preciso instalar dependências.
+      # composer audit falha em QUALQUER advisory (exit != 0 por padrão).
+      - name: Composer audit
+        run: composer audit
+
+      # Só high/critical em deps de produção bloqueiam o PR (medium/low não travam).
+      - name: pnpm audit (prod, high/critical)
+        run: pnpm audit --prod --audit-level high
+
   # -----------------------
   # Rector (opcional, não bloqueia)
   # -----------------------
@@ -179,10 +262,10 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2.37.2
         with:
           php-version: 8.4
 

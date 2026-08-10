@@ -43,7 +43,7 @@ class CpfCnpj implements ValidationRule
 
         for ($t = 9; $t < 11; $t++) {
             for ($d = 0, $c = 0; $c < $t; $c++) {
-                $d += $cpf[$c] * (($t + 1) - $c);
+                $d += (int) $cpf[$c] * (($t + 1) - $c);
             }
             $d = ((10 * $d) % 11) % 10;
 
@@ -68,7 +68,7 @@ class CpfCnpj implements ValidationRule
         $pos     = $length - 7;
 
         for ($i = $length; $i >= 1; $i--) {
-            $sum += $numbers[$length - $i] * $pos--;
+            $sum += (int) $numbers[$length - $i] * $pos--;
 
             if ($pos < 2) {
                 $pos = 9;
@@ -87,7 +87,7 @@ class CpfCnpj implements ValidationRule
         $pos     = $length - 7;
 
         for ($i = $length; $i >= 1; $i--) {
-            $sum += $numbers[$length - $i] * $pos--;
+            $sum += (int) $numbers[$length - $i] * $pos--;
 
             if ($pos < 2) {
                 $pos = 9;

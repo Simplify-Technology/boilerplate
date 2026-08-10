@@ -1,47 +1,81 @@
 <?php
 
+declare(strict_types = 1);
+
+use App\Enum\Roles;
+use App\Models\Role;
+use App\Models\User;
+use Database\Seeders\PermissionRoleSeeder;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
 /*
 |--------------------------------------------------------------------------
 | Test Case
 |--------------------------------------------------------------------------
 |
-| The closure you provide to your test functions is always bound to a specific PHPUnit test
-| case class. By default, that class is "PHPUnit\Framework\TestCase". Of course, you may
-| need to change it using the "pest()" function to bind a different classes or traits.
+| Feature roda contra o app com banco limpo por teste. Unit e Arch usam o
+| TestCase base do PHPUnit — testes de Unit que precisem do app bootado
+| (ex.: CpfHasherTest usa config()) declaram `uses(Tests\TestCase::class)`
+| no próprio arquivo.
 |
 */
 
 pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+    ->use(RefreshDatabase::class)
     ->in('Feature');
-
-/*
-|--------------------------------------------------------------------------
-| Expectations
-|--------------------------------------------------------------------------
-|
-| When you're writing tests, you often need to check that values meet certain conditions. The
-| "expect()" function gives you access to a set of "expectations" methods that you can use
-| to assert different things. Of course, you may extend the Expectation API at any time.
-|
-*/
-
-expect()->extend('toBeOne', function() {
-    return $this->toBe(1);
-});
 
 /*
 |--------------------------------------------------------------------------
 | Functions
 |--------------------------------------------------------------------------
 |
-| While Pest is very powerful out-of-the-box, you may have some testing code specific to your
-| project that you don't want to repeat in every file. Here you can also expose helpers as
-| global functions to help you to reduce the number of lines of code in your test files.
+| Helpers de persona. Todos criam usuários reais via factory com um cargo do
+| PermissionRoleSeeder — as permissões vêm do pivot permission_role, exatamente
+| como em produção. O seeder roda sob demanda (idempotente por causa do
+| RefreshDatabase), então os testes não precisam de beforeEach próprio.
 |
 */
 
-function something()
+/**
+ * Cria um usuário ativo e verificado com o cargo informado, sem autenticar.
+ */
+function userWithRole(Roles $role): User
 {
-    // ..
+    if (!Role::query()->where('name', $role->value)->exists()) {
+        test()->seed(PermissionRoleSeeder::class);
+    }
+
+    return User::factory()->create([
+        'is_active' => true,
+        'role_id'   => Role::query()->where('name', $role->value)->firstOrFail()->id,
+    ]);
+}
+
+/**
+ * Autentica um usuário com o cargo informado e o retorna.
+ */
+function actingAsUserWithRole(Roles $role): User
+{
+    $user = userWithRole($role);
+
+    test()->actingAs($user);
+
+    return $user;
+}
+
+/**
+ * Autentica um SUPER_USER (todas as permissões do seeder) e o retorna.
+ */
+function actingAsSuperUser(): User
+{
+    return actingAsUserWithRole(Roles::SUPER_USER);
+}
+
+/**
+ * Cria um usuário sem nenhuma permissão (cargo VISITOR), SEM autenticar.
+ * Útil como alvo de gestão em testes de CRUD.
+ */
+function guestUser(): User
+{
+    return userWithRole(Roles::VISITOR);
 }
