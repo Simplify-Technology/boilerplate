@@ -56,7 +56,10 @@ Ordenados por (impacto × generalidade) ÷ risco. Fonte de todos: ctfinance @ `b
 - **Fatia A5b (comportamental, deploy fora de pico):** `auth.session` no grupo web + limiter nomeado `sessions` + linha no dataset de `AuthRouteThrottleTest.php:37-47` + **teste Feature provando que a segunda sessão de fato perde acesso**. Escreve em coluna persistida (`users.password`) e muda a pilha de auth globalmente. Atenção: as linhas de `sessions` não são apagadas — sem delete/reload a lista continua exibindo as sessões "encerradas".
 - **Colisão a resolver:** `ShowController.php:31` faz `DB::table('sessions')` dentro do controller, o que viola o guard **já existente** `arch('controllers não fazem query via facade DB')` (`tests/Arch/ArchTest.php:39-41`). A consulta vai para Service/Support.
 
-### A6 · `[guard-rail]` invariante de banco que vira no-op no SQLite · M · risco baixo
+### ~~A6~~ ✅ APLICADO · PR [#56](https://github.com/Simplify-Technology/boilerplate/pull/56) · `[guard-rail]` invariante de banco que vira no-op no SQLite · M · risco baixo
+
+> **Correções que a aplicação trouxe (2026-08-11):** (a) o marcador `DB::unprepared` faltava no candidato — é a forma que o ctfinance usa no ramo MySQL, e sem ela metade do caso de origem escapava; (b) o teste **não** podia ficar ao lado do molde irmão em `tests/Feature/Foundation/` — lá herda `RefreshDatabase` e depende de as migrations rodarem, que é o que quebra quando o erro acontece (medido: `QueryException` antes de qualquer asserção). Foi para `tests/Unit/Database/`, sem app; (c) a lente de atualidade foi reconfirmada no vendor: sem `check()` no `Blueprint`, sem `getCheckConstraints()` na introspecção.
+
 
 - **Origem:** `2026_01_27_000003_add_recurring_expenses_xor_bank_account_credit_card_check.php:23` — CHECK no pgsql, **trigger `SIGNAL SQLSTATE '45000'`** no MySQL, **no-op no SQLite**. A suíte roda em SQLite, então o teste nunca vê a constraint.
 - **Absorver:** guarda que detecta migration com `DB::statement`/`getDriverName` e exige (a) teste que exercite a invariante no dialeto real ou (b) a mesma invariante em código. Molde irmão: `tests/Feature/Foundation/SchemaIdentifierLengthTest.php:7-12`.
@@ -103,6 +106,27 @@ Ordenados por (impacto × generalidade) ÷ risco. Fonte de todos: ctfinance @ `b
 - **Correção da lente REFUTAR — reduzir o escopo:** nenhum bug de *transição inválida* é citado no ctfinance; o estrago real veio de **renomear status e conviver com cases legados**. A regra que a evidência sustenta é sobre renomeação/convivência, não sobre máquina de estado completa.
 - **⚠️ Correção da lente RISCO — a cláusula "remover o case legado no mesmo ciclo" é perigosa AQUI:** neste boilerplate, case de enum **é dado persistido** (`SyncPermissionsCommand` materializa `Permissions::cases()` em tabela). Remover case sem migração de dados quebra permissões vivas.
 - **Nota da lente ATUALIDADE:** "nunca aceita status arbitrário do payload" tem API nativa a prescrever por nome — `Rule::enum(Status::class)->only([...])`.
+
+## Achados internos do boilerplate (não são harvest — medidos durante fatias)
+
+Não vieram de projeto-fonte, então não têm origem `projeto/path@SHA`. Ficam aqui para não se perderem.
+
+### C1 · coluna `*_id` que parece FK e não é · P · risco baixo · **medido em 2026-08-11**
+
+- **Medido** durante a fatia A6, com `Schema::getForeignKeys()` na suíte (sqlite `:memory:`, `PRAGMA foreign_keys = 1` — as FKs de verdade são aplicadas):
+
+  | Tabela | FKs materializadas |
+  | ------ | ------------------ |
+  | `users` | **nenhuma** |
+  | `sessions` | **nenhuma** |
+  | `permission_role` | `permission_id→permissions`, `role_id→roles` (ambas `no action`) |
+  | `permission_user` | `permission_id→permissions`, `user_id→users` (ambas `cascade`) |
+  | `activity_log` | nenhuma (é `nullableMorphs`, esperado) |
+
+- **Causa:** `0001_01_01_000004_add_role_id_to_users_table.php:11` declara `foreignId('role_id')->after('is_active')->nullable()` **sem `->constrained()`**, e `0001_01_01_000000_create_users_table.php:33` faz o mesmo em `sessions.user_id`. `foreignId()` sozinho é só um `unsignedBigInteger` — o nome sugere integridade que não existe.
+- **Consequência:** nada no banco impede `users.role_id` de apontar para um `role` apagado. O contraste é gritante dentro do mesmo schema: `permission_user` tem `cascade` nas duas pontas.
+- **Por que não entrou na fatia A6:** é mudança comportamental (adicionar constraint a coluna existente exige decidir o `onDelete` — `set null` casa com o `nullable()` e com o VISITOR como piso de privilégio, mas é decisão, não detalhe). Fatia própria.
+- **Trap anotada:** `permission_role` está com `no action` enquanto `permission_user` está com `cascade` — a assimetria também não tem decisão registrada.
 
 ## Adiados / rescopados para prioridade baixa
 

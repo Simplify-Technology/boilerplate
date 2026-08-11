@@ -62,7 +62,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 4/70 células (5,7%) · BACKLOG: **2 aplicados (A1, A3)**, 1 realocado (A2), 9 aplicáveis, 7 adiados, 5 rejeitados
+**Progresso:** 4/70 células (5,7%) · BACKLOG: **3 aplicados (A1, A3, A6)**, 1 realocado (A2), 8 aplicáveis, 7 adiados, 5 rejeitados, 1 achado interno (C1)
 
 ### Ponteiros levantados no inventário (entram como candidatos nas dimensões, ainda SEM veredito)
 
@@ -85,6 +85,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | ---- | ----- | ------ | ------ | ----- | -- | ------ |
 | **A1** — guard-rail: rota de escrita autenticada declara autorização | [#51](https://github.com/Simplify-Technology/boilerplate/issues/51) | `51-harvest-v2-guard-rota-escrita-autorizada` | ✅ 3 testes + 3 mutações | ✅ ambos exit 0 | [#52](https://github.com/Simplify-Technology/boilerplate/pull/52) | **aguardando merge do dono** |
 | **A3** — guard-rail: shape do `share()` + espelho TS | [#53](https://github.com/Simplify-Technology/boilerplate/issues/53) | `53-harvest-v2-contrato-share-props` | ✅ 1 teste novo + 3 mutações | ✅ ambos exit 0 | [#54](https://github.com/Simplify-Technology/boilerplate/pull/54) | **aguardando merge do dono** |
+| **A6** — guard-rail: invariante de banco que vira no-op no SQLite | [#55](https://github.com/Simplify-Technology/boilerplate/issues/55) | `55-harvest-v2-guard-invariante-por-dialeto` | ✅ 3 testes + 6 mutações | ✅ ambos exit 0 | [#56](https://github.com/Simplify-Technology/boilerplate/pull/56) | **aguardando merge do dono** |
 
 ### A1 — o que entrou
 
@@ -119,6 +120,29 @@ Dois fatos medidos que corrigem o candidato original:
 
 Achado de brinde, na mesma direção: `flash` era publicado pelo `share()` e não existia em `SharedData` — vivia numa interface privada dentro de `use-flash-messages.tsx`, o segundo canal para o mesmo dado que o `CLAUDE.md` proíbe.
 
+### A6 — o que entrou
+
+`tests/Unit/Database/MigrationDialectInvariantTest.php` (novo) + `.ai/rules/migrations.md` (novo) + 1 linha no `.ai/rules/index.md`.
+
+| Mutação aplicada | Resultado |
+| ---------------- | --------- |
+| A forma exata do ctfinance (`getDriverName` + `DB::statement` + `return` no sqlite) | ⨯ falha nomeando o arquivo |
+| `DB::unprepared` puro com SQL válido no sqlite | ⨯ falha |
+| `DB::connection()->statement` (facade indireta) | ⨯ falha |
+| Entrada morta na allowlist | ⨯ falha nomeando a entrada |
+| Migration **declarada** na allowlist | ✓ as 3 passam |
+| `DB::statement` só dentro de comentário | ✓ passa — falso positivo evitado por `token_get_all` |
+
+Três fatos medidos nesta fatia:
+
+1. **A guarda não podia morar em `Feature`.** Lá ela herda o `RefreshDatabase` e passa a depender de as migrations rodarem — exatamente o que quebra quando alguém comete o erro que ela existe para pegar. Medido: a migration-sonda com trigger MySQL derrubou a suíte com `QueryException` **antes** de qualquer asserção, e as mutações 2 e 3 tiveram de ser refeitas com SQL válido no sqlite para isolar a guarda. Foi para `tests/Unit` (TestCase base, sem app), com caminho por `dirname(__DIR__, 3)` em vez de `database_path()`.
+2. **Lente de atualidade confirmada no vendor 13.24.0**, não só nos docs: `Blueprint` não tem `check()` (grep → 0 ocorrências) e a introspecção nativa é `getTables`/`getViews`/`getColumns`/`getIndexes`/`getForeignKeys` — **não existe** `getCheckConstraints()`. Grep no texto da migration segue sendo o único caminho, como o BACKLOG previa.
+3. **A perna 2 que eu tinha imaginado morreu na medição.** "FK declarada existe no schema materializado" nasceria verde por acidente: `Schema::getForeignKeys()` na suíte devolve `[]` para `users` e `sessions` porque essas colunas **não declaram FK nenhuma** (ver achado interno no BACKLOG). Fatia entregue só com a perna que tem corpo.
+
+## Achado interno registrado no BACKLOG
+
+`users.role_id` e `sessions.user_id` usam `foreignId()` **sem** `->constrained()` — coluna sem FK real, em todos os dialetos. Medido nesta fatia, entrou no BACKLOG como C1. Não é harvest (não veio de projeto-fonte) e não entrou nesta fatia: mudar isso é comportamental e merece fatia própria.
+
 ## ⚠️ Observação estratégica — guard-rail vazio não é guard-rail
 
 Aplicando A1 e A3 ficou visível um limite do BACKLOG atual: **a maioria dos guard-rails restantes do ctfinance prescreve para código que o boilerplate ainda não tem.**
@@ -138,9 +162,7 @@ Teste `arch()` sobre namespace inexistente devolve layer vazia e **passa vacuame
 
 ## Próxima unidade
 
-**A6** — guard-rail de invariante de banco por dialeto (`DB::statement`/`getDriverName` em migration). É o próximo com superfície real: as 6 migrations existem e o teste tem molde irmão em `tests/Feature/Foundation/SchemaIdentifierLengthTest.php`.
-
-Depois dele, ou a fatia única de regras acima, ou as dimensões 4–6 do ctfinance.
+**Dimensão 4 (Fluidez & performance frontend) do ctfinance.** A fila de fatias com superfície real secou: dos candidatos aplicáveis do ctfinance, A4 e A5 são comportamentais de raio médio (A4 exige inverter o modo de falha antes; A5 depende de decisão sobre `auth.session`), A10 depende de decisão de payload, e A2/A7/A9/A12/B4/B6 são a fatia única de regras que aguarda decisão do dono (ver observação estratégica abaixo). Varrer é o que mais rende agora — e as dimensões 4–6 alimentam os temas multi-fonte de UI/UX, que hoje estão todos represados.
 
 ## Vereditos das dimensões 1–3 (ctfinance)
 
