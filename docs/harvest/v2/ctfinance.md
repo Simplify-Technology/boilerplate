@@ -168,3 +168,13 @@ Divergências que importam: **`logging.php` do ctfinance não tem tap de PII** (
 ## Achados por dimensão
 
 _(a preencher — as 8 dimensões consomem o inventário acima)_
+
+### Dimensões 1–3 — resumo (detalhe e escopo corrigido no BACKLOG)
+
+| Dim | Candidatos | Sobreviveram | Derrubados por lente | Direção inversa |
+| --- | ---------: | -----------: | -------------------: | --------------: |
+| 1 Segurança | 7 | 7 (5 com escopo reduzido) | — | `PiiScrubber`, `EnsureUserIsActive`, limiters nomeados, `withExceptions` |
+| 2 Arquitetura | 7 | 6 | 1 (`form-request-concerns-trait`) | larastan / `phpstan.neon` |
+| 3 Perf backend | 7 | 6 | 1 (`guard-cache-derivado-o1`) | Horizon, supervisors |
+
+Os 12 candidatos aplicáveis viraram A1–A12 no `BACKLOG.md`; 7 foram adiados (B1–B7) e 5 rejeitados com motivo registrado.

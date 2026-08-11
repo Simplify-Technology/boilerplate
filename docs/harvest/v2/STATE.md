@@ -46,7 +46,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 
 | # | Projeto | Inv | 1 Seg | 2 Arq | 3 Perf-BE | 4 Front | 5 UX | 6 UI | 7 Copy | 8 Ops | Crítico | Projeto |
 | - | ------- | --- | ----- | ----- | --------- | ------- | ---- | ---- | ------ | ----- | ------- | ------- |
-| 1 | ctfinance | ✅ | 🔍 | 🔍 | 🔍 | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 1 | ctfinance | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 2 | spinmax | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 3 | sorteiopix | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 4 | ctjuris | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -54,7 +54,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 1/70 células (1,4%)
+**Progresso:** 4/70 células (5,7%) · BACKLOG com **12 candidatos aplicáveis** + 7 adiados + 5 rejeitados
 
 ### Ponteiros levantados no inventário (entram como candidatos nas dimensões, ainda SEM veredito)
 
@@ -81,4 +81,18 @@ Nenhuma.
 
 ## Próxima unidade
 
-**Dimensões 1–3 do ctfinance** (Segurança, Arquitetura, Performance backend) — em execução.
+**Dimensões 4–6 do ctfinance** (Fluidez frontend, UX, UI).
+
+> Nota de sequenciamento: A1/A2/A3 do BACKLOG já são fatias aplicáveis (P, risco baixo, sem tema multi-fonte pendente) e pelo protocolo teriam prioridade sobre novas células. Ficam disponíveis para a próxima invocação — a escolha entre "aplicar A1–A3 agora" e "terminar a varredura do ctfinance" é do dono.
+
+## Vereditos das dimensões 1–3 (ctfinance)
+
+20 candidatos levantados, 3 lentes adversariais cada (refutar / risco de absorção / atualidade via `search-docs`). **Nenhum passou intacto** — 15 sobreviveram com escopo reduzido, 3 foram derrubados por lente, 2 eram direção inversa. O escopo corrigido está no BACKLOG; fatia que reabrir o escopo original está errada.
+
+Correções mais importantes que as lentes trouxeram:
+
+1. **`Auth::logoutOtherDevices()` não encerra sessão nenhuma** sem o middleware `AuthenticateSession` (`SessionGuard.php:740-777`). As 3 lentes convergiram nisso independentemente. Na origem, o botão grava "Demais sessões foram encerradas." e nada é encerrado.
+2. **Tirar `role_id`/`is_active` do `$fillable` sem inverter o modo de falha antes é fail-OPEN**: `handleDiscardedAttributeViolationUsing` só faz `report()` em produção (`AppServiceProvider.php:81-89`), então `revokeRole` e `toggleActive` virariam no-op silencioso. São 8 call sites, não 3.
+3. **`Rule::exists()->where()` já é o nativo** para FK escopada por dono — não criar `ValidationRule` nova.
+4. Metade do candidato de idempotência já é `Builder::createOrFirst()` nativo; a forma da origem tem bug de portabilidade (catch dentro da transação quebra em pgsql).
+5. `withPhpSets()` resolve a versão pelo `composer.json`, não pelo runtime — a adaptação proposta estava errada.
