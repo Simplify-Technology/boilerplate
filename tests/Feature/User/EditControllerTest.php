@@ -37,9 +37,10 @@ it('includes the current role of the edited user even when not assignable', func
         ->assertOk()
         ->assertInertia(fn(Assert $page) => $page
             ->component('users/edit')
-            // Os 5 cargos do enum, atribuíveis pelo SUPER_USER, mais o legado.
-            ->has('roles', 6)
-            ->where('roles.5.name', $legacyRole->name));
+            // Os cargos selecionáveis do enum, atribuíveis pelo SUPER_USER, mais
+            // o legado empurrado por ser o cargo atual do alvo.
+            ->has('roles', count(selectableRoles()) + 1)
+            ->where('roles.' . count(selectableRoles()) . '.name', $legacyRole->name));
 });
 
 it('forbids a manager from opening the edit form of an admin', function(): void {

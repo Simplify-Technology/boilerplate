@@ -90,8 +90,7 @@ final class RevokeRoleController extends Controller
         $user->update(['role_id' => $visitorRole->id]);
 
         // Limpa cache
-        Cache::forget("user:$user->id:roles");
-        Cache::forget("user:$user->id:permissions");
+        Cache::forget(User::permissionCacheKey($user->id));
 
         // Dispara evento
         Broadcast::event(new RoleUserUpdatedEvent($user));

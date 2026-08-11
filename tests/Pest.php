@@ -72,6 +72,20 @@ function actingAsSuperUser(): User
 }
 
 /**
+ * Os cargos que o painel oferece num seletor de atribuição — todos menos o
+ * VISITOR, que só se alcança por "Remover cargo". Ver `Roles::isSelectable()`.
+ *
+ * @return list<Roles>
+ */
+function selectableRoles(): array
+{
+    return array_values(array_filter(
+        Roles::cases(),
+        fn(Roles $role): bool => $role->isSelectable()
+    ));
+}
+
+/**
  * Cria um usuário sem nenhuma permissão (cargo VISITOR), SEM autenticar.
  * Útil como alvo de gestão em testes de CRUD.
  */

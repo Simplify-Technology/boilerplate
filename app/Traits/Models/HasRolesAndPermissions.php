@@ -40,9 +40,20 @@ trait HasRolesAndPermissions
         return in_array($permission, $permissions, true);
     }
 
+    /**
+     * Quem invalida o cache está espalhado — controllers de usuário, de cargo, o
+     * `permissions:sync` e o seeder —, e cada um escrevia a chave à mão. Sete
+     * cópias do mesmo formato: mudar uma quebra as outras seis em silêncio, e o
+     * sintoma é permissão fantasma sobrevivendo a `rememberForever`.
+     */
+    public static function permissionCacheKey(int $userId): string
+    {
+        return "user:$userId:permissions";
+    }
+
     private function getPermissionCacheKey(): string
     {
-        return "user:$this->id:permissions";
+        return self::permissionCacheKey((int) $this->id);
     }
 
     /**

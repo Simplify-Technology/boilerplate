@@ -85,6 +85,13 @@ final class RoleFilterService
      * Use this method for DISPLAYING roles in forms and UI components.
      * For security validations, use getAssignableRoles() instead.
      *
+     * É aqui — e **só** aqui — que o `Roles::isSelectable()` entra: "Visitante"
+     * some do seletor porque quem quer tirar o acesso de alguém usa "Remover
+     * cargo", a ação com nome e log próprios. Aplicar o mesmo filtro no
+     * `getAssignableRoles()` negaria toda remoção de cargo, já que o
+     * `RevokeRoleController` confere se o ator poderia atribuir `visitor` antes
+     * de rebaixar.
+     *
      * @param User $user The current session user (may be impersonated)
      * @return Collection<int, Role> Filtered roles
      */
@@ -112,6 +119,11 @@ final class RoleFilterService
             ->get()
             ->filter(function(Role $role) use ($userPriority, $isSuperUser) {
                 $rolePriority = $role->getPriority();
+
+                // Cargos que não se atribuem pelo seletor (hoje: Visitante)
+                if (RolesEnum::tryFrom($role->name)?->isSelectable() === false) {
+                    return false;
+                }
 
                 // SUPER_USER só pode ser atribuído por SUPER_USER
                 if ($role->isSuperUser() && !$isSuperUser) {

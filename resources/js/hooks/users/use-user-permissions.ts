@@ -1,7 +1,6 @@
 import { usePermissions } from '@/hooks/use-permissions';
 import type { SharedData } from '@/types';
-import type { User, UserPermissionChecks } from '@/types/users';
-import { getUserPermissionChecks } from '@/utils/users/permissions';
+import type { User } from '@/types/users';
 import { usePage } from '@inertiajs/react';
 import { useCallback } from 'react';
 
@@ -11,9 +10,7 @@ import { useCallback } from 'react';
  */
 export function useUserPermissions() {
     const { auth } = usePage<SharedData>().props;
-    const { hasPermission, hasRole } = usePermissions();
-
-    const currentUserId = auth.user.id;
+    const { hasPermission } = usePermissions();
 
     const canDeleteUser = useCallback(
         (user: User) => {
@@ -73,28 +70,11 @@ export function useUserPermissions() {
         return hasPermission('assign_roles');
     }, [hasPermission]);
 
-    const canView = useCallback(() => {
-        return hasPermission('viewAny');
-    }, [hasPermission]);
-
-    const getUserChecks = useCallback(
-        (user: User): UserPermissionChecks => {
-            return getUserPermissionChecks(user, {
-                currentUserId,
-                hasPermission,
-                hasRole,
-            });
-        },
-        [currentUserId, hasPermission, hasRole],
-    );
-
     return {
         canDeleteUser,
         canEdit,
         canImpersonate,
         canManagePermissions,
         canAssignRoles,
-        canView,
-        getUserChecks,
     };
 }

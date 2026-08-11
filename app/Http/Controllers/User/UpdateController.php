@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Services\ImpersonationService;
 use App\Services\RoleFilterService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
@@ -106,8 +107,7 @@ final class UpdateController extends Controller
 
         // Limpa cache de permissões se role foi alterado
         if ($roleChanged) {
-            \Illuminate\Support\Facades\Cache::forget("user:$user->id:permissions");
-            \Illuminate\Support\Facades\Cache::forget("user:$user->id:roles");
+            Cache::forget(User::permissionCacheKey($user->id));
         }
 
         // Recarrega o usuário para obter o role atualizado

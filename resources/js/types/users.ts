@@ -130,15 +130,6 @@ export type OnPageChange = (page: number) => void;
 // Permission Check Types
 // ============================================================================
 
-export type UserPermissionChecks = {
-    canDelete: (user: User) => boolean;
-    canEdit: (user: User) => boolean;
-    canImpersonate: (user: User) => boolean;
-    canManagePermissions: boolean;
-    canAssignRoles: boolean;
-    canView: boolean;
-};
-
 // ============================================================================
 // Configuration Types
 // ============================================================================

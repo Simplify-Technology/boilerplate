@@ -113,7 +113,7 @@ final class SyncPermissionsCommand extends Command
             ->orderBy('id')
             ->chunkById(500, function(Collection $users) use (&$invalidatedUserCount): void {
                 foreach ($users as $user) {
-                    Cache::forget("user:$user->id:permissions");
+                    Cache::forget(User::permissionCacheKey($user->id));
                     $invalidatedUserCount++;
                 }
             });

@@ -17,17 +17,6 @@ enum Roles: string
     case VIEWER  = 'viewer';
     case VISITOR = 'visitor';
 
-    /**
-     * @return array<int, array{value: string, label: string}>
-     */
-    public static function options(): array
-    {
-        return array_map(
-            fn($case) => ['value' => $case->value, 'label' => $case->label()],
-            self::cases()
-        );
-    }
-
     public function label(): string
     {
         return match ($this) {
@@ -66,5 +55,23 @@ enum Roles: string
             self::VIEWER     => 10,
             self::VISITOR    => 5,
         };
+    }
+
+    /**
+     * Aparece na lista de "atribuir cargo" do painel?
+     *
+     * Só o `VISITOR` fica de fora: quem quer deixar alguém sem acesso usa
+     * **Remover cargo**, que é a ação com nome próprio e log próprio. Oferecer
+     * "Visitante" no mesmo seletor dos cargos de verdade seria dois caminhos
+     * para a mesma coisa, um deles sem rastro.
+     *
+     * **Vale só para EXIBIÇÃO.** A checagem de segurança
+     * (`RoleFilterService::getAssignableRoles`) continua enxergando o `VISITOR`
+     * — senão o próprio "Remover cargo" passaria a ser negado, porque ele
+     * confere se o ator poderia atribuir `visitor` antes de rebaixar.
+     */
+    public function isSelectable(): bool
+    {
+        return $this !== self::VISITOR;
     }
 }
