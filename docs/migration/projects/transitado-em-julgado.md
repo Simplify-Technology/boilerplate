@@ -106,4 +106,15 @@ Ordem recomendada: **0 → 1 → 2 → 4 → 5 → 6** (3a/3b puladas).
 - **Drift descoberto p/ resync da Fatia 6:** Form Requests de `Musicas/` autorizam `true` (User/PermissionRole re-checam `can()` — a convenção em camadas); requests usam a string `'manage_users'` em vez do enum `Permissions`.
 - Gates verdes antes e depois: `composer ci:check` e `pnpm ci:check` (este, após a válvula do nanoid).
 
+**Drift criado pelo boilerplate depois da Fatia 1 (harvest reversa do spinmax, 2026-08-11) — resolver na Fatia 6:**
+
+A Fatia 1 zerou o passivo do Larastan portando tipagem de arquivos de origem comum. Dois deles **deixaram de existir no boilerplate** desde então:
+
+- **`app/DataTransferObjects/PermissionMetaDTO.php` foi apagado** (PR #45). Era código morto lá: o único hit no repositório era a própria declaração, e `HasRolesAndPermissions::getCustomPermissionsList()` remonta a mesma forma inline. Aqui ele chegou como material de tipagem, não por uso — conferir se algum ponto do transitado passou a consumi-lo de verdade antes de apagar. Atenção: a regra de arch local ("`App\DataTransferObjects` readonly") ficaria sem alvo se este for o único DTO do projeto.
+- **`Roles::options()` foi apagado** (mesmo PR). Zero call sites no boilerplate, e devolvia `super_user` e `visitor` crus para um `<select>` que ignora o `RoleFilterService`. Aqui ele aparece na lista de "domínio próprio anotado à mão" da Fatia 1 — verificar se tem consumidor real antes de remover.
+
+No mesmo lote o boilerplate ganhou `Roles::isSelectable()` (tira "Visitante" do seletor de atribuição, **só na exibição**), `User::permissionCacheKey()` (a chave estava escrita à mão em 7 pontos) e `Cache::forget` no `PermissionRoleSeeder`. Os três entram junto no resync do RBAC.
+
+Também **saíram do boilerplate** `lang/pt_BR.json`, `lang/pt_BR/actions.php` e `lang/pt_BR/http-statuses.php` (zero referências). O §3 acima registra "sem `lang/`" como gap deste projeto: quando a fatia de i18n rodar, o alvo a copiar é `auth.php`, `pagination.php`, `passwords.php` e `validation.php` — **não** mais o `pt_BR.json`.
+
 Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps; Fatia 2 concluída — próxima: Fatia 4 — Hardening + smoke browser adiado da Fatia 1)
