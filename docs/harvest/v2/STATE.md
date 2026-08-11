@@ -94,6 +94,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **A1** — guard-rail: rota de escrita autenticada declara autorização | [#51](https://github.com/Simplify-Technology/boilerplate/issues/51) | `51-harvest-v2-guard-rota-escrita-autorizada` | ✅ 3 testes + 3 mutações | ✅ ambos exit 0 | [#52](https://github.com/Simplify-Technology/boilerplate/pull/52) | **aguardando merge do dono** |
 | **A3** — guard-rail: shape do `share()` + espelho TS | [#53](https://github.com/Simplify-Technology/boilerplate/issues/53) | `53-harvest-v2-contrato-share-props` | ✅ 1 teste novo + 3 mutações | ✅ ambos exit 0 | [#54](https://github.com/Simplify-Technology/boilerplate/pull/54) | **aguardando merge do dono** |
 | **A6** — guard-rail: invariante de banco que vira no-op no SQLite | [#55](https://github.com/Simplify-Technology/boilerplate/issues/55) | `55-harvest-v2-guard-invariante-por-dialeto` | ✅ 3 testes + 6 mutações | ✅ ambos exit 0 | [#56](https://github.com/Simplify-Technology/boilerplate/pull/56) | **aguardando merge do dono** |
+| **D2** — fix: cache de prefetch sobrevive à troca de identidade | [#57](https://github.com/Simplify-Technology/boilerplate/issues/57) | `57-harvest-v2-flush-prefetch-identidade` | ✅ 7 testes + 3 mutações | ✅ ambos exit 0 | [#58](https://github.com/Simplify-Technology/boilerplate/pull/58) | **aguardando merge do dono** |
 
 ### A1 — o que entrou
 
@@ -147,6 +148,22 @@ Três fatos medidos nesta fatia:
 2. **Lente de atualidade confirmada no vendor 13.24.0**, não só nos docs: `Blueprint` não tem `check()` (grep → 0 ocorrências) e a introspecção nativa é `getTables`/`getViews`/`getColumns`/`getIndexes`/`getForeignKeys` — **não existe** `getCheckConstraints()`. Grep no texto da migration segue sendo o único caminho, como o BACKLOG previa.
 3. **A perna 2 que eu tinha imaginado morreu na medição.** "FK declarada existe no schema materializado" nasceria verde por acidente: `Schema::getForeignKeys()` na suíte devolve `[]` para `users` e `sessions` porque essas colunas **não declaram FK nenhuma** (ver achado interno no BACKLOG). Fatia entregue só com a perna que tem corpo.
 
+### D2 — o que entrou
+
+`resources/js/lib/impersonation.ts` (novo) + 2 arquivos de teste + 3 call sites convertidos + regra em `.ai/rules/js.md`.
+
+| Mutação aplicada | Resultado |
+| ---------------- | --------- |
+| Tirar `router.flushAll()` de `startImpersonation` | ⨯ 3 testes falham |
+| Somar 4º call site chamando `router.post(route('users.impersonate'))` direto | ⨯ guarda de propriedade de rota falha |
+| Reverter `impersonate-banner` para o `router.delete` direto | ⨯ 2 testes falham |
+
+**Primeira fatia da rodada que conserta bug, não só previne.** As anteriores (A1, A3, A6) travavam contratos já corretos; esta corrige vazamento de dado entre identidades que estava vivo em `main`.
+
+Decisão de forma que vale registrar: a correção **não** foi espalhar `flushAll()` pelos 3 call sites, e sim fazer `lib/impersonation.ts` o único caminho, com teste de propriedade proibindo nomear as rotas fora dele. Os 3 call sites nasceram um de cada vez sem saber uns dos outros — foi assim que o buraco apareceu, e espalhar a chamada conserta hoje e reabre no quarto.
+
+**Verificação própria antes de codar:** as afirmações do fan-out foram reconferidas no código real (3 call sites, 6 `<Link prefetch>`, `grep` de invalidação vazio, `RedirectResponse` nos dois controllers, `flushAll(): void` em `types/router.d.ts:40`). Todas bateram.
+
 ## Achado interno registrado no BACKLOG
 
 `users.role_id` e `sessions.user_id` usam `foreignId()` **sem** `->constrained()` — coluna sem FK real, em todos os dialetos. Medido nesta fatia, entrou no BACKLOG como C1. Não é harvest (não veio de projeto-fonte) e não entrou nesta fatia: mudar isso é comportamental e merece fatia própria.
@@ -170,9 +187,9 @@ Teste `arch()` sobre namespace inexistente devolve layer vazia e **passa vacuame
 
 ## Próxima unidade
 
-**Fatia D2** — `router.flushAll()` na troca de identidade. É a melhor fatia disponível na rodada inteira até agora: bug de **privacidade** vivo e alcançável no boilerplate (prefetch de `/settings/profile` com nome e e-mail do admin servido durante impersonation), superfície real e não-vacuária (3 call sites + 6 `<Link prefetch>`), esforço P, 3/3 nas lentes, e mutação óbvia que prova a guarda.
+**Fatia D5** — o spinner de busca que nunca aparece e o que nunca para (`search-bar.tsx:73` + o early-return sem reset em `use-user-filters.ts:54`). Defeito real, 2 arquivos, esforço P, não é multi-fonte.
 
-Depois dela, na ordem: D5 (spinner morto, 2 arquivos), D4 (token do primeiro paint), D3 (regra de closure, só doc). Nenhuma das quatro é multi-fonte.
+Depois: D4 (token do primeiro paint), D3 (regra de closure, só doc), então a dimensão 5 do ctfinance.
 
 ## Vereditos das dimensões 1–3 (ctfinance)
 

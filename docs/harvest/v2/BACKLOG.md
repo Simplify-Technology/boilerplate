@@ -111,7 +111,9 @@ Ordenados por (impacto × generalidade) ÷ risco. Fonte de todos: ctfinance @ `b
 
 Fonte: ctfinance @ `b8c6d57`. **Particularidade desta célula:** três dos quatro candidatos não são "código a portar" — são **defeitos que o boilerplate já tem** e que a leitura comparada do ctfinance revelou. O ativo colhido é o diagnóstico, não o arquivo.
 
-### D2 · `[guard-rail]` cache de prefetch sobrevive à troca de identidade · P · risco baixo · **prioridade máxima da célula**
+### ~~D2~~ ✅ APLICADO · PR [#58](https://github.com/Simplify-Technology/boilerplate/pull/58) · `[guard-rail]` cache de prefetch sobrevive à troca de identidade · P · risco baixo
+
+> **Como foi aplicado (2026-08-11):** não como `flushAll()` espalhado pelos 3 call sites, e sim como `resources/js/lib/impersonation.ts` — único caminho para trocar de identidade — mais um teste de propriedade proibindo nomear as rotas `users.impersonate` fora do módulo. Os 3 call sites nasceram um de cada vez sem saber uns dos outros; espalhar a chamada consertaria hoje e reabriria no quarto.
 
 - **Origem:** `resources/js/components/sidebar-context-switcher.tsx:36-38` — `router.flushAll()` antes de trocar de contexto, com o comportamento travado em teste (`resources/js/test/components/sidebar-context-switcher.test.tsx:8,13,90`).
 - **Bug vivo no boilerplate**, com os dois ingredientes: 6 superfícies `<Link prefetch>` (`nav-main.tsx:58`, `app-sidebar.tsx:39`, `user-menu-content.tsx:25`, `app-header.tsx:97`, `settings/settings-sidebar.tsx:73`, `layouts/settings/layout.tsx:47`) e **3** pontos de troca de identidade sem invalidação — `user-details-dialog.tsx:47-61`, `impersonate-banner.tsx:15-18` e `hooks/users/use-user-actions.ts:51-53` (este último o caçador perdeu; achado da lente). `grep -rn "flushAll\|flushByCacheTags\|invalidateCacheTags" resources/js` → **0 linhas**.
