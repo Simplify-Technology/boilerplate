@@ -28,7 +28,7 @@ spinmax é a maior fonte da harvest — reconciliar drift, não re-portar:
 - `tests/Browser/ShopSmokeTest.php` (pest-plugin-browser + Playwright) e grupos `browser`/`contract` fora da suíte padrão via `phpunit.xml`.
 - Hardening parcial já é o padrão: `SecurityHeaders` com `stamp()`, `EnsureUserIsActive`, PiiScrubber em logs, mail allowlist fora de produção.
 - Kit BR completo (fonte da harvest): `MaskedInput`/`CurrencyInput`/`masks.ts`/`money.ts` + `Money.php`/`Cpf.php`; data-table kit; flash→toast com dedupe; `check-contrast.mjs`.
-- RBAC enum-driven + `RbacSyncCommand`, impersonation auditada, webhook inbox (`webhook_events` + reprocesso/prune).
+- RBAC enum-driven + `RbacSyncCommand`, impersonation auditada, webhook inbox (`webhook_events` + reprocesso/prune). **Ressalva:** "em conformidade" aqui significa *mesma arquitetura*, não *mesmo código* — o RBAC divergiu nos dois sentidos desde a origem comum. Ver §4.
 - `lang/pt_BR` completo; `.mise.toml`; `pnpm-workspace.yaml` com overrides de supply-chain; Husky (`pre-commit`, `commit-msg`); `AGENTS.md` + `.github/skills/`; Form Requests já existem em Auth/Settings/Shipping/Shop/Store/User.
 
 ## 3. Divergências e riscos específicos
@@ -44,7 +44,41 @@ spinmax é a maior fonte da harvest — reconciliar drift, não re-portar:
 9. **pnpm 11.17.0 / Node 24** — o boilerplate re-congelado alcançou e passou (11.19.0 / Node 24): Node já em paridade; alinhar pnpm 11.17→11.19 na Fatia 2 (não é mais exceção).
 10. Menores: actions por tag (sem SHA), sem `dependabot.yml`, Husky sem `pre-push`/`prepare-commit-msg` (ci:check não roda no push), sem `.ai/rules`/`CLAUDE.md` (tem AGENTS.md + skills — mesclar, não sobrescrever), sem `SetSensitiveCacheHeaders`, sem `resources/views/errors/`, validação inline em ~7 controllers (Auth/Settings/PermissionRole), só 1 rate limiter nomeado (`mp-webhook`).
 
-## 4. Fatias aplicáveis (ordem para este projeto)
+## 4. Drift bidirecional do RBAC
+
+O boilerplate **nasceu do spinmax**, e os dois evoluíram separados. Não existe um lado canônico para o RBAC inteiro: existe um lado canônico **por arquivo**. Sem este registro, em seis meses ninguém sabe qual é qual — e a Fatia 6 corre o risco de "sincronizar" desfazendo correção.
+
+### 4.1 O que o boilerplate já colheu do spinmax (harvest reversa, 2026-08-11)
+
+Sentido **inverso** ao das fatias, independente da numeração: o spinmax não precisou "chegar na vez dele". Cinco PRs, todos mergeados — só mecanismo, estrutura e texto; nenhuma regra de negócio da loja veio junto.
+
+| PR | O que veio | Onde estava no spinmax |
+| -- | ---------- | ---------------------- |
+| #36 | Teto de prioridade no RBAC: `outranks()` + `effectiveActor()` na `UserPolicy`, `mutatePermissions()` separado da leitura, `assignRole()` na policy, `ensureActorMayEdit()` no editor de cargos | `UserPolicy`, `PermissionRole/UpdateController` |
+| #39 | `canManagePermissions` lendo `manage_permissions` (o backend sempre exigiu essa) | `use-user-permissions.ts` |
+| #41 | Pente editorial: "Cargos" como termo único, consequência em vez de nome de tela, estados vazios acionáveis | diffs de `pages/users/*` e `pages/permission-role/*` |
+| #43 | `description()` em `Permissions` e `Roles` | `app/Enum/Permissions.php`, `app/Enum/Roles.php` |
+| #45 | `Roles::isSelectable()`, `ImpersonationService::stop()` resolvendo antes de limpar a sessão, `Cache::forget` no seeder | `Roles.php`, `ImpersonationService`, `PermissionRoleSeeder` |
+
+Quatro escaladas de privilégio estavam **vivas no boilerplate** e foram fechadas por #36 — o spinmax já as tinha resolvido. Os textos dos cargos **não** portaram literais: o spinmax tem `OPERATIONS`/`ACCOUNTING` onde o boilerplate tem `MANAGER`, e o `SUPER_USER` dele nomeia o cliente.
+
+### 4.2 O que o boilerplate deve DEVOLVER na Fatia 6
+
+Aqui o boilerplate está à frente. Ao sincronizar o RBAC, estes três vão no sentido boilerplate → spinmax:
+
+1. **Bug em `getAllPermissions()`** — o spinmax tem `$this->role?->permissions->merge($this->permissions)->unique('id') ?? collect()`. O `?->` curto-circuita a **expressão inteira**: para um usuário **sem cargo**, o resultado é `collect()` vazio e as **permissões avulsas dele somem**. O boilerplate resolve o cargo primeiro (`$this->role->permissions ?? collect()`) e só então faz o merge. É correção de bug, não estilo.
+2. **`unsetRelation()` no `refreshPermissionsCache()`** — sem descartar as relations memoizadas antes de recomputar, um `assignRole()`/`givePermissionTo()` grava no cache `rememberForever` as permissões do **cargo antigo**. O spinmax só faz `forget` + `rememberForever`.
+3. **`role="alertdialog"` + `autoFocus` no botão seguro** do `delete-confirmation-dialog.tsx` — o spinmax tem o componente sem os dois. Leitor de tela não anuncia o diálogo como destrutivo, e o foco inicial não cai no "Cancelar".
+
+Vale também o que a §3.4 já diz do kit BR: reconciliar **por diff**, adotar a canônica, deletar a local no mesmo PR.
+
+### 4.3 O que NÃO deve ser sincronizado
+
+- **A matriz de cargos.** `OPERATIONS`/`ACCOUNTING` são da operação da loja; `MANAGER` é do boilerplate. As descrições de `Roles::description()` descrevem matrizes diferentes de propósito.
+- **As descrições das permissões de loja** (`VIEW_ORDERS`, `MANAGE_SHIPPING_TABLE`, …) — não existem no boilerplate e não devem existir.
+- **`RbacSyncCommand` × `permissions:sync`** — mesmo papel, nomes diferentes; decidir na Fatia 6 qual nome fica, sem re-portar lógica.
+
+## 5. Fatias aplicáveis (ordem para este projeto)
 
 0. **Pré-requisito (§4 do playbook): smoke de checkout completo verde.** `ShopSmokeTest` existe — ampliar para o fluxo Pix/cartão com fakes (pest-plugin-browser roda no processo do teste; `Http::fake` vale). Nenhuma fatia entra sem isso.
 1. **Fatia 0 — Baseline**: CI já ativo e estruturalmente próximo do alvo (spinmax é fonte do `ci.yml` do boilerplate). Deltas: SHA-pinning das actions, reconciliar `concurrency`/jobs com o boilerplate, documentar aqui a contagem/cobertura da suíte e o que está em `browser`/`contract`.
@@ -54,9 +88,9 @@ spinmax é a maior fonte da harvest — reconciliar drift, não re-portar:
 5. **Fatia 3b — Inertia 2→3**: receita `fad56c0` já validada em ctjuris/sorteiopix/ctfinance; republicar `config/inertia.php` v3; tipar `resolve()` em `app.tsx`/`ssr.tsx` (SSR ativo); caçar eventos renomeados/cancelamento antigo; atenção ao `@mercadopago/sdk-react` no build. Gate = tsc + eslint + prettier + vitest + `build:ssr` + Pest + **smoke de checkout**.
 6. **Fatia 4 — Hardening**: evoluir o `SecurityHeaders` local para o do boilerplate com **CSP report-only** + allowlist Mercado Pago (risco #3); `SetSensitiveCacheHeaders`; páginas de erro; strict mode com `report()`. `EnsureUserIsActive` já existe — só reconciliar com `LoginRequest`.
 7. **Fatia 5 — Kit BR/dedupe**: **teste de compatibilidade do hash de CPF primeiro** (risco #1); depois dedupe por diff de masks/money/inputs/PiiScrubber para os paths canônicos, deletando locais no mesmo PR.
-8. **Fatia 6 — Convenções**: Form Requests nos ~7 controllers com validação inline; rate limiters nomeados além de `mp-webhook`; kebab-case; sync do trait RBAC com o boilerplate; registrar exceções (auditing owen-it, Resend); respeitar ADRs.
+8. **Fatia 6 — Convenções**: Form Requests nos ~7 controllers com validação inline; rate limiters nomeados além de `mp-webhook`; kebab-case; sync do trait RBAC com o boilerplate **no sentido §4.2** (os três itens de devolução, com o bug do `?->` primeiro); registrar exceções (auditing owen-it, Resend); respeitar ADRs.
 
-## 5. Estado
+## 6. Estado
 
 - [ ] ⬜ Pré-requisito — smoke de checkout completo verde (bloqueia todas as fatias)
 - [ ] ⬜ Fatia 0 — Baseline (SHA-pinning, reconciliar ci.yml, documentar suíte)
@@ -66,6 +100,6 @@ spinmax é a maior fonte da harvest — reconciliar drift, não re-portar:
 - [ ] ⬜ Fatia 3b — Inertia 2→3 (receita `fad56c0` madura, SSR, sdk MP)
 - [ ] ⬜ Fatia 4 — Hardening (CSP report-only + allowlist Mercado Pago)
 - [ ] ⬜ Fatia 5 — Kit BR/dedupe (⚠️ compat do hash de CPF antes do merge)
-- [ ] ⬜ Fatia 6 — Convenções (Form Requests, rate limiters, exceção auditing/Resend)
+- [ ] ⬜ Fatia 6 — Convenções (Form Requests, rate limiters, exceção auditing/Resend; **devolver §4.2**: bug do `?->` em `getAllPermissions`, `unsetRelation`, a11y do dialog de exclusão)
 
-Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)
+Última atualização: 2026-08-11 (§4 nova — drift bidirecional do RBAC, após a harvest reversa PRs #36/#39/#41/#43/#45)

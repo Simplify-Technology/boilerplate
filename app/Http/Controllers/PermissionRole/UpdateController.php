@@ -39,20 +39,17 @@ final class UpdateController extends Controller
 
         $role->permissions()->sync(Permission::getIdsFromNames($permissionNames));
 
-        Cache::forget("role:$role->id:permissions");
-        Cache::rememberForever("role:$role->id:permissions", fn() => $role->permissions()->pluck('name')->toArray());
-
-        $invalidatedUserCount = 0;
-
+        // Quem o `hasPermissionTo()` lê é `user:{id}:permissions`, por usuário.
+        // A chave `role:{id}:permissions`, que este controller mantinha, nunca
+        // era lida por ninguém — reescrevê-la dava a impressão de invalidação
+        // sem invalidar nada.
         User::query()
             ->where('role_id', $role->id)
             ->select('id')
             ->orderBy('id')
-            ->chunkById(500, function($users) use (&$invalidatedUserCount): void {
+            ->chunkById(500, function($users): void {
                 foreach ($users as $user) {
-                    Cache::forget("user:$user->id:permissions");
-                    Cache::forget("user:$user->id:roles");
-                    $invalidatedUserCount++;
+                    Cache::forget(User::permissionCacheKey($user->id));
                 }
             });
 

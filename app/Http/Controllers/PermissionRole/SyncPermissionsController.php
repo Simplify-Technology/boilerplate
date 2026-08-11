@@ -23,7 +23,7 @@ final class SyncPermissionsController extends Controller
         // Sync permissions (preserva metadados existentes via syncWithPivotValues se necessário)
         $user->permissions()->sync($permissionIds);
 
-        Cache::forget("user:$user->id:permissions");
+        Cache::forget(User::permissionCacheKey($user->id));
 
         return redirect()
             ->back()

@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\ImpersonationService;
 use App\Services\RoleFilterService;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 
@@ -82,8 +83,7 @@ final class StoreController extends Controller
         $user = User::create($data);
 
         // Limpa cache de permissões
-        \Illuminate\Support\Facades\Cache::forget("user:$user->id:permissions");
-        \Illuminate\Support\Facades\Cache::forget("user:$user->id:roles");
+        Cache::forget(User::permissionCacheKey($user->id));
 
         return redirect()
             ->route('users.index')

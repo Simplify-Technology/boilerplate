@@ -28,10 +28,14 @@ final class ImpersonationService
 
     public function stop(): User
     {
-        $originalUserId = Session::pull(self::SESSION_ORIGINAL_USER_ID);
-        Session::pull(self::SESSION_ORIGINAL_USER_NAME);
+        // A conta original é resolvida ANTES de a sessão ser limpa. Se ela foi
+        // excluída durante a impersonação, o findOrFail estoura — e com a ordem
+        // invertida estourava depois de a sessão já ter ido, deixando o operador
+        // preso na persona, sem marcador e sem caminho de volta pelo painel.
+        $originalUser = User::findOrFail(Session::get(self::SESSION_ORIGINAL_USER_ID));
 
-        $originalUser     = User::findOrFail($originalUserId);
+        Session::forget([self::SESSION_ORIGINAL_USER_ID, self::SESSION_ORIGINAL_USER_NAME]);
+
         $impersonatedUser = Auth::user();
 
         Auth::login($originalUser);
