@@ -54,7 +54,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 
 | # | Projeto | Inv | 1 Seg | 2 Arq | 3 Perf-BE | 4 Front | 5 UX | 6 UI | 7 Copy | 8 Ops | Crítico | Projeto |
 | - | ------- | --- | ----- | ----- | --------- | ------- | ---- | ---- | ------ | ----- | ------- | ------- |
-| 1 | ctfinance | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 1 | ctfinance | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 2 | spinmax | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 3 | sorteiopix | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 4 | ctjuris | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -62,7 +62,9 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 5/70 células (7,1%) · BACKLOG: **7 aplicados (A1, A3, A6, D2, D3, D4, D5)**, 1 realocado (A2), 8 aplicáveis (todas de dim. 1–3), 7 adiados, 5 rejeitados, 9 sem veredito (dim. 4), 1 achado interno (C1)
+**Progresso:** 6/70 células (8,6%) · BACKLOG: **7 aplicados (A1, A3, A6, D2, D3, D4, D5)**, 1 realocado (A2), **38 aplicáveis** (8 de dim. 1–3 + **30 de dim. 5: E1–E30**), 7 adiados, **10 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`), **1 decisão de arquitetura pendente do dono** (flash nativo do Inertia 3.6)
+
+> **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
 **Baseline de gates em `main` com as 4 fatias mescladas combinadas** (medido 2026-08-11, primeira vez que rodaram juntas): `composer ci:check` 311 testes / 1678 asserções, `corepack pnpm ci:check` 25 arquivos / 158 testes. Ambos exit 0.
 
@@ -99,7 +101,9 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **D2** — fix: cache de prefetch sobrevive à troca de identidade | [#57](https://github.com/Simplify-Technology/boilerplate/issues/57) | `57-harvest-v2-flush-prefetch-identidade` | ✅ 7 testes + 3 mutações | ✅ ambos exit 0 | [#58](https://github.com/Simplify-Technology/boilerplate/pull/58) | ✅ **MESCLADO** 2026-08-11 |
 | **D5** — fix: spinner de busca (nunca aparecia / nunca parava) | [#59](https://github.com/Simplify-Technology/boilerplate/issues/59) | `59-harvest-v2-spinner-busca` | ✅ 8 testes + 3 mutações | ✅ ambos exit 0 | [#60](https://github.com/Simplify-Technology/boilerplate/pull/60) | **aguardando merge do dono** |
 | **D4** — fix: fundo escuro inline com literal + `color-scheme` | [#61](https://github.com/Simplify-Technology/boilerplate/issues/61) | `61-harvest-v2-fundo-inline-tema` | ✅ 4 testes + 3 mutações | ✅ ambos exit 0 | [#62](https://github.com/Simplify-Technology/boilerplate/pull/62) | **aguardando merge do dono** |
-| **D3** — docs: closure em prop de render não adia nada | [#63](https://github.com/Simplify-Technology/boilerplate/issues/63) | `63-harvest-v2-regra-props-lazy` | — (só doc; gate inviável, ver BACKLOG) | ✅ ambos exit 0 | [#64](https://github.com/Simplify-Technology/boilerplate/pull/64) | **aguardando merge do dono** |
+| **D3** — docs: closure em prop de render não adia nada | [#63](https://github.com/Simplify-Technology/boilerplate/issues/63) | `63-harvest-v2-regra-props-lazy` | — (só doc; gate inviável, ver BACKLOG) | ✅ ambos exit 0 | [#64](https://github.com/Simplify-Technology/boilerplate/pull/64) | ✅ **MESCLADO** 2026-08-11 18:56 |
+
+**Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
 ### A1 — o que entrou
 
@@ -190,9 +194,29 @@ Teste `arch()` sobre namespace inexistente devolve layer vazia e **passa vacuame
 
 **Recomendação:** juntar A2, A7, A9, A12, B4 e B6 numa **fatia única de `.ai/rules`** — prescrição honesta para código futuro, sem teste vazio fingindo cobertura — e reservar teste executável para quando a superfície existir. Decisão do dono; não executei.
 
+### O que a dimensão 5 ensinou (2026-08-11)
+
+Célula de maior rendimento da rodada: 32 candidatos caçados em 4 frentes, **28 sobreviveram**, mais 6 da secagem (5 sobreviveram) = **33 itens de BACKLOG**. Três coisas mudam a leitura da rodada:
+
+1. **A proporção "defeito de casa" subiu de 3/4 (dim. 4) para 22/28.** A pergunta (b) — "que limitação daqui vira guard-rail lá?" — deixou de ser a segunda pergunta e virou a principal. As dimensões 6–8 devem ser abertas com ela na frente.
+2. **A verificação adversarial pagou de novo, e mais caro.** Entre os fatos derrubados: `aria-live` num nó recém-montado **não** anuncia (o remédio do ctfinance não funciona); `replace: true` no autosave é desnecessário quando a URL não muda; a correção proposta para o `flash` **não preserva nada** porque `ageFlashData()` roda em toda requisição; o `<main>` real é o do `SidebarInset`, não o do `app-content` (o skip-link do caçador apontaria para id inexistente); `@radix-ui/react-dialog@1.1.23` não emite o warning que justificava um candidato; o boilerplate tinha **3 offenders vivos** de máscara inline onde o caçador jurou "nasce verde".
+3. **Código morto é desinformação ativa.** Sete peças órfãs medidas no boilerplate, e **duas delas fizeram caçadores errarem o diagnóstico nesta mesma célula** (E23 e E29 acusaram defeitos em componentes que nunca renderizam). Isso justifica sozinho uma fatia de limpeza.
+
+### ⚠️ Decisão do dono represando fatias
+
+**Canal de flash.** O Inertia 3.6 tem flash nativo (`Inertia::flash()` + `Page['flash']` + `router.on('flash')`); o boilerplate reimplementa com `->with()` + prop no `share()` + `use-flash-messages.tsx` + 9 chamadas por página. Migrar resolve E2 **e** E13 de uma vez e apaga o hook caseiro. Não conflita com ADR vigente — é escolha ainda não registrada. **Nenhuma fatia de flash abre antes dessa decisão.** Alternativa conservadora registrada no BACKLOG.
+
+Segue pendente, de antes: a **fatia única de `.ai/rules`** juntando A2, A7, A9, A12, B4 e B6 (guard-rails sem superfície executável no boilerplate hoje).
+
 ## Próxima unidade
 
-**Dimensão 5 (UX) do ctfinance.** A fila de fatias P secou: todas as quatro da dimensão 4 estão aplicadas (D2, D3, D4, D5) e o que resta do ctfinance é ou comportamental de raio médio (A4, A5, A10), ou a fatia única de regras que aguarda sua decisão (A2/A7/A9/A12/B4/B6), ou multi-fonte represado (D6). Varrer volta a ser o que mais rende — e a dimensão 5 alimenta os temas de UX/UI que hoje estão todos represados.
+**Fatia E17 — `sort_order`/`per_page` crus em `User/IndexController`.** Prioridade 1 do protocolo (fatia de aplicação pronta), e a fila de P deixou de estar seca: a dimensão 5 entregou 20 candidatos P de risco baixo.
+
+Por que E17 primeiro entre eles: é o único **bug de disponibilidade** da leva (`/users?sort_order=<lixo>` → 500, `Builder.php:2985-2993`), a correção já existe pronta no ctfinance (`RecurringExpense/IndexController.php:94-103`, absorção verbatim), é backend puro com teste de negação natural (fecha a Definition of Done sem depender de gate de browser), e é **pré-requisito do E19**.
+
+Fila sugerida depois dele, todos P e agrupados por arquivo para manter o PR pequeno: **E14+E15** (`empty-state.tsx`) · **E21+E12** (`delete-confirmation-dialog.tsx`) · **E30** (`delete-user.tsx`, bug que todo derivado tem) · **E22+E24** (landmark + skip-link) · **E6+E20** (ARIA de campo) · **E23** · **E18** · **E27+E29** (limpeza de código morto).
+
+Varredura só volta a ser a unidade mais rentável quando essa fila de P secar. **Não abrir a dimensão 6 (UI) antes** — ela está represada pelos ponteiros que a dimensão 5 já acumulou e cresce de valor esperando.
 
 ## Vereditos das dimensões 1–3 (ctfinance)
 

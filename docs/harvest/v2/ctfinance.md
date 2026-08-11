@@ -281,3 +281,126 @@ O único candidato que uma lente derrubou. As três divergiram de forma instruti
 2. **Paridade `app.tsx` ↔ `ssr.tsx`**: o ctfinance ainda usa `resolvePageComponent` cru no `ssr.tsx:14` enquanto o `app.tsx:16` usa o resolver de recuperação. O boilerplate usa `resolveInertiaPage` nos dois. O que sobra do ctfinance aqui é a **lição**, não o código.
 3. **`useDebouncedValue`** (`hooks/use-debounced-value.ts:7`, genérico, 21 linhas, com teste): o ctfinance não tem equivalente — hand-rolla `setTimeout` + `useRef` + flag `isInitialMount` dentro de **10 hooks de filtro quase idênticos**.
 4. **Duas versões de API à frente**: `Inertia::once()`/`shareOnce()`, `DefersProps::defer()` fluente, `defer(..., rescue: true)`, `scroll()`; no front `flushByCacheTags` e `invalidateCacheTags`. Vários workarounds manuais do ctfinance são obsoletos por construção no alvo.
+
+### Dimensão 5 — UX ✅
+
+Varredura em 4 frentes paralelas (fluxos ponta a ponta · formulários · tabelas/listas/estados · a11y/navegação), **3 lentes adversariais por frente**, secagem única. 32 candidatos brutos → **28 sobreviveram, 4 derrubados por lente**; mais 6 da secagem, verificados à parte.
+
+**A célula com o maior rendimento da rodada até aqui — e o padrão da dimensão 4 se confirmou em forma mais extrema: de 28 sobreviventes, 22 são defeitos vivos no PRÓPRIO boilerplate**, visíveis só ao ler o ctfinance ao lado. Só 6 são código a portar do derivado.
+
+Duas frentes independentes convergiram nos mesmos três achados sem se falarem (`InputError` sem live region, `FormField` com zero adoção, `useFlashMessages` opt-in por página) — evidência convergente, não repetição.
+
+#### O achado que muda a prioridade da rodada
+
+`app/Http/Controllers/User/IndexController.php:64-73,76` passa `sort_order` cru para `orderBy()` e não põe teto em `per_page`. `/users?sort_order=<lixo>` **derruba a listagem em 500** (`Builder.php:2985-2993` lança). Não é hipótese: a rota é autenticada e autorizada, mas qualquer usuário com `manage_users` alcança. E a defesa **já existe pronta no ctfinance** (`RecurringExpense/IndexController.php:94-103`), com allow-list de campo, normalização de direção e teto de page size via o helper nativo `$request->integer()`. O caçador tinha afirmado que a defesa do ctfinance "é constante de frontend, nunca chega ao servidor" — a lente mediu e era falso.
+
+#### Vereditos
+
+| # | Candidato | Classe | Origem do valor |
+| - | --------- | ------ | --------------- |
+| E1 | motivo de bloqueio morre na fronteira do hook (`onError: () =>` descarta o bag) | guard-rail M | defeito de casa |
+| E2 | consumo de flash é opt-in por página — 8 de 17 não chamam o hook | absorver M | defeito de casa |
+| E3 | `/` não é destino: logout e auto-exclusão ricocheteiam mudos até o login | guard-rail P | defeito de casa |
+| E4 | contrato de gate que redireciona (isenção, memória do destino, beco explicado) | guard-rail P | padrão do derivado |
+| E5 | 429 dos limiters do boilerplate sem tratamento — HTML cru no modal do Inertia | guard-rail M | defeito de casa |
+| E6 | `InputError` não é live region | absorver P | defeito de casa |
+| E7 | `FormField` existe, é testado e tem **zero** adoção — 27 erros sem `aria-describedby` | guard-rail M | defeito de casa |
+| E8 | posse do `InputError` + rejeição de filho não-host no `FormField` | guard-rail P | defeito de casa |
+| E9 | máscara inline no `onChange` sem preservação de caret — **3 offenders vivos** | absorver M | defeito de casa |
+| E10 | validação progressiva de form longo → Precognition, não `intent` no payload | guard-rail P | padrão do derivado (modernizado) |
+| E11 | visita repetida disparada por digitação (debounce, dedup, corrida, `preserveState`) | guard-rail P | padrão do derivado |
+| E12 | `confirmationNote` + `w-full sm:w-auto` + fallback de `DialogDescription` | absorver P | padrão do derivado |
+| E13 | `flash` no `share()` não é `Inertia::always()` — partial reload consome e o toast some | absorver P | defeito de casa |
+| E14 | `EmptyState type="row"` emite `<tr>` dentro de `<div>` dentro de `<td>` | guard-rail P | defeito de casa |
+| E15 | `EmptyState` sem `action` — estado vazio é beco sem saída | absorver P | padrão do derivado |
+| E16 | sem variante mobile-card e sem piso de alvo de toque | absorver M | padrão do derivado |
+| **E17** | **`sort_order`/`per_page` crus — 500 alcançável por URL** | **absorver P** | **defeito de casa** |
+| E18 | toast de erro anunciado como `role=status`/`polite` | guard-rail P | defeito de casa |
+| E19 | peças mortas do kit data-table (`DataTableHeader`, `DateRangeFilter`, `use-user-search`) | guard-rail P | defeito de casa |
+| E20 | `DateInput` sobrescreve o `aria-invalid` que o `FormField` injeta | guard-rail P | defeito de casa |
+| E21 | `DeleteConfirmationDialog` com `description` opcional — alertdialog sem descrição | guard-rail P | defeito de casa |
+| E22 | navegação principal não é landmark e o item ativo não é anunciado | guard-rail P | defeito de casa |
+| E23 | `<div role="button">` na busca: não focável, sem handler de teclado | guard-rail P | padrão do derivado |
+| E24 | nenhum skip-link | guard-rail P | defeito de casa |
+| E25 | live region da busca anuncia o começo e nunca o resultado | guard-rail P | defeito de casa |
+
+Derrubados (motivo completo no BACKLOG): janela de arrependimento de exclusão de conta (sobreposto ao B1, e o nativo é `SoftDeletes` + `Prunable`) · `intent` no payload como contrato (Precognition é nativo; regra sobre wizard inexistente é imposto de contexto) · `required` do `FormField` ser só asterisco (os call sites reais usam `required` nativo, que **entrega** a semântica) · `eslint-plugin-jsx-a11y` (peer declara até ESLint 9; o boilerplate roda 10.8.0 — é incompatibilidade, não decisão).
+
+#### O que as lentes corrigiram (amostra — a íntegra está no escopo corrigido de cada item do BACKLOG)
+
+1. **`aria-live` num nó recém-montado não anuncia.** O remédio do ctfinance (`aria-live="polite"` no `InputError`) não funciona no nó que ele mesmo monta — a região precisa preexistir. O certo é `role="alert"` para o uso avulso e slot sempre renderizado dentro do `FormField`. **Absorver o problema, rejeitar o remédio do derivado.**
+2. **`replace: true` no autosave é desnecessário** quando a resposta volta para a mesma URL: o Inertia 3.6.1 já faz replace sozinho (`isSameUrlWithoutHash` no core). O caçador tinha vendido isso como "o detalhe que importa".
+3. **A correção proposta para o `flash` (closure pelada) não preserva nada** — `Store::save()` chama `ageFlashData()` em toda requisição (`Session/Store.php:181-183,233-240`), então a mensagem é apagada no fim do próprio request parcial. O mecanismo nativo correto é `AlwaysProp`, que faz bypass do filtro em `PropsResolver.php:325`.
+4. **O Inertia 3.6 tem flash nativo** (`Inertia::flash()`, `Page['flash']`, evento `inertia:flash` / `router.on('flash')`) — o canal caseiro `->with()` + prop + `use-flash-messages.tsx` é reimplementação. Isso subsome E2 e E13 e é decisão de arquitetura, não fatia: registrado como proposta para o dono.
+5. **`app-header.tsx` e `app-header-layout.tsx` são código morto** — `AppHeaderLayout` não é importado por ninguém; `layouts/app-layout.tsx:1` importa fixo o `app-sidebar-layout`. O caçador tinha o título "em toda página autenticada"; nenhum dos dois botões renderiza jamais. O único caso vivo da família é `data-table/search-bar.tsx:56`.
+6. **O `<main>` real é o do `SidebarInset` (`ui/sidebar.tsx:304`)**, não o de `app-content.tsx:14` (ramo `variant="header"`, alcançável só pelo layout morto). Seguir o caçador produziria um skip-link apontando para um id que nunca existe.
+7. **`@radix-ui/react-dialog@1.1.23` não emite warning de descrição ausente** (`grep -n "warn"` no dist → 0 linhas). O argumento se sustenta em ARIA, não em ruído de console.
+8. **3 offenders vivos de máscara inline** em `user-form.tsx:172-175,235-238,257-260` — o caçador afirmara "o boilerplate hoje tem 0 offenders, nasce verde". E não existe máscara `mobile` no mapa `MASKS`, então a migração não é 1:1.
+9. **`role="text"` (usado no `hidden-text`/`hidden-value` do ctfinance) não é role ARIA válido** — era extensão só do Safari. O mascaramento de dado sensível vira só visual.
+10. **`jest-axe` sobre a suíte Vitest existente pega o que o `jsx-a11y` estruturalmente não pega** (nome acessível computado através de `<Button>`, Slot do Radix e `asChild`): teria pegado 4 dos achados desta célula; o lint não pegaria nenhum, porque todos passam por componentes.
+
+#### Direção inversa — onde o boilerplate já é superior (nota, não candidato)
+
+1. **`ui/confirm-dialog.tsx:6`** já torna `description` obrigatória no tipo — é o padrão a replicar no `DeleteConfirmationDialog`, melhor que as strings de fallback do ctfinance (que só poluem a árvore de a11y).
+2. **`pages/users/index.tsx:139`** já usa o padrão correto de live region (região sr-only preexistente) — é o modelo interno a seguir, não o `InputError` do ctfinance.
+3. **`autoFocus` no botão Cancelar** do `DeleteConfirmationDialog`, que o ctfinance não tem.
+4. **`withExceptions` completo** (página Inertia + fallback Blade + 419 + `SecurityHeaders::stamp()`) contra o bloco **vazio** do ctfinance.
+5. **`Settings/Privacy/ShowController.php:19`** do ctfinance publica `pendingDeleteUntil` uma segunda vez, na mesma página em que o `share()` já publica (`HandleInertiaRequests.php:75`) — é exatamente o segundo canal que o `CLAUDE.md` do boilerplate proíbe. Absorver verbatim importaria o defeito.
+
+#### Secagem (passada extra ÚNICA) — 6 candidatos, 5 sobreviveram
+
+Rendeu uma família que nenhuma das 4 frentes viu: **código morto herdado do starter kit**. Sete peças medidas no boilerplate — `app-header-layout.tsx`, `app-header.tsx`, `user-details-dialog.tsx`, `layout/page-header.tsx`, `data-table/table-header.tsx`, `hooks/use-user-search.ts`, `DateRangeFilter`.
+
+**Duas delas fizeram caçadores errarem o diagnóstico nesta mesma célula** (E23 acusou "botões sem nome em toda página autenticada" olhando o `app-header` morto; E29 acusou "dois caminhos, um com feedback" olhando o `user-details-dialog` morto). Código morto não é só peso: é desinformação ativa, e custou duas premissas falsas numa varredura que fez de tudo para não errar.
+
+| # | Candidato | Classe | Nota |
+| - | --------- | ------ | ---- |
+| E26 | Ctrl+B come tecla dentro de campo de texto, e o atalho é invisível | guard-rail P | o ctfinance tem o **mesmo** handler sem guarda — colhe-se dele só a dica em Tooltip |
+| E27 | layout morto sem o banner de personificação | guard-rail P | latente, não vivo — mas a única saída da personificação não tem teste que a trave |
+| E28 | `loading`/`aria-busy` no `Button` (16 spinners, 2 idiomas, 0 `aria-busy`) | absorver M | copiar verbatim faria "Excluir Conta" perder o `disabled` real sob `asChild` |
+| E29 | personificar pelo menu é mudo — e o `preventDefault` trava o dropdown aberto | absorver P | o Inertia 3.6 **já** aborta a visita em voo; não implementar guarda de duplo-POST |
+| E30 | erro de senha sobrevive ao Esc/X — `<Dialog>` não controlado | guard-rail P | **arquivo verbatim do starter kit: todo derivado tem o bug** |
+| — | interruptor de preferência sem ponto de leitura | **rejeitado** | o boilerplate não tem nenhuma preferência persistida — o gate nasceria vácuo |
+
+#### Ponteiros que a dimensão 5 deixou para as células 6, 7 e 8
+
+Fatos verificados que **não** são UX. Entram como candidatos quando a célula dona abrir — não reabrem esta.
+
+**Para a dimensão 6 (UI):**
+
+| Fato verificado | Onde |
+| --------------- | ---- |
+| `empty-state.tsx:2` do boilerplate ainda importa `{ Box, Flex, Table, Text } from '@radix-ui/themes'`; o do ctfinance é 100% Tailwind/tokens | troca de implementação (o contrato `action` já virou E15) |
+| `delete-confirmation-dialog.tsx:66-76` fixa cores literais (`bg-red-100 dark:bg-red-900/40`, `bg-orange-100`…) em vez de tokens | o mesmo arquivo existe nos dois e o diff é exatamente tokens × literais |
+| `pages/users/index.tsx` tem cor de marca hardcoded em 4 pontos (`text-cyan-600 dark:text-cyan-500` em `:149,226,234`; `bg-cyan-600 hover:bg-cyan-700` em `:190`); o ctfinance usa `text-primary`/`Button` sem override | — |
+| `data-table/filter-toggle.tsx:14-24` usa `<button>` cru com `bg-primary/20 dark:bg-primary/40` hardcoded; o ctfinance usa as variantes CVA `toolbar`/`toolbarActive`, que **não existem** no `ui/button.tsx` do boilerplate | — |
+| `input-error.tsx:6` usa `text-sm text-red-600 dark:text-red-400`; o ctfinance usa `text-destructive` + tokens de tipografia | cor de erro fora do token semântico |
+| `ui/button.tsx:27` do boilerplate tem `icon: "size-9"` (36px) contra `size-11` (44px, piso de alvo de toque) no ctfinance `:31`; e `rounded-md` hardcoded contra `rounded-[var(--radius-control)]` | conversa com o E16 fatia A |
+| `layout/page-header.tsx:41` monta classe Tailwind por interpolação (`from-${iconGradient.from}`) — o JIT não varre string dinâmica, **o gradiente nunca é gerado**. Componente tem 0 call sites | código morto **e** quebrado |
+| o `Alert` do ctfinance tem `variant="success"`; o boilerplate repete classes emerald inline no call-site (`pages/auth/verify-email.tsx:25-28`, idem `forgot-password.tsx`) | — |
+| ctfinance tem `test/styles/design-tokens-contract.test.ts` (26 custom properties + 11 classes travadas por teste, incluindo `.dark` definir `--surface-base`) e `test/components/design-token-consumers.test.tsx`; o boilerplate não tem equivalente | **padrão forte a absorver na 6** |
+| ctfinance define `--focus-ring-{color,width,offset,offset-color}` (`app.css:181-184`, redefinidos no escuro em `:279-280`) + classe `.focus-ring-brand` (`:362-375`); o boilerplate tem **0** ocorrências de `focus-ring` e espalha 19 usos de `focus-visible:` pelos primitivos | comportamento (foco visível existe) está OK nos dois — é centralização |
+| ctfinance transforma a navegação de settings em `Sheet` lateral no mobile (`pages/settings/privacy.tsx:73-95`, `lg:hidden` + trigger com o item atual no rótulo) | comparar com `layouts/settings/layout.tsx` |
+| ctfinance `critical-alerts-banner.tsx:31` combina `role="alert" aria-live="assertive" aria-atomic="true"`; o boilerplate só tem `role="alert"` no primitivo (`ui/alert.tsx:30`), sem `aria-live` em call site nenhum | — |
+| ctfinance `ui/date-picker.tsx` é híbrido de 322 l. (input digitável dd/MM/yyyy + popover `react-day-picker`, ISO no fio, locale ptBR); o `ui/date-input.tsx` do boilerplate tem 75 l. e é `<input type="date">` nativo | trocar exige `react-day-picker` + `date-fns` = **`[dep-nova]`** |
+| **`role="text"` não é role ARIA válido** (era extensão só do Safari) e o ctfinance o usa nos dois componentes que mascaram dado sensível (`ui/hidden-text.tsx:70`, `ui/hidden-value.tsx:48`) — o `aria-label` irmão pode ser ignorado e o mascaramento vira só visual | **não absorver assim** |
+| ctfinance `ui/date-picker.tsx:1` importa `InputError` dentro do primitivo (2 usos) — se a posse do `InputError` virar lint (E8), esta é a exceção que a célula 6 precisa decidir | — |
+
+**Para a dimensão 7 (copy):**
+
+- `hooks/permissions/use-permission-actions.ts:45,77,107` responde "Erro ao atribuir cargo!" + "Por favor, tente novamente." para falhas que **nunca** vão passar numa nova tentativa (ex.: "Você não pode remover o seu próprio cargo!").
+- ctfinance põe a regra de bloqueio na própria `description` do diálogo (`categories/index.tsx:331`) e usa `cancelText="Manter categoria"` em vez de "Cancelar"; o diálogo de revogar cargo do boilerplate (`pages/users/index.tsx:373-400`) não enuncia nenhuma das 4 condições que bloqueiam a ação.
+- ctfinance centraliza mensagens de fluxo em `app/Services/Onboarding/OnboardingFlashMessages` e nomeia o passo de destino ("Voltou para {$previousLabel}."); o boilerplate tem `grep -rn "with('success'" app/` → **11 literais inline**.
+- ctfinance centraliza microcopy em `resources/js/content/phase-one-surface-copy.ts` (`internalAccessMicrocopy`, `authSurfaceMicrocopy`) com **3 testes de linguagem**; o boilerplate hardcoda as mesmas strings inline nas 6 páginas de auth e em `pages/users/index.tsx`.
+- ctfinance concentra mensagem de validação acionável via `messages()` no FormRequest (`UpdatePfFinancialBaseRequest.php:88-95`) em vez do default do Laravel — medir a cobertura de `messages()` nos dois lados.
+- `ui/breadcrumb.tsx:96`: **única** diferença entre os dois arquivos é `sr-only` "Mais" (boilerplate) × "More" (ctfinance) — string em inglês no derivado.
+- Textos destrutivos divergem por escolha: boilerplate "O cadastro é apagado de vez. Não existe lixeira nem como recuperar depois." (`:312`) + alternativa de desativar (`:326`); ctfinance "Essa pessoa perderá o acesso… você pode incluí-la novamente depois." (`:317`) — e o do ctfinance é factualmente **mais brando** que o hard delete que B1 mapeou.
+
+**Para a dimensão 8 (ops/DX):**
+
+- ctfinance `EnsureSubscriptionActive.php:46-48` torna o gate inteiro no-op sob `config('billing.enabled')`, com docblock (`:14-19`) explicando que isso mantém o app abrível em beta e em todo PR — **padrão de feature flag para gate ainda incompleto**.
+- ctfinance `Category/DestroyController.php:24-28,35-39,46-50,57-61,68-72` emite `Log::warning` estruturado (user_id, category_id, category_name) em **cada** bloqueio de exclusão e `Log::info` no sucesso (`:81-85`) — observabilidade de ação negada, que no boilerplate só existe para RBAC (`RevokeRoleController.php:56-62,75-82`).
+- boilerplate `bootstrap/app.php:57` desliga a página de erro Inertia em `local` **e `testing`**, então nem o time nem a suíte jamais exercitam `pages/errors/error-page.tsx` num request real.
+- ctfinance `utils/analytics.ts:18-39` é sink de evento sem vendor (`dataLayer` + `window.analytics` + `CustomEvent`) — ponto de plugue único para GA/PostHog sem acoplar o app; **mas tem 1 call-site só**.
+- ctfinance `tests/Browser/DashboardContextSwitcherBrowserTest.php:103-125` prova, no MESMO caso, que a afordância some da tela **e** que o endpoint recusa (403) — é a prova executável da doutrina "`PermissionsGuard` no React é UX-only" do `CLAUDE.md`. O boilerplate cobre bem só a metade backend (46 asserções de 403 em 19 arquivos) e não tem infra de Pest Browser para pendurar a outra metade.
+- Compatibilidade a anotar se testes browser do ctfinance forem portados: `CategoryDeleteConfirmationBrowserTest.php:130` seleciona `[role="dialog"]`, mas o boilerplate marca `delete-confirmation-dialog.tsx:82` e `ui/confirm-dialog.tsx:50` com `role="alertdialog"` — o seletor não casaria. E `:110-113` seleciona por `button[aria-label="Mais opções para %s"]`, o que transforma `aria-label` em contrato travado por teste.

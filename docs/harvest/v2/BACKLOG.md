@@ -228,7 +228,10 @@ Candidato cujo tema aparece em mais de um projeto só vira fatia depois que as c
 | Webhooks | assinatura HMAC + log de tentativa inválida (ctfinance) × inbox `webhook_events` (spinmax) | spinmax | — | — |
 | Multi-tenant | ctjuris × cuidari | ambas | — | — |
 | Auditoria impersonation-aware | `AuditUserResolver` sobre owen-it (ctfinance) × sorteiopix × `ActivityCauserResolver` sobre spatie (boilerplate) | sorteiopix | — | pilhas divergentes (owen-it × spatie) — comparar antes |
-| Tooling de a11y | ctjuris × spinmax | ambas | — | — |
+| Tooling de a11y | ctjuris × spinmax × (dim. 5 do ctfinance: **nenhuma** ferramenta nos dois lados) | ctjuris, spinmax | parcial: `jest-axe` sobre o Vitest existente > `eslint-plugin-jsx-a11y` | o lint não enxerga componentes (`<Button>`, Slot do Radix, `asChild`) e seu peer para no ESLint 9; axe sobre o DOM renderizado pegaria 4 achados da dim. 5. Comparar com `check-contrast.mjs` (spinmax) e o sweep do ctjuris antes de fatiar |
+| Estado vazio / `EmptyState` | ctfinance (`action` + 29 usos em 18 arquivos, 100% Tailwind) × boilerplate (sem `action`, ainda em `@radix-ui/themes`) × demais a varrer | 6 projetos | parcial: ctfinance > boilerplate **no contrato** (`action`) | o corpo visual é dimensão 6 e fica represado; o contrato (E15) não |
+| Variante mobile-card de listagem | ctfinance (9 páginas com o par card/linha, 19 `min-h-11`) × demais a varrer | 6 projetos | — | o boilerplate tem **0** de ambos; a metade barata (piso de alvo de toque, E16 fatia A) não precisa esperar |
+| Canal de flash → toast | boilerplate (`->with()` + prop + hook caseiro, opt-in por página) × ctfinance (mesmo canal, mas consumido em 51 páginas) × **nativo do Inertia 3.6** | 6 projetos | provável: **nativo** > ambos | `Inertia::flash()` + `router.on('flash')` apaga o hook caseiro; decisão do dono pendente (ver §Decisões) |
 | Motion / `prefers-reduced-motion` | ctfinance (só um hook pontual, sem tratamento global) × sweep de motion no Vitest do ctjuris | ctjuris | — | boilerplate hoje tem **0** ocorrências contra 17 usos de `animate-*` |
 | Code splitting / chunking | ctfinance (`manualChunks` Rollup + `React.lazy` por widget) × demais a varrer | 6 projetos | — | premissa do caçador invertida: `manualChunks` segue vivo no Vite 8 via Rolldown |
 | i18n / `lang` | ctfinance (`messages.php` 198 l. com 4 grupos de plataforma + `pt_BR.json`) × ctjuris × sorteiopix × spinmax | 3 | — | — |
@@ -249,3 +252,221 @@ Candidato cujo tema aparece em mais de um projeto só vira fatia depois que as c
 | ------ | --------------- | -------- |
 | `laravel/pulse` no ctfinance | 0004 (sem Telescope; stack = Pail + Log Viewer + Horizon + LaraDumps) | O ADR 0004 rejeita o Telescope nominalmente, mas o racional (duplicar observabilidade já instalada, mais um painel a proteger) alcança o Pulse. Decidir explicitamente: estender o 0004 ou abrir ADR próprio. |
 | `owen-it/laravel-auditing` (ctfinance) × `spatie/laravel-activitylog` (boilerplate) | nenhum ADR cobre a escolha de pilha de auditoria | Duas pilhas divergentes entre projetos irmãos, sem decisão registrada. Candidato a ADR novo depois de varrer sorteiopix (que também tem resolver impersonation-aware). |
+
+## Aplicáveis agora — ctfinance (dimensão 5 — UX)
+
+Fonte: ctfinance @ `b8c6d57`, comparado ao boilerplate `main` @ `9814f46`. **28 sobreviventes de 32 candidatos; 22 deles são defeitos vivos no próprio boilerplate.** O escopo abaixo é o CORRIGIDO pelas 3 lentes.
+
+### E17 · `[absorver]` `sort_order`/`per_page` crus — 500 alcançável por URL · P · risco baixo · **primeiro da fila**
+
+- **Defeito vivo no boilerplate:** `app/Http/Controllers/User/IndexController.php:64-73` tem allow-list só do CAMPO; `:76` passa `sort_order` cru ao `orderBy()`, que lança em `Builder.php:2985-2993`. `/users?sort_order=<lixo>` e `?sort_order[]=a` devolvem **500**. `per_page` não tem teto — `?per_page=999999` pagina tudo.
+- **Origem da correção (verbatim, não inventar):** `RecurringExpense/IndexController.php:94-103` e `RecurringIncome/IndexController.php:72-81` — allow-list do campo **e** da direção, `$perPage = max(5, min(50, (int) $request->integer('per_page', 15)))` com o helper nativo.
+- **⚠️ Correção da lente REFUTAR:** o caçador afirmou que no ctfinance a defesa "é constante de frontend, nunca chega ao servidor" — **falso**, é server-side completa. Isso muda a classe de `guard-rail` de casa para `absorver` padrão do derivado.
+- **Escopo:** portar a forma para `User/IndexController`; testes Pest de negação (`?sort_order=<lixo>`, `?sort_order[]=a`, `?per_page=999999` → 200 com fallback, nunca 500); regra em `.ai/rules/controllers.md` (ordenação/paginação de URL é entrada não confiável; o eco em `$filters` publica o valor **normalizado**, senão o lixo volta pela URL via `withQueryString()`). Como esta listagem é o template dos próximos módulos, extrair para trait/FormRequest do kit.
+- **Precede o E19** (ligar ordenação sem isto cria um 500 alcançável por clique).
+
+### E13 · `[absorver]` `flash` no `share()` não é `Inertia::always()` · P · risco baixo
+
+- **Defeito vivo:** `HandleInertiaRequests.php:68-73` publica `flash` como array cru com `pull`. Em partial reload que não pede `flash`, a prop é filtrada — mas o `pull` **já rodou**, e a mensagem some sem nunca chegar à tela.
+- **Escopo:** `'flash' => Inertia::always(fn (): array => [...])` — uma linha, shape TS inalterado. Teste Pest: redirect com `->with('success')` seguido de GET com `X-Inertia-Partial-Data` sem `flash`, assertando que `flash.success` **chega** no payload.
+- **⚠️ Duas correções GRAVES da lente:** (a) a forma proposta pelo caçador (closure pelada) **não preserva nada** — `Store::save()` chama `ageFlashData()` em toda requisição (`Session/Store.php:181-183,233-240`), a mensagem não-pullada é apagada no fim do próprio request parcial; (b) o teste que ele propôs ("a mensagem AINDA está na sessão") **falha mesmo com a correção** — seria gate enganoso. O mecanismo nativo é `AlwaysProp`, que faz bypass do filtro em `PropsResolver.php:325`.
+- Regra em `.ai/rules/middleware.md`: prop compartilhada com efeito colateral (`pull`/consume/increment) nunca entra crua no `share()`.
+
+### E14 + E15 · `[guard-rail]` + `[absorver]` `EmptyState`: HTML inválido e beco sem saída · P · risco baixo · **1 PR, 1 arquivo**
+
+- **E14 — HTML inválido vivo:** `components/empty-state.tsx:13-29`, ramo `type="row"`, emite `Table.Row`/`Table.Cell` próprios; o **único** call-site (`role-users-table.tsx:141`) já o embrulha → `<tr>` dentro de `<div>` dentro de `<td>`. Escopo: apagar o ramo **e** a prop `type` (`:9`), que fica órfã.
+- **E15 — beco sem saída:** o `EmptyState` do boilerplate não aceita `action`; o do ctfinance sim (29 usos em **18** arquivos — o caçador disse 17). Escopo: `action?: ReactNode` + `className?`, e migrar os 2 call-sites: `pages/users/index.tsx:274-286` ganha CTA de criar no vazio-inicial e "Limpar filtros" (via `use-user-filters.ts:112-122`) no vazio-por-filtro; `role-users-table.tsx:137-142` ganha link para usuários.
+- Regra em `.ai/rules/js.md`: vazio-por-filtro ≠ vazio-inicial, cada um com sua ação.
+- **Não trazer o corpo Tailwind/tokens do ctfinance** (o do boilerplate ainda importa `@radix-ui/themes`) — é dimensão 6. `data-testid="empty-state"` só junto do teste de regressão, senão nasce peça morta.
+
+### E6 + E20 · `[absorver]` ARIA do campo: erro não anunciado e `aria-invalid` sobrescrito · P · risco baixo · **1 PR**
+
+- **E6 — `InputError` não é live region:** `components/input-error.tsx` renderiza `<p>` sem nada; 27 mensagens de erro aparecem em silêncio para leitor de tela.
+  - **⚠️ Absorver o problema, REJEITAR o remédio do derivado:** o ctfinance põe `aria-live="polite"` no próprio nó, e **`aria-live` num nó recém-montado não anuncia** — a região precisa preexistir. Escopo correto: (a) `form-field.tsx` renderiza SEMPRE o slot de erro (`<p id={errorId} aria-live="polite">{error ?? ''}</p>`), id estável, sem montar/desmontar; (b) `input-error.tsx` ganha `role="alert"` (é o mecanismo para nó inserido dinamicamente) + `data-slot="input-error"` + guard `message.trim() === ''`.
+  - Modelo interno melhor que o do ctfinance: `pages/users/index.tsx:139` já faz o padrão certo.
+  - Ressalva a anotar: com 4 erros de um 422, 4 `role="alert"` disparam em série; região única de nível de formulário é evolução futura, fora desta fatia.
+- **E20 — `DateInput` sobrescreve o `aria-invalid` do `FormField`** (ordem de spread). **⚠️ A primeira correção sugerida pelo caçador ("mover para antes do spread") está ERRADA e reintroduz o bug espelhado** — o `cloneElement` do `FormField` grava `'aria-invalid': undefined` como chave própria quando não há erro, e o `undefined` do pai apagaria o `invalid` do próprio `DateInput`. Só a **fusão** funciona: `aria-invalid={props['aria-invalid'] ?? invalid ?? undefined}`. Regra em `.ai/rules/js.md`: em wrapper de primitivo, ARIA próprio se FUNDE com o de `props`, nunca é redeclarado depois do spread.
+  - Alcance real hoje: os 2 usos (`date-range-filter.tsx:87,96`) não passam por `FormField` — nada quebra em tela; é trava para quando o E7 rodar.
+- Não copiar as classes do ctfinance (`text-destructive` + tokens) — dimensão 6.
+
+### E22 + E24 · `[guard-rail]` navegação: sem landmark, sem `aria-current`, sem skip-link · P · risco baixo · **1 PR**
+
+- **E22:** `nav-main.tsx:57-61` — extrair `const active = isItemActive(item)` e passar `aria-current={active ? 'page' : undefined}` no `<Link>` (o `asChild`/Slot cai no `<a>`); `app-sidebar.tsx:47` ganha `role="navigation"` + `aria-label`. **Não tocar em `ui/sidebar.tsx`** (código shadcn, tem de continuar rastreável ao upstream).
+- **E24:** `id="conteudo"` + `tabIndex={-1}` em `app-sidebar-layout.tsx:18`; `<a href="#conteudo">` escondido antes do `<AppSidebar/>`.
+  - **⚠️ Fato do caçador invertido:** ele mandou ancorar no `<main>` de `app-content.tsx:14` — esse é o ramo `variant="header"`, alcançável só pelo layout morto. O `<main>` de toda página autenticada é o de `ui/sidebar.tsx:304` (`SidebarInset`), via `app-layout.tsx:1` → `app-sidebar-layout.tsx:18` → `app-content.tsx:10`. Seguir o caçador daria um skip-link apontando para id inexistente. Verificado que `AppContent` repassa `{...props}` nos dois ramos e `SidebarInset` espalha em `:311` — um único call site cobre tudo sem tocar no primitivo.
+- Correções menores de contagem do caçador: são **5** linhas de `<nav|role=navigation` (não 6); `<ul>` em `sidebar.tsx:451` (não 449); `<li>` em `:462` (não 460).
+
+### E21 + E12 · `[guard-rail]` + `[absorver]` diálogo destrutivo · P · risco baixo · **1 PR, 1 arquivo**
+
+- **E21:** `delete-confirmation-dialog.tsx:33` — tornar `description` **obrigatória** no tipo, espelhando `ui/confirm-dialog.tsx:6`, e render incondicional em `:90` (alertdialog exige descrição pela APG; os 2 call sites já passam, custo zero). Remover o `role="button"` redundante em `page-info.tsx:72`.
+  - **⚠️ Fato do caçador errado:** "é o que dispara o warning do Radix" — `@radix-ui/react-dialog@1.1.23` **não tem esse warning** (`grep -n "warn"` no dist → 0 linhas). O argumento se sustenta em ARIA, sem ruído de console.
+  - **Fora do escopo:** as strings de fallback do ctfinance (ruído na árvore de a11y) e `helpDescription` no `PageHeaderProps` (componente com **0** call sites — mexer nele é arrumar código morto).
+- **E12:** adicionar (não "reintroduzir") `confirmationNote?: ReactNode` como override do parágrafo de consequência, com o texto atual de default.
+  - **⚠️ Quatro fatos do caçador errados:** o boilerplate **nunca teve** o prop (`git log -S "confirmationNote" -- resources/js/` → zero commits); o ctfinance o adicionou em `ebbee55` (2026-04-29), depois do fork. O texto "não pode ser desfeita" é o original de `400fb2f`, não substituiu nada. E ele **não é falso hoje**: o boilerplate não tem `SoftDeletes` em nenhum modelo e os 2 call sites são hard delete.
+  - No mesmo diff, os dois achados que pesam mais e ele omitiu: devolver `w-full sm:w-auto` aos botões do rodapé (rotear com D14) e pôr fallback na `DialogDescription` em vez do render condicional.
+- Copy do texto default é dimensão 7. Modernização futura anotada: trocar o `Dialog` + `role` hand-rolled pelo `AlertDialog` de `@radix-ui/themes` (sem dep nova) — fora do escopo.
+
+### E23 · `[absorver]` `<div role="button">` na busca: não focável, sem teclado · P · risco baixo
+
+- **Único defeito vivo desta família:** `components/data-table/search-bar.tsx:56` — `<div className="cursor-pointer" onClick={focusInput} role="button" aria-label="Focar busca">`, sem `tabIndex`, sem handler de teclado. O ctfinance usa `<button type="button">` (`search-bar.tsx:57-68`).
+- **⚠️ O fato central do título original era falso:** "botões só-ícone sem nome em toda página autenticada" — `AppHeaderLayout` **não é importado por ninguém** e `layouts/app-layout.tsx:1` importa fixo o `app-sidebar-layout`; nenhum dos dois botões renderiza jamais. O cabeçalho real (`app-sidebar-header.tsx:9`) usa `SidebarTrigger`, que **tem** nome acessível (`ui/sidebar.tsx:272`).
+- Teste Vitest sobre `SearchBar`: todo elemento com role interativo é focável e tem nome. **Não escrever teste contra `AppHeader`.**
+- Item separado, decisão de escopo do boilerplate e não de a11y: **remover `app-header.tsx` + `app-header-layout.tsx`** (código morto com botão inerte).
+
+### E18 · `[guard-rail]` toast de erro anunciado como `polite` · P · risco baixo
+
+- `toast-config.ts:45-58` e `:63` — acrescentar `ariaProps: { role: 'alert', 'aria-live': 'assertive' }` em `toastErrorOptions` e `toastWarningOptions`, mantendo `polite` em success/info. Teste em `test/hooks/use-flash-messages.test.ts`.
+- **⚠️ Não mexer em `duration`, e em hipótese alguma usar `Infinity`** — `ui/toast-provider.tsx` não tem botão de dispensa; viraria toast preso. No máximo ~8s, e só com afordância de fechar entregue junto.
+- Justificar pelo comportamento de live region inserida dinamicamente, **não** por "fila de anúncios" (especulação do caçador).
+
+### E25 · `[guard-rail]` a live region da busca anuncia o começo e nunca o resultado · P · risco baixo
+
+- `pages/users/index.tsx:139-141` anuncia "Buscando…" e nunca o desfecho. Mover a região para dentro de `components/data-table/search-bar.tsx` (que **já** é dona da prop `isSearching` — `:16`; o caçador propôs componente novo desnecessário), com prop opcional de contagem/rótulo. Teste Vitest cobrindo as três fases.
+- Onde a implementação emperra de verdade e o caçador não apontou: a contagem de resultados não existe no hook, tem de vir das props da página. Texto exato é dimensão 7.
+- Valor honesto: ganho de **uma** tela hoje; o retorno está em não replicar nos derivados o copy-paste de 11 páginas do ctfinance.
+
+### E2 · `[absorver]` consumo de flash é opt-in por página — 8 de 17 não chamam o hook · M · risco baixo
+
+- **Regra escrita e violada:** `.ai/rules/js.md:15` diz "cada página Inertia chama `useFlashMessages()`". Medido: 17 páginas, **9** chamam, 8 não (as 6 de `auth/`, `dashboard.tsx`, `errors/error-page.tsx`).
+- **Três mensagens comprovadamente mortas:** `EnsureUserIsActive.php:29-31` (`->with('error', 'Sua conta foi desativada…')` → `login.tsx` só renderiza a prop `status`, `:43-45`) · `bootstrap/app.php:67-68` (419 → `back()` → login) · `StartImpersonateController.php:41-42` (→ `dashboard.tsx`, mitigado só pelo banner).
+- **⚠️ O guard-rail proposto pelo caçador (varredura estática de destino de `->with()`) não se sustenta** — descartar. O que fica: teste Vitest do ponto único com `flash.error` + Pest que assere que `EnsureUserIsActive` redireciona **com** a flash.
+- **Escopo:** consumo em UM lugar (`app.tsx`/`ssr.tsx` ou `app-layout` + `auth-layout`, com decisão explícita para `errors/error-page.tsx`, que não usa layout), remover as 9 chamadas, reescrever `.ai/rules/js.md:15` para "o ponto de montagem chama; página nenhuma chama".
+- **Ver a proposta ao dono abaixo** — o Inertia 3.6 tem flash nativo e isto pode ser resolvido de outra forma. **Não abrir esta fatia antes da decisão.**
+
+### E7 + E8 · `[guard-rail]` `FormField` existe, é testado e tem zero adoção · M · risco **médio** · **3 fatias, nesta ordem**
+
+- **Medido:** 0 usos de `FormField` no boilerplate; 27 `InputError` hand-rolled, **0** com `aria-describedby`, `aria-invalid` só em `user-form`. No ctfinance: 16 usos em 6 arquivos.
+- **⚠️ Correção da lente — NÃO é migração mecânica:** o próprio arquivo de referência (`ctfinance onboarding/show.tsx:1710-1737`) mostra o `FormField` **perdendo `aria-describedby` e `aria-invalid` em silêncio** quando o filho é a raiz `<Select>` do Radix — e o boilerplate tem a mesma forma em `user-form.tsx:191-214`. O modo de falha é silencioso e a suíte atual não o pega. Os 27 campos não são uniformes (Select, Checkbox, Textarea, Label sr-only).
+- **Fatia 1 — ENDURECER antes de migrar:** aviso em dev (ou estreitamento de tipo) quando o filho não aceita os props injetados + teste novo em `form-field.test.tsx` com `<Select>`/`<SelectTrigger>` provando qual é o filho legal.
+- **Fatia 2 — as 5 páginas de `pages/auth/`** (login, register, reset-password, forgot-password, confirm-password): 11 dos 27, todos `<Input>`, menor superfície, e é o que os 7 derivados copiam. **Preservar o `required` nativo** dos 6 inputs existentes. Delta visual a tratar: `grid gap-2` → `flex flex-col gap-2` + `FORM_CONTROL_LABEL_CLASSNAME`.
+- **Fatia 3 — `settings/` e `user-form.tsx`** (16 restantes), tratando Select/Checkbox/Textarea um a um (o filho do `FormField` sendo o `SelectTrigger`).
+- **E8 (só depois da fatia 2):** ESLint `no-restricted-imports` proibindo `@/components/input-error` fora de `resources/js/components/ui/**` — ferramenta nativa, roda no editor, zero código novo (a regra **não** está no `eslint.config.js` hoje). Em `warn` com contagem decrescente durante a migração, em vez de inventar allowlist. **Descartar a varredura de filesystem copiada do teste de impersonation** — redundante com o lint, e ela trava quem *renderiza* o erro, não quem *liga* o erro ao campo (passaria verde justamente no cenário de regressão do E7).
+- Teste de varredura de `aria-describedby` entra ao final, escopado a `pages/auth/**` enquanto o resto não migrar.
+
+### E9 · `[absorver]` máscara inline no `onChange` sem preservação de caret · M · risco baixo
+
+- **⚠️ O fato central do caçador estava errado:** ele disse "o boilerplate hoje tem 0 offenders — nasce verde". **Há 3 offenders vivos**, exatamente o padrão do docblock: `components/user-form.tsx:172-175`, `:235-238`, `:257-260`.
+- **Ordem invertida pela lente:** (1) PRIMEIRO corrigir os 3, trocando por `<MaskedInput>`, **acrescentando `mobile: applyMobileMask` ao mapa `MASKS`** (`masked-input.tsx:5-11` — não existe hoje, a migração do campo Celular não é 1:1), com teste de caret (editar no meio, backspace sobre separador) em `test/components/masked-input.test.tsx`. (2) SÓ ENTÃO ligar a trava, e mirando o padrão certo: varredura por `apply*Mask(` **dentro de `onChange`**, não ban de import — senão `pages/users/show.tsx:30-32` (leitura legítima) vira falso positivo. (3) Uma linha em `.ai/rules/js.md` com o motivo (caret) e o ponteiro para `MaskedInput`/`CurrencyInput`.
+
+### E1 · `[guard-rail]` o motivo do bloqueio morre na fronteira do hook · M · risco baixo
+
+- **Defeito vivo:** `hooks/users/use-user-actions.ts:8,11,28-29,68-69` e `hooks/permissions/use-permission-actions.ts:44-45,76-77,106-107` declaram `onError?: () => void` — **descartam o errors bag**. O backend produz 10 motivos acionáveis (`RevokeRoleController.php:43,48,65,85`; `AssignRoleController.php:46,51,58,75,97,116`) e o usuário vê "Erro ao remover cargo. Por favor, tente novamente." para uma ação que **nunca** vai passar. Revogar o próprio cargo em `/users` mostra **zero** texto. `grep -rn "errors\.error" resources/js/` → 0.
+- **⚠️ Correção de escopo da lente:** reduzir aos caminhos que de fato fazem `withErrors` — `use-permission-actions.ts` (3 callbacks) e o `onRevokeRoleError` de `use-user-actions.ts`. **Não** mexer no `onDeleteError` de users: `User/DestroyController.php:14` usa `$this->authorize()` → 403 → `errors/error-page` (`bootstrap/app.php:57`); não existe bag ali.
+- Assinatura passa a `(errors: Record<string,string>) => void`; `delete-confirmation-dialog.tsx` ganha `error?: string` renderizado **antes do `DialogFooter`, dentro do diálogo** — corrigindo a colocação que o próprio ctfinance errou (`categories/index.tsx:127-131` pinta no corpo da página com o diálogo aberto; `bank-accounts/index.tsx:75` descarta tudo).
+- Guard-rail: Vitest do diálogo com erro + Pest assertando `withErrors(['error' => ...])` ao revogar o próprio cargo (fixa a chave). **Descartar a regra de ESLint proposta.**
+
+### E5 · `[guard-rail]` 429 dos limiters do boilerplate sem tratamento · M · risco baixo
+
+- Escopo reduzido: `Limit::response()` em `AppServiceProvider::configRateLimiting()`, **só** nos limiters `verification` e `impersonate` — `back()->with('error', 'Muitas tentativas. Aguarde N segundos…')` com o N vindo do `Retry-After` que o framework já passa ao callback.
+- **⚠️ Deixar o limiter `auth` e o `bootstrap/app.php` intactos** — `AuthRouteThrottleTest.php:62` fixa o 429 cru e quebra com correção global.
+- **Dois fatos do caçador errados:** (1) "o modal do Inertia mostra o HTML padrão do **Symfony**" — o Laravel 13.24 tem view própria de 429 (`Foundation/Exceptions/views/429.blade.php`); o sintoma visível é o mesmo, a atribuição é falsa. (2) Contradição interna: ele afirma que 429 não cai em nenhum ramo do handler **e** que `error-page.tsx:29` responderia "Erro interno" — o fallback jamais é alcançado. **Descartar também o recado de revisar `bootstrap/app.php:57`** (aquele guard preserva a página de debug do framework em `local`; é decisão deliberada de DX, não carona deste PR).
+
+### E3 · `[guard-rail]` `/` não é destino: logout e auto-exclusão ricocheteiam mudos · P · risco baixo
+
+- `AuthenticatedSessionController.php:40` e `ProfileController.php:52` fazem `redirect('/')`, que é rota autenticada — o usuário ricocheteia até o login sem mensagem nenhuma.
+- Escopo: trocar por `to_route('login')->with(...)`; atualizar os **2 testes** que assertam `'/'` (omissão do caçador, e não estava no esforço); resolver os **4 links `route('home')`** das 3 auth layouts (apontar para `login` ou dar a `/` uma página pública) — é o sintoma mais visível e também não estava na evidência.
+- Guard-rail: Pest assertando `assertRedirect(route('login'))` em **um** salto. A mensagem de chegada depende do E2 estar no ponto único — os dois andam juntos.
+
+### E16 · `[absorver]` sem variante mobile-card e sem piso de alvo de toque · M · risco baixo · **2 fatias**
+
+- **Fatia A (P, vale agora):** piso de alvo de toque como regra + asserção — `min-h-11` nos alvos interativos primários de lista, com escape de breakpoint para não engordar a linha desktop; regra em `.ai/rules/js.md` citando WCAG 2.2 Target Size; teste Vitest no estilo `transaction-mobile-card.test.tsx:67`. Medido: **0** `min-h-11` no boilerplate contra 19 em 9 componentes no ctfinance.
+- **Fatia B (M, só com aval do dono):** `components/users/user-mobile-card.tsx` reusando `UserActionsMenu` e `getUserInitials`, com toggle `sm:hidden` / `hidden sm:block` em `pages/users/index.tsx`; trocar `@/content/phase-one-surface-copy` (que o boilerplate não tem) por strings locais; desenho visual do card deferido à dimensão 6. **Regra obrigatória junto:** card e linha COMPARTILHAM o mesmo `{modulo}-actions-menu`, nunca reimplementam ações.
+- Correções da lente: são **9** páginas com o par (não 8); o boilerplate **tem** tratamento responsivo parcial que o caçador não citou (`pages/users/index.tsx:223`, `hidden md:table-cell`); `h-8 w-8` está em `user-actions-menu.tsx:46`; aplicar `min-h-11` nesse trigger altera **também** a tabela desktop (dimensão 6). Distinto de D14 (auditoria de 56 rotas).
+
+### E19 · `[guard-rail]` peças mortas do kit data-table · P · risco baixo
+
+- Refeito grep a grep: `DataTableHeader` = 1 linha (a declaração) nos dois projetos · `DateRangeFilter` sem consumidor de produção e inexistente no ctfinance · `use-user-search` sem consumidor e inexistente no ctfinance · cabeçalhos não clicáveis (`pages/users/index.tsx:216-239`).
+- **AGORA (P):** decisão binária registrada. Recomendado apagar `components/data-table/table-header.tsx` e `hooks/use-user-search.ts` + seu teste (semântica divergente de `hooks/users/use-user-filters.ts:69` — `use-user-search.ts:26` injeta default `'created_at'` onde o outro repassa cru). Manter `DateRangeFilter` só se algum derivado o consumir — **consultar antes de apagar**.
+- Se a escolha for LIGAR a ordenação em vez de apagar: **E17 é pré-requisito obrigatório**, senão vira 500 alcançável por clique.
+- **`[dep-nova]` separado:** `knip` (ou `eslint-plugin-import`) para detecção contínua de export órfão — **nenhum dos dois está instalado** e `eslint.config.js:1-7` não os carrega; o caçador propôs `no-unused-modules` como se fosse configuração. Não pode viajar embutido num PR de limpeza.
+
+### E4 · `[guard-rail]` contrato de gate que redireciona · P · risco baixo · **só documentação**
+
+- Em `.ai/rules/middleware.md` (o glob já aponta para `app/Http/Middleware/**`): (a) gate que redireciona isenta o próprio destino + settings + logout, com a razão escrita por entrada; (b) memória do destino é `redirect()->guest()` + `redirect()->intended($default)` — **nunca serviço próprio com chave de sessão paralela**; (c) gate insatisfazível explica na própria tela em vez de redirecionar. `EnsureUserIsActive` entra como contraexemplo de gate que não redireciona.
+- **Descartar o teste Pest de contrato** — nasce vácuo.
+- Correção da lente: o caçador conflacionou dois arquivos (quem grava o destino é `RedirectPendingOnboardingProfileSelection.php:38`, não `OnboardingEntryRedirector.php:38`) e, pior, apresentou o `OnboardingEntryRedirector` como padrão a absorver quando ele **reimplementa `redirect()->guest()`**.
+
+### E10 · `[guard-rail]` validação progressiva de form longo · P · risco baixo · **só documentação**
+
+- Duas frases em `.ai/rules/requests.md`, **sem canonizar o arquivo do ctfinance**: (1) validação por etapa de wizard usa **Precognition** (`HandlePrecognitiveRequests`, presente no framework 13.24 instalado) + `<Form>` do Inertia com `validate({only})` — não um discriminador `intent` no payload; (2) se for preciso PERSISTIR parcial, o ramo frouxo escreve num slot de rascunho separado, mantém o mesmo `authorize()` com `$this->user()->can(...)` (regra vigente de `requests.md:9`) e **não pode avançar a máquina de estado** — porque `intent` vem do cliente.
+- O Request modelo do ctfinance tem `authorize(): return true` (`:13-16`), em conflito direto com `requests.md:9` do boilerplate. Citar o gate de `current_step` como o padrão, não o `return true`.
+- Nota: o cliente `laravel-precognition-react-inertia` **não** está em `node_modules` — adotá-lo seria `[dep-nova]`.
+
+### E11 · `[guard-rail]` visita repetida disparada por digitação · P · risco baixo · **só documentação**
+
+- Entrada curta em `.ai/rules/js.md`, ao lado das regras de Inertia que vieram de D2/D3: autosave, filtro persistido e gravação por polling precisam de (a) debounce com cleanup no unmount, (b) dedup por assinatura do payload com refs de "último persistido" e "último tentado", (c) guard contra corrida com o submit explícito, (d) `preserveState: true` para o redirect não clobberar o form.
+- **⚠️ O fato central do caçador está errado:** "sem `replace: true` cada autosave empilha uma entrada no histórico". **Falso neste código** — o PATCH responde `to_route('onboarding.show')`, mesma URL, e o Inertia 3.6.1 já seta replace sozinho (`isSameUrlWithoutHash` no core; docs v3: "Visits made to the same URL automatically set replace to true"). Usar `replace: true` **só** quando a resposta muda a URL. E `preserveState` não é acessório: é o que protege o estado do form.
+
+## Novos `[rejeitado]` da dimensão 5 — registrados para não re-descobrir
+
+| Achado | Origem | Motivo (lente que derrubou) |
+| ------ | ------ | --------------------------- |
+| Janela de arrependimento em exclusão de conta (7 dias + banner + cancelar) | `Settings/Privacy/{Schedule,Cancel}AccountDeletionController` | REFUTAR: é a metade UX do **B1**, que mexe na mesma coluna, controller e comando de expurgo — dois cards na mesma coluna abrem PR conflitante. "7 dias" é decisão de produto de app financeiro; o que generaliza ("destrutivo de conta tem estado e volta") já está no B1. ATUALIDADE: o comando custom é desnecessário — `SoftDeletes` + `Prunable` + `model:prune` é a expressão nativa (o `User` do boilerplate não usa nenhum dos dois). RISCO: o modelo exibido como exemplar contém o anti-padrão da casa — `Privacy/ShowController.php:19` é um **segundo canal** para `pendingDeleteUntil`, que o `share()` já publica em `HandleInertiaRequests.php:75`. |
+| `intent` explícito no payload como contrato de rascunho parcial | `UpdatePfFirstValueRequest.php:20,22,27,34` | REFUTAR: regra prescrevendo para código que o boilerplate não tem **e não tem plano de ter** — wizard multi-etapa com rascunho servidor não é necessidade previsível de um painel administrativo, e `.ai/rules/requests.md` entra no contexto de todo agente que toca `app/Http/Requests/**` (imposto de contexto). Único candidato da leva sem nenhum defeito de casa revelado. ATUALIDADE: **Precognition** (nativo, instalado) resolve a validação progressiva sem ramo de `intent`; `useRemember` do `@inertiajs/react` 3.6 resolve a metade cliente. Sobreviveu **só** a parte documental, que virou o E10. |
+| `required` do `FormField` é só um asterisco `aria-hidden` | `ui/form-field.tsx:66-70` | REFUTAR: **conclusão falsa nos dois lados.** No boilerplate o `FormField` tem 0 call sites e as telas reais põem `required` **nativo** no `<Input>` (`login.tsx:56,80`; `register.tsx:44,61,77,93` — 6 verificados), que mapeia para `aria-required` na árvore de acessibilidade. No ctfinance idem (`register.tsx:77,91,105`) — o que existe lá é cheiro de DRY, não furo de a11y. Não protege um pixel renderizado hoje; vira **critério de aceite do E7**, não item próprio. |
+| `eslint-plugin-jsx-a11y` | ausência nos dois projetos | REFUTAR: **bloqueio duro, não decisão** — o boilerplate roda ESLint **10.8.0** e o `eslint-plugin-jsx-a11y@6.10.2` (última publicada) declara peer `eslint: ^3 \|\| … \|\| ^9`. Instalar exige override de peer no linter que trava todo push. E o rendimento é de 1 arquivo: o exemplo usado para vendê-lo é código morto, e o plugin não enxerga componentes sem mapa `settings['jsx-a11y'].components`. ATUALIDADE: o que pega o que ele estruturalmente não pega (nome acessível computado através de `<Button>`, Slot do Radix, `asChild`) é **axe sobre o DOM renderizado na suíte Vitest que já existe** — `jest-axe@11` é mantido e roda sob Vitest via `expect.extend`. Axe teria pego 4 achados desta célula; o lint, nenhum. Ver `[dep-nova]`. |
+
+## Decisões que precisam do dono (dimensão 5)
+
+### ADR/arquitetura — canal de flash nativo do Inertia 3.6 (subsome E2 + E13)
+
+O Inertia 3.3+/3.6 tem **flash nativo**: `Inertia::flash()` no servidor, `Page['flash']` no payload, e o evento `inertia:flash` / `router.on('flash')` no cliente (`@inertiajs/core/types/types.d.ts:45,85`). O boilerplate reimplementa isso com `->with()` + prop no `share()` + `hooks/use-flash-messages.tsx` + 9 chamadas por página. Migrar resolveria E2 e E13 de uma vez e apagaria o hook caseiro, com um `router.on('flash')` registrado uma vez em `app.tsx`.
+
+Não conflita com ADR vigente — é escolha de arquitetura ainda não registrada. **Caminho conservador** (fallback, se o dono preferir): hook num ponto único de montagem + `Inertia::always()` no `share()`, assumindo a dívida contra o nativo e registrando no PR. **Nenhuma fatia de flash deve abrir antes desta decisão.**
+
+### `[dep-nova]` — represados aguardando aprovação
+
+| Pacote | Origem | Para quê | Fatia dependente |
+| ------ | ------ | -------- | ---------------- |
+| `jest-axe ^11` (dev) | lente de ATUALIDADE da dimensão 5 (nenhum projeto-fonte tem) | axe sobre o DOM renderizado na suíte Vitest existente (`vitest 4.1.10` + `@testing-library/react 16.3.2` + `jest-dom 7.0.0`), via `expect.extend`. Teria pegado E6, E21, E22 e E23 de uma vez. `vitest-axe` está abandonado em 0.1.0 — não é alternativa. | trava contínua das fatias de a11y |
+| `knip` **ou** `eslint-plugin-import` (dev) | E19 | detecção contínua de export órfão; nenhum dos dois está instalado | E19 (a limpeza manual não depende disto) |
+| ~~`eslint-plugin-jsx-a11y`~~ | — | **rejeitado por incompatibilidade de peer com ESLint 10**, não por falta de aprovação | — |
+
+## Secagem da dimensão 5 — E26–E30 (verificados nas 3 lentes, 5 de 6 sobreviveram)
+
+A passada extra rendeu uma família que nenhuma das 4 frentes viu: **código morto herdado do starter kit**, e um bug de diálogo que está em todos os 7 derivados por construção.
+
+### E30 · `[guard-rail]` o erro de senha sobrevive ao Esc e ao X · P · risco baixo · **multi-fonte confirmado**
+
+- **Bug vivo:** `components/delete-user.tsx:52` monta `<Dialog>` **não controlado** (sem `open`, sem `onOpenChange`); `closeModal()` (`:26-29`, o único que faz `clearErrors()` + `reset()`) está pendurado **só** no botão Cancelar (`:82-86`). O X (`ui/dialog.tsx:64-68`, sempre renderizado), o Escape e o clique fora não passam por ele. O `useForm` vive **fora** do `<Dialog>`, então não desmonta: quem errou a senha, fechou com Esc e reabriu vê "senha incorreta" sobre um campo vazio, como se a tentativa nova já tivesse sido rejeitada.
+- `grep -rn "clearErrors" resources/js` → **2 linhas, ambas neste arquivo**.
+- **O padrão certo já existe na casa:** `ui/confirm-dialog.tsx:44-48` usa `onOpenChange={(next) => { if (!next) onCancel(); }}`, e `delete-confirmation-dialog.tsx:29-30` recebe `open`/`onOpenChange`. `delete-user.tsx` é o outlier — o conserto é **alinhar ao padrão da casa**, não inventar padrão.
+- **Escopo:** tornar o Dialog controlado, cobrindo Esc/X/overlay/Cancelar por um funil único. Teste Vitest: submeter → erro renderizado → Escape → reabrir → `InputError` sumiu. Uma linha em `.ai/rules/js.md` (não nasce vácuo: há 3 diálogos na árvore para policiar).
+- **Multi-fonte medido:** `ctfinance delete-user.tsx:51,84,13,27` tem o bug byte a byte. É arquivo verbatim do starter kit — **todo derivado tem**.
+- Modernização anotada (não requisito): o `<Form>` do Inertia v3 expõe `clearErrors` e `resetAndClearErrors` como slot props.
+- Lente: **nenhum fato do caçador errado.** Só ajuste de rótulo — sem o teste isto é bug fix de um arquivo; com o teste vira guard-rail.
+
+### E27 + E29 · `[guard-rail]` + `[absorver]` código morto do starter kit que finge cobertura · P · risco baixo · **1 PR**
+
+- **E27 — `layouts/app/app-header-layout.tsx` é órfão.** `grep "app-header-layout|AppHeaderLayout"` → **1 linha, a própria declaração** (`:7`). `layouts/app-layout.tsx:1` importa fixo o `app-sidebar-layout`. Só o `app-sidebar-layout.tsx:20-24` monta o `<ImpersonateBanner>`, que é a **única** saída da personificação em código de app (`grep stopImpersonation` → só `impersonate-banner.tsx:1,17`; o `user-menu-content.tsx` tem apenas "Configurações" e "Sair").
+  - **⚠️ Tempo verbal do caçador errado:** "quebra a saída da personificação" — hoje **não quebra**, porque ninguém renderiza o layout morto. É armadilha latente: quem trocar o template em `app-layout.tsx:1` perde a saída e **nenhum teste reclama**. A fatia D2 não cobre isso — ela trava *como* se troca de identidade (flush + posse de rota) e renderiza o banner isolado (`test/lib/impersonation.test.tsx:81-87`), mas nada afirma que um layout o **monta**.
+  - **Escopo (reduzido de M para P): deletar** o layout, não preenchê-lo. `components/app-header.tsx` fica órfão junto (1 único importador é o layout deletado) — decidir no mesmo PR. Guard-rail que sobrevive à próxima troca de template: teste Vitest que renderiza `layouts/app-layout.tsx` com `auth.impersonating.active=true` e exige o link de saída.
+- **E29 — o único caminho vivo de personificar é mudo, e trava o menu aberto.** `components/users/user-actions-menu.tsx:106-117` chama `onImpersonate` sem estado nem feedback. **Achado que o caçador não viu e é o mais concreto:** o `e.preventDefault()` de `:109` suprime o `handleSelect` do Radix (`react-menu@2.1.24/dist/index.mjs:397` usa `composeEventHandlers` com `checkForDefaultPrevented=true`), então **o dropdown não fecha** — inconsistente com todos os irmãos do mesmo menu.
+  - **⚠️ A premissa "dois caminhos" é FALSA:** `components/user-details-dialog.tsx` (o suposto caminho com feedback) é **código morto** — `grep "UserDetailsDialog"` → 2 hits, ambos dentro do próprio arquivo; `grep "user-details-dialog"` → **0**. A página real (`pages/users/show.tsx`) não tem personificação.
+  - **⚠️ "Nenhum dos dois barra o clique duplo" é FALSO nas duas metades:** o diálogo morto barra (`:193`), e o `@inertiajs/core` 3.6.1 **já aborta a visita em voo** (`dist/index.js:3015-3018` `maxConcurrent: 1, interruptible: true` + `:3173` `interruptInFlight()`). **Não implementar guarda de duplo-POST.**
+  - **Escopo:** deletar `user-details-dialog.tsx` (é o chamariz que fez o caçador — e faria o próximo leitor — acreditar que existe um caminho bom); remover o `preventDefault()` ou trocar por `onSelect` com `pending` explícito; um teste Vitest no menu.
+- **Tema consolidado — código morto do boilerplate medido nesta célula:** `app-header-layout.tsx`, `app-header.tsx`, `user-details-dialog.tsx`, `layout/page-header.tsx` (0 call sites), `data-table/table-header.tsx`, `hooks/use-user-search.ts`, `DateRangeFilter` (ver E19). Sete peças. Duas delas fizeram caçadores errarem o diagnóstico nesta mesma célula (E23 e E29) — **código morto não é só peso, é desinformação ativa**. Candidato natural a uma fatia de limpeza única, mais o `[dep-nova]` `knip` do E19 para não reacumular.
+
+### E28 · `[absorver]` `loading`/`aria-busy` no `Button` · M · risco médio
+
+- **Medido no boilerplate:** `grep "animate-spin"` → **16**; `grep "aria-busy"` → **0**; `grep 'disabled={processing'` → 24. Os 16 se partem em **2 idiomas**: 6× `<LoaderCircle className="h-4 w-4 animate-spin" />` (as 6 páginas de auth) e 10× div artesanal com `border-2 border-current border-t-transparent`.
+- **Origem:** `ctfinance ui/button.tsx:41-88` tem `loading`, `loadingText`, `aria-busy`, `aria-disabled` e ícone com `data-slot`, coberto por `test/components/Button.test.tsx:53`.
+- **⚠️ Risco de regressão ao copiar verbatim — o item mais importante desta entrada:** `ctfinance ui/button.tsx:60,82` faz `shouldRenderLoadingIndicator = loading && !asChild` e `disabled={asChild ? undefined : isDisabled}` — com `asChild` ele **não passa `disabled`**, só `aria-disabled`. O boilerplate tem exatamente um call-site destrutivo com `asChild`: `delete-user.tsx:86` (Excluir Conta). Absorver sem ajuste faria esse botão **perder o `disabled` real e voltar a ser clicável durante o envio** — falha ABERTA num caminho de exclusão de conta. **Divergir do ctfinance nesse ponto: manter `disabled` real também sob `asChild`.**
+- **Escopo:** (1) `loading`/`loadingText`/`aria-busy` em `ui/button.tsx` com a divergência acima; (2) repassar `busy → loading` em `ui/confirm-dialog.tsx:57-68` (o caçador não viu que a lacuna está em **2** lugares); (3) corrigir `delete-user.tsx:86` tirando o `asChild`; (4) um teste Vitest espelhando o do ctfinance. Migrar os outros 15 spinners artesanais é follow-up e **não bloqueia**.
+- **Lente de atualidade:** `useFormStatus` do react-dom 19.2.8 **não substitui** — só reporta dentro de `<form action={fn}>` (React Actions), e o boilerplate submete por `useForm` + `onSubmit` do Inertia, então reportaria sempre `pending:false`. O `<Form>` do Inertia v3 dá `processing` como slot prop e elimina o encanamento manual, mas **não** dá `aria-busy` — o `loading` no Button é ortogonal e segue necessário. Nota de modernização: formulários novos usam `<Form>`+`processing` alimentando `<Button loading>`.
+- Imprecisão do caçador: `delete-user.tsx:86` não fica "sem nenhum sinal" — a cva aplica `disabled:opacity-50`.
+
+### E26 · `[guard-rail]` Cmd/Ctrl+B da sidebar come tecla dentro de campo de texto, e é invisível · P · risco baixo
+
+- `ui/sidebar.tsx:31,94-105` — handler global de `keydown` com `event.preventDefault()` e **zero** checagem de `event.target`/`isContentEditable`. Alcança toda página autenticada (`app-shell.tsx:25` → `app-sidebar-layout.tsx:17` → `app-layout.tsx:1`).
+- **⚠️ Dois fatos do caçador corrigidos:** (1) "sequestra uma tecla de edição de texto" está **exagerado** — não há contenteditable nem editor rich-text no boilerplate (0 ocorrências de `contenteditable|tiptap|slate|quill|lexical`); o dano real é estreito: em macOS, Ctrl+B é o binding Cocoa de "mover o cursor um caractere à esquerda" dentro de `<input>`/`<textarea>`, e o `preventDefault()` come essa tecla. (2) **Não é colheita do ctfinance** — `ctfinance ui/sidebar.tsx:31,98-99` é byte-idêntico e igualmente sem guarda. O que se colhe de lá é só a **dica de atalho** (`balance-visibility-toggle.tsx:57`, `shortcutHint` em Tooltip).
+- Atalho invisível: `SidebarTrigger` tem só `<span className="sr-only">Abrir ou fechar o menu lateral</span>` (`ui/sidebar.tsx:272`), sem Tooltip/`title`; `grep -i "⌘|cmd|atalho|shortcut"` → 0 ocorrências que descrevam o atalho a um usuário.
+- **Escopo:** early-return quando o alvo é INPUT/TEXTAREA/SELECT ou `isContentEditable`; expor o atalho no `SidebarTrigger`; um teste Vitest disparando Ctrl+B com foco num input. **Não** importar o Cmd+H do ctfinance (o macOS come antes do browser, e lá também não há guarda).
+- Custo colateral honesto: `ui/sidebar.tsx` é shadcn vendorizado de 722 linhas e patchear diverge do upstream — mas o arquivo **já** foi localizado (sr-only em pt-BR na `:272`), o precedente existe.
+- Multi-fonte: o arquivo é idêntico entre boilerplate e ctfinance; todo derivado com sidebar carrega o mesmo handler.
+
+### `[rejeitado]` da secagem
+
+| Achado | Origem | Motivo (lente que derrubou) |
+| ------ | ------ | --------------------------- |
+| Guard-rail contra "interruptor de preferência sem ponto de leitura em produção" | `ctfinance NotificationPreferenceService.php:12-16` — `financial_summary` e `recurring_generated` têm **zero** consumidores (só `lgpd_export_ready` é lido, em `ExportReadyNotification.php:28`) | REFUTAR: o defeito no ctfinance é real e medido, mas **não tem contraparte no boilerplate** — não existe nenhuma preferência persistida em banco lá (a única é o tema, em localStorage/cookie, e ela **é** lida em `use-appearance.tsx:22-23`). RISCO: é a armadilha de vácuo do enunciado — `arch()` sobre `App\Services\*PreferenceService` resolve para camada vazia e passa vacuamente; teste por varredura de árvore nasceria com conjunto vazio e apodreceria em silêncio. E a premissa "o teste só prova que o checkbox aparece" é **falsa**: `NotificationsPreferencesTest.php` é Pest de backend com 6 testes (guest→redirect, defaults, PATCH+releitura, 422 de categoria desconhecida, always-on, e o gate real do `ExportReadyNotification`) e **zero** asserção de checkbox. O buraco correto é "nenhum teste prova EFEITO das 2 órfãs". **Resíduo:** uma frase em `.ai/rules` a ser ATIVADA como teste quando a primeira preferência persistida aterrissar no boilerplate. Fora do escopo desta colheita: vale abrir bug no ctfinance. |
