@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento · **as 4 primeiras fatias (A1, A3, A6, D2) MESCLADAS em 2026-08-11**
+- **Situação:** Fase 0 concluída · varredura em andamento (6/70 células) · **5 fatias MESCLADAS** (A1, A3, A6, D2, D3) · **3 PRs abertos aguardando merge do dono** (#60 D5, #62 D4, #66 E17)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -33,7 +33,8 @@ Toda evidência/veredito desta rodada refere-se ao SHA abaixo. Commits posterior
 
 `core.hooksPath` do repositório é **`.husky/_`**, que é **gerado pelo `pnpm install`** (script `prepare`) e é gitignorado. Um worktree recém-criado (`git worktree add`) não tem `.husky/_/`, então o git **não encontra hook algum**: nem `pre-commit` (lint-staged), nem `commit-msg` (guard de ID de issue e de branch), nem `pre-push` (os dois `ci:check`). Eles não falham — simplesmente não existem, sem aviso.
 
-- Confirmado no push de 2026-08-11: os 3 commits de estado subiram sem que uma linha de gate rodasse. Aceitável **só porque o diff é markdown puro** — `git diff origin/main -- ':!docs' ':!.claude'` volta vazio, zero código.
+- Confirmado no push de 2026-08-11: os 3 commits de estado subiram sem que uma linha de gate rodasse. Aceitável **só porque o diff é markdown puro**.
+- **⚠️ Correção de 2026-08-11 (2ª invocação): a checagem que estava escrita aqui está errada e dá falso alarme.** `git diff origin/main -- ':!docs'` **não** volta mais vazio — não porque o branch de estado toque código, mas porque ele nasceu de `c6982fa` e a `main` já andou 5 fatias à frente; o diff mostra a `main` nova contra o snapshot velho. A checagem correta é contra a merge-base: `git diff $(git merge-base origin/main HEAD)..HEAD --stat -- ':!docs'` — **esta** volta vazia. Não rebase o branch de estado só para satisfazer a checagem antiga.
 - **Consequência para as fatias de código desta rodada:** worktree de fatia precisa de `corepack pnpm install` **antes do primeiro commit**, senão os gates são silenciosamente pulados e o Guardrail 7 vira letra morta. Não é caso de `SKIP_GIT_HOOKS=1` — é o oposto: o skip aqui é o default acidental.
 - Segunda pegadinha do mesmo worktree: `.mise.toml` nasce **não confiado** (`mise ERROR ... are not trusted`), o que quebra qualquer comando antes de chegar ao hook. Resolver com `mise trust` no worktree novo.
 
@@ -62,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 6/70 células (8,6%) · BACKLOG: **7 aplicados (A1, A3, A6, D2, D3, D4, D5)**, 1 realocado (A2), **38 aplicáveis** (8 de dim. 1–3 + **30 de dim. 5: E1–E30**), 7 adiados, **10 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`), **1 decisão de arquitetura pendente do dono** (flash nativo do Inertia 3.6)
+**Progresso:** 6/70 células (8,6%) · BACKLOG: **8 aplicados (A1, A3, A6, D2, D3, D4, D5, E17)**, 1 realocado (A2), **37 aplicáveis** (8 de dim. 1–3 + 29 de dim. 5: E1–E30 menos o E17 aplicado), 7 adiados, **10 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`), **1 decisão de arquitetura pendente do dono** (flash nativo do Inertia 3.6)
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -102,6 +103,8 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **D5** — fix: spinner de busca (nunca aparecia / nunca parava) | [#59](https://github.com/Simplify-Technology/boilerplate/issues/59) | `59-harvest-v2-spinner-busca` | ✅ 8 testes + 3 mutações | ✅ ambos exit 0 | [#60](https://github.com/Simplify-Technology/boilerplate/pull/60) | **aguardando merge do dono** |
 | **D4** — fix: fundo escuro inline com literal + `color-scheme` | [#61](https://github.com/Simplify-Technology/boilerplate/issues/61) | `61-harvest-v2-fundo-inline-tema` | ✅ 4 testes + 3 mutações | ✅ ambos exit 0 | [#62](https://github.com/Simplify-Technology/boilerplate/pull/62) | **aguardando merge do dono** |
 | **D3** — docs: closure em prop de render não adia nada | [#63](https://github.com/Simplify-Technology/boilerplate/issues/63) | `63-harvest-v2-regra-props-lazy` | — (só doc; gate inviável, ver BACKLOG) | ✅ ambos exit 0 | [#64](https://github.com/Simplify-Technology/boilerplate/pull/64) | ✅ **MESCLADO** 2026-08-11 18:56 |
+
+| **E17** — fix: ordenação e page size crus na listagem (500 por URL) | [#65](https://github.com/Simplify-Technology/boilerplate/issues/65) | `65-harvest-v2-normaliza-ordenacao-listagem` | ✅ 41 testes + 4 mutações | ✅ ambos exit 0 (352/1831) | [#66](https://github.com/Simplify-Technology/boilerplate/pull/66) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -208,9 +211,32 @@ Célula de maior rendimento da rodada: 32 candidatos caçados em 4 frentes, **28
 
 Segue pendente, de antes: a **fatia única de `.ai/rules`** juntando A2, A7, A9, A12, B4 e B6 (guard-rails sem superfície executável no boilerplate hoje).
 
+### E17 — o que entrou (2026-08-11)
+
+`app/Support/Listing/ListQueryNormalizer.php` (novo) + `User/IndexController.php` + 2 arquivos de teste + linha nova em `.ai/rules/controllers.md`. PR [#66](https://github.com/Simplify-Technology/boilerplate/pull/66).
+
+**Segunda fatia da rodada que conserta bug em vez de prevenir** (depois da D2), e a primeira de disponibilidade: o 500 foi **reproduzido pelo teste antes da correção** (`InvalidArgumentException` de `Query\Builder:2992`).
+
+| Mutação aplicada | Resultado |
+| ---------------- | --------- |
+| Direção crua no `orderBy()` (o defeito original) | ⨯ 5 testes falham |
+| `perPage()` sem teto/piso | ⨯ 2 falham |
+| Allow-list de campo desligada | ⨯ 3 falham |
+| `$default` de direção sem validação | ⨯ 1 falha |
+
+Três fatos medidos nesta fatia:
+
+1. **A quarta mutação passou verde na primeira rodada.** A proteção contra `$default` inválido — que o próprio docblock prometia — não tinha cobertura. O teste que faltava entrou antes do commit. Sem a passada de mutação, a fatia teria entregue uma garantia escrita e não testada.
+2. **O ponto de pouso sugerido pela lente estava em conflito com a convenção da casa.** O BACKLOG dizia "extrair para trait/FormRequest do kit", mas `.ai/rules/controllers.md` proíbe camada de query objects e reserva `App\Services` para lógica reusada por vários controllers. `App\Support\Listing\` (final, estático, puro) é o encaixe que `.ai/rules/support.md` já descreve — e um FormRequest daria **422 num GET de listagem**, quebrando bookmark antigo, quando o comportamento desejado é fallback gracioso.
+3. **`sort_by`/`sort_order` não são emitidos pela UI hoje** — `resources/js` só **lê** `per_page`, nunca envia nenhum dos três. O bug só era alcançável por URL montada à mão. É o E19 (ordenação clicável) que o tornaria alcançável por clique — daí a ordem obrigatória.
+
 ## Próxima unidade
 
-**Fatia E17 — `sort_order`/`per_page` crus em `User/IndexController`.** Prioridade 1 do protocolo (fatia de aplicação pronta), e a fila de P deixou de estar seca: a dimensão 5 entregou 20 candidatos P de risco baixo.
+**Fatia E14+E15 — `empty-state.tsx`** (HTML inválido no ramo `type="row"` + estado vazio sem `action`). Um arquivo, dois call-sites, teste de regressão portado do ctfinance com as duas adaptações já anotadas no BACKLOG (sem `type="row"`, sem a asserção de token). É a próxima P de risco baixo com superfície real.
+
+Depois dela, a fila registrada: **E21+E12** (`delete-confirmation-dialog.tsx`) · **E30** (`delete-user.tsx`) · **E22+E24** · **E6+E20** · **E23** · **E18** · **E27+E29**.
+
+~~**Fatia E17**~~ ✅ aplicada — PR #66 aberto. Justificativa que valeu e segue valendo para a fila acima: Prioridade 1 do protocolo (fatia de aplicação pronta), e a fila de P deixou de estar seca: a dimensão 5 entregou 20 candidatos P de risco baixo.
 
 Por que E17 primeiro entre eles: é o único **bug de disponibilidade** da leva (`/users?sort_order=<lixo>` → 500, `Builder.php:2985-2993`), a correção já existe pronta no ctfinance (`RecurringExpense/IndexController.php:94-103`, absorção verbatim), é backend puro com teste de negação natural (fecha a Definition of Done sem depender de gate de browser), e é **pré-requisito do E19**.
 
