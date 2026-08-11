@@ -49,12 +49,39 @@ export interface NavItem {
     role?: string;
 }
 
+/**
+ * Mensagens de uma ação, consumidas por `useFlashMessages`. Espelha o bloco
+ * `flash` de `HandleInertiaRequests::share()` — as quatro chaves vêm sempre,
+ * com `null` quando não há mensagem.
+ */
+export interface FlashMessages {
+    success: string | null;
+    error: string | null;
+    warning: string | null;
+    info: string | null;
+}
+
+/**
+ * Props globais que toda página recebe. Espelha `HandleInertiaRequests::share()`
+ * — os dois mudam juntos, e `tests/Feature/SharedPropsTest.php` trava o shape
+ * dos dois lados.
+ *
+ * `errors` não vem do `share()`: o middleware do Inertia injeta em toda
+ * resposta. Está aqui porque o tipo descreve o que a página RECEBE.
+ */
 export interface SharedData {
+    errors: Record<string, string>;
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
+    flash: FlashMessages;
     ziggy: Config & { location: string };
 
+    // Exigido pelo constraint `PageProps` do @inertiajs/react: sem o index
+    // signature, `usePage<SharedData>()` não compila. Ou seja, o tipo é
+    // necessariamente mais largo que o payload e NÃO consegue barrar prop
+    // global nova sozinho — quem barra é o contrato de runtime em
+    // tests/Feature/SharedPropsTest.php. Não remova achando que é desleixo.
     [key: string]: unknown;
 }
 
