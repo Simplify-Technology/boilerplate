@@ -1,14 +1,8 @@
 import { toastErrorOptions, toastInfoOptions, toastSuccessOptions, toastWarningOptions } from '@/lib/toast-config';
+import type { FlashMessages } from '@/types';
 import { usePage } from '@inertiajs/react';
 import { useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
-
-interface FlashMessages {
-    success?: string;
-    error?: string;
-    warning?: string;
-    info?: string;
-}
 
 interface WindowWithFlashCleanup extends Window {
     __flashCleanupInterval?: ReturnType<typeof setInterval>;

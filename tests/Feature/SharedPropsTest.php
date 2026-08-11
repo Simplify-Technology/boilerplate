@@ -12,6 +12,47 @@ use Inertia\Testing\AssertableInertia as Assert;
  * tipos em resources/js/types — os dois mudam juntos.
  */
 
+it('trava o conjunto inteiro de props globais que toda página recebe', function(): void {
+    // `interacted()` é o que transforma isto num contrato: ao fechar o escopo,
+    // chave que ninguém tocou falha com "Unexpected properties were found in
+    // scope". Assim, chave nova no share() sem espelho em resources/js/types
+    // quebra aqui.
+    //
+    // O `->interacted()` do fim NÃO é redundante: o AssertableInertia aplica a
+    // checagem automaticamente só nos escopos aninhados (os `has()` com
+    // callback). No escopo raiz ela não roda sozinha — sem esta linha, uma prop
+    // global nova passa despercebida, que é exatamente o buraco que este teste
+    // existe para fechar.
+    //
+    // `errors` não sai do share(): o middleware do Inertia injeta em toda
+    // resposta. Está no contrato porque ele descreve o que a PÁGINA recebe.
+    actingAsSuperUser();
+
+    $this->get(route('dashboard'))
+        ->assertOk()
+        ->assertInertia(fn(Assert $page) => $page
+            ->has('errors')
+            ->has('name')
+            ->has('quote', fn(Assert $quote) => $quote
+                ->has('message')
+                ->has('author'))
+            ->has('auth', fn(Assert $auth) => $auth
+                ->has('user')
+                ->has('permissions')
+                ->has('roles')
+                ->has('impersonating', fn(Assert $impersonating) => $impersonating
+                    ->has('active')
+                    ->has('originalUserName')
+                    ->has('impersonatedUserName')))
+            ->has('flash', fn(Assert $flash) => $flash
+                ->has('success')
+                ->has('error')
+                ->has('warning')
+                ->has('info'))
+            ->has('ziggy')
+            ->interacted());
+});
+
 it('shares only the fields the front actually reads from the authenticated user', function(): void {
     // O $hidden do model esconde só password e remember_token: compartilhar o
     // model inteiro mandava cpf_cnpj, phone, mobile e user_notes em toda página.
