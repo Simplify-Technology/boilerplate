@@ -19,7 +19,7 @@ final class StopImpersonateController extends Controller
     public function __invoke(Request $request): RedirectResponse
     {
         if (!$this->impersonationService->isImpersonating()) {
-            abort(403, 'Você não está personificando nenhum usuário.');
+            abort(403, 'Você não está usando o painel como outra pessoa.');
         }
 
         $originalUser = $this->impersonationService->stop();

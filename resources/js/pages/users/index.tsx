@@ -124,7 +124,7 @@ export default function Index({ users, roles, assignableRoles = [], filters = {}
     const tableColumns = useMemo(
         () => [
             { key: 'name', label: 'Nome', icon: User2 },
-            { key: 'email', label: 'Email', icon: Mail },
+            { key: 'email', label: 'E-mail', icon: Mail },
             { key: 'mobile', label: 'Celular', icon: Phone },
             { key: 'role', label: 'Cargo', icon: Shield },
             { key: 'status', label: 'Status', icon: CheckCircle },
@@ -134,7 +134,7 @@ export default function Index({ users, roles, assignableRoles = [], filters = {}
 
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Gerenciamento de Usuários" />
+            <Head title="Usuários" />
             {/* Aria live region for screen readers */}
             <div aria-live="polite" aria-atomic="true" className="sr-only">
                 {isSearching ? 'Buscando usuários...' : ''}
@@ -154,7 +154,7 @@ export default function Index({ users, roles, assignableRoles = [], filters = {}
                                             variant="ghost"
                                             size="icon"
                                             className="hover:bg-accent/50 dark:hover:bg-accent/20 hover:text-primary dark:hover:text-primary/90 h-6 w-6 transition-all duration-200 ease-in-out hover:scale-105 active:scale-95"
-                                            aria-label="Informações sobre o módulo de usuários"
+                                            aria-label="Sobre a tela de usuários"
                                         >
                                             <Info className="text-muted-foreground dark:text-muted-foreground/80 h-4 w-4 transition-colors duration-200" />
                                         </Button>
@@ -274,13 +274,13 @@ export default function Index({ users, roles, assignableRoles = [], filters = {}
                                             <EmptyState
                                                 title={
                                                     filters.search || filters.role_id !== undefined || filters.is_active !== undefined
-                                                        ? 'Nenhum usuário encontrado com os filtros aplicados'
-                                                        : 'Nenhum usuário encontrado'
+                                                        ? 'Nenhum usuário bate com esses filtros'
+                                                        : 'Nenhum usuário cadastrado ainda'
                                                 }
                                                 description={
                                                     filters.search || filters.role_id !== undefined || filters.is_active !== undefined
-                                                        ? 'Tente ajustar os critérios de busca ou limpar os filtros'
-                                                        : 'Não há usuários cadastrados no sistema'
+                                                        ? 'Limpe os filtros ou tente outro termo de busca'
+                                                        : 'Clique em "Novo Usuário" para cadastrar o primeiro'
                                                 }
                                                 icon={User2}
                                             />
@@ -309,26 +309,26 @@ export default function Index({ users, roles, assignableRoles = [], filters = {}
                 onOpenChange={setShowDeleteDialog}
                 onConfirm={handleDelete}
                 title="Excluir Usuário"
-                description="Tem certeza que deseja remover este usuário permanentemente da plataforma?"
+                description="O cadastro é apagado de vez. Não existe lixeira nem como recuperar depois."
                 itemName={userToDelete?.name}
                 itemType="Usuário"
                 icon={User2}
                 details={
                     userToDelete
                         ? [
-                              { label: 'Email', value: userToDelete.email, icon: Mail },
+                              { label: 'E-mail', value: userToDelete.email, icon: Mail },
                               { label: 'Cargo', value: userToDelete.role?.label || 'Não definido', icon: Shield },
                           ]
                         : []
                 }
                 warnings={[
                     {
-                        message: 'Todo o histórico de atividades deste usuário será permanentemente removido.',
-                        severity: 'danger',
+                        message: 'Se você só quer tirar o acesso, desative a conta: a pessoa não entra mais e o cadastro fica.',
+                        severity: 'warning',
                     },
                     {
-                        message: 'O usuário perderá acesso imediato à plataforma e não poderá fazer login.',
-                        severity: 'warning',
+                        message: 'O registro de auditoria das ações desta pessoa permanece, sem vínculo com o cadastro apagado.',
+                        severity: 'danger',
                     },
                 ]}
                 variant="danger"
@@ -386,7 +386,7 @@ export default function Index({ users, roles, assignableRoles = [], filters = {}
                 details={
                     userToRevokeRole
                         ? [
-                              { label: 'Email', value: userToRevokeRole.email, icon: Mail },
+                              { label: 'E-mail', value: userToRevokeRole.email, icon: Mail },
                               { label: 'Cargo Atual', value: userToRevokeRole.role?.label || 'Não definido', icon: Shield },
                           ]
                         : []

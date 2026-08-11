@@ -35,7 +35,7 @@ it('is idempotent on a database already in sync', function(): void {
     $this->seed(PermissionRoleSeeder::class);
 
     $this->artisan('permissions:sync')
-        ->expectsOutputToContain('Nenhum papel ou permissão órfã a remover.')
+        ->expectsOutputToContain('Nenhum cargo ou permissão órfã a remover.')
         ->assertSuccessful();
 
     expect(Role::query()->count())->toBe(count(Roles::cases()))

@@ -17,13 +17,13 @@ export function ImpersonateBanner({ active, originalUserName, impersonatedUserNa
         router.delete(route('users.impersonate.stop'));
     };
 
-    // Mostra o nome do usuário que está sendo impersonado (não o impersonador)
+    // Mostra o nome de quem está sendo usado como persona (não quem entrou)
     const displayName = impersonatedUserName || originalUserName || 'este usuário';
 
     return (
         <div className="mb-2 rounded-md bg-teal-500 px-4 py-1.5 text-center text-sm text-white">
             <span>
-                Você está impersonando <strong>{displayName}</strong>,{' '}
+                Você está usando o painel como <strong>{displayName}</strong>,{' '}
                 <a href="#" onClick={stopImpersonation} className="cursor-pointer underline hover:no-underline">
                     clique aqui para sair
                 </a>

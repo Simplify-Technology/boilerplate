@@ -42,7 +42,7 @@ export default function ResetPassword({ token, email }: ResetPasswordProps) {
             <form onSubmit={submit}>
                 <div className="grid gap-6">
                     <div className="grid gap-2">
-                        <Label htmlFor="email">Email</Label>
+                        <Label htmlFor="email">E-mail</Label>
                         <Input id="email" type="email" name="email" autoComplete="email" value={data.email} readOnly disabled={processing} />
                         <InputError message={errors.email} className="mt-2" />
                     </div>

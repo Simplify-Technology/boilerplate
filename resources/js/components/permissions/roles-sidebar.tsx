@@ -19,13 +19,13 @@ export function RolesSidebar({ roles, selectedRole, onSelectRole, totalRoles }: 
 
     return (
         <aside className="bg-card border-border/40 flex w-full shrink-0 flex-col overflow-hidden rounded-lg border shadow-sm lg:w-64 lg:max-w-xs">
-            {/* Funções Header */}
+            {/* Cargos Header */}
             <div className="bg-muted/20 border-border/30 border-b backdrop-blur-sm">
                 <div className="flex items-center gap-2 px-3 py-2">
                     <Shield className="h-4 w-4 text-cyan-600 transition-colors duration-200 dark:text-cyan-500" />
-                    <h2 className="dark:text-foreground text-base font-semibold tracking-tight">Funções</h2>
+                    <h2 className="dark:text-foreground text-base font-semibold tracking-tight">Cargos</h2>
                     <span className="text-muted-foreground/80 dark:text-muted-foreground/70 text-xs font-medium">
-                        • {totalRoles} {totalRoles === 1 ? 'função' : 'funções'}
+                        • {totalRoles} {totalRoles === 1 ? 'cargo' : 'cargos'}
                     </span>
                 </div>
             </div>

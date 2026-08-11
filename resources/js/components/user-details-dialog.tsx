@@ -94,7 +94,7 @@ export function UserDetailsDialog({ open, onOpenChange, user, canManagePermissio
                                 <div className="flex items-center space-x-2">
                                     <Mail className="text-muted-foreground h-4 w-4" />
                                     <div>
-                                        <p className="text-sm font-medium">Email</p>
+                                        <p className="text-sm font-medium">E-mail</p>
                                         <p className="text-muted-foreground text-sm">{user.email}</p>
                                     </div>
                                 </div>

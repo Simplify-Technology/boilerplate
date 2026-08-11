@@ -61,19 +61,19 @@ export function UserShowInfoDialog({ open, onOpenChange }: UserInfoDialogProps) 
             content: (
                 <ul className="space-y-1.5 text-sm">
                     <li>
-                        • <strong>Status Ativo:</strong> Usuários inativos não conseguem fazer login
+                        • <strong>Status:</strong> quem está inativo não entra no painel, mas continua na lista
                     </li>
                     <li>
-                        • <strong>Cargo:</strong> Define permissões base do usuário
+                        • <strong>Cargo:</strong> o pacote de acessos que a pessoa herda
                     </li>
                     <li>
-                        • <strong>Permissões Diretas:</strong> Permissões extras além das do cargo
+                        • <strong>Permissões extras:</strong> acessos dados a esta pessoa, que somam aos do cargo
                     </li>
                     <li>
-                        • <strong>Email Verificado:</strong> Indica se o email foi confirmado
+                        • <strong>E-mail verificado:</strong> sem confirmar, a pessoa não entra no painel
                     </li>
                     <li>
-                        • <strong>Notas:</strong> Informações adicionais registradas sobre o usuário
+                        • <strong>Notas:</strong> anotações internas, visíveis só para quem administra
                     </li>
                 </ul>
             ),

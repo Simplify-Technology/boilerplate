@@ -136,7 +136,7 @@ export function RoleUsersTable({ users, roleLabel, assignableRoles = [], onRevok
                                         <div className="flex items-center justify-center py-12">
                                             <EmptyState
                                                 title="Nenhum usuário encontrado"
-                                                description={`Nenhum usuário foi encontrado com a função de ${roleLabel}.`}
+                                                description={`Ninguém está no cargo de ${roleLabel} ainda. Atribua o cargo pela tela de usuários.`}
                                                 icon={UserX}
                                                 type="row"
                                             />

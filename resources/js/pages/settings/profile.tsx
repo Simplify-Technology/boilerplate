@@ -136,7 +136,7 @@ export default function Profile({ mustVerifyEmail, status }: ProfilePageProps) {
                                                     <h3 className="dark:text-foreground text-base font-semibold">Dados Pessoais</h3>
                                                 </div>
                                                 <p className="text-muted-foreground dark:text-muted-foreground/70 text-sm">
-                                                    Atualize seu nome e endereço de email
+                                                    Atualize seu nome e endereço de e-mail
                                                 </p>
                                             </div>
 
@@ -156,7 +156,7 @@ export default function Profile({ mustVerifyEmail, status }: ProfilePageProps) {
                                                 </div>
 
                                                 <div className="grid gap-2">
-                                                    <Label htmlFor="email">Endereço de Email</Label>
+                                                    <Label htmlFor="email">Endereço de e-mail</Label>
                                                     <Input
                                                         id="email"
                                                         type="email"
@@ -165,7 +165,7 @@ export default function Profile({ mustVerifyEmail, status }: ProfilePageProps) {
                                                         onChange={(e) => setData((prev) => ({ ...prev, email: e.target.value }))}
                                                         required
                                                         autoComplete="username"
-                                                        placeholder="Endereço de email"
+                                                        placeholder="Endereço de e-mail"
                                                     />
                                                     <InputError message={errors.email} />
                                                 </div>
@@ -174,28 +174,28 @@ export default function Profile({ mustVerifyEmail, status }: ProfilePageProps) {
 
                                         <Separator />
 
-                                        {/* Email Verification Section */}
+                                        {/* Verificação de e-mail */}
                                         {mustVerifyEmail && auth.user.email_verified_at === null && (
                                             <div>
                                                 <div className="mb-2 flex items-center gap-2">
                                                     <Mail className="h-4 w-4 text-cyan-600 transition-colors duration-200 dark:text-cyan-500" />
-                                                    <h3 className="dark:text-foreground text-base font-semibold">Verificação de Email</h3>
+                                                    <h3 className="dark:text-foreground text-base font-semibold">Verificação de e-mail</h3>
                                                 </div>
                                                 <p className="text-muted-foreground dark:text-muted-foreground/70 text-sm">
-                                                    Seu endereço de email não foi verificado.{' '}
+                                                    Seu endereço de e-mail não foi verificado.{' '}
                                                     <Link
                                                         href={route('verification.send')}
                                                         method="post"
                                                         as="button"
                                                         className="text-foreground underline decoration-neutral-300 underline-offset-4 transition-colors duration-300 ease-out hover:decoration-current! dark:decoration-neutral-500"
                                                     >
-                                                        Clique aqui para reenviar o email de verificação.
+                                                        Clique aqui para reenviar o e-mail de verificação.
                                                     </Link>
                                                 </p>
 
                                                 {status === 'verification-link-sent' && (
                                                     <div className="mt-2 text-sm font-medium text-green-600 dark:text-green-500">
-                                                        Um novo link de verificação foi enviado para seu endereço de email.
+                                                        Um novo link de verificação foi enviado para seu endereço de e-mail.
                                                     </div>
                                                 )}
                                             </div>

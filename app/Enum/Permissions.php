@@ -6,7 +6,7 @@ namespace App\Enum;
 
 enum Permissions: string
 {
-    // Gestão de Usuários/Papéis/Permissões
+    // Gestão de Usuários/Cargos/Permissões
     case MANAGE_USERS       = 'manage_users';
     case MANAGE_ROLES       = 'manage_roles';
     case MANAGE_PERMISSIONS = 'manage_permissions';
@@ -17,9 +17,9 @@ enum Permissions: string
     {
         return match ($this) {
             self::MANAGE_USERS       => 'Gerenciar Usuários',
-            self::MANAGE_ROLES       => 'Gerenciar Papéis',
+            self::MANAGE_ROLES       => 'Gerenciar Cargos',
             self::MANAGE_PERMISSIONS => 'Gerenciar Permissões',
-            self::ASSIGN_ROLES       => 'Atribuir Papéis',
+            self::ASSIGN_ROLES       => 'Atribuir Cargos',
             self::IMPERSONATE_USERS  => 'Personificar Usuários',
         };
     }

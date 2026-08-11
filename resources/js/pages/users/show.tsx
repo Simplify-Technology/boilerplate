@@ -94,7 +94,7 @@ export default function Show({ user }: ShowUserProps) {
                                                 <p className="text-foreground text-sm font-medium">{user.name}</p>
                                             </div>
                                             <div className="space-y-1.5">
-                                                <p className="text-muted-foreground text-xs font-medium">Email</p>
+                                                <p className="text-muted-foreground text-xs font-medium">E-mail</p>
                                                 <div className="flex items-center gap-1.5">
                                                     <Mail className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
                                                     <p className="text-foreground text-sm break-all">{user.email}</p>
@@ -176,7 +176,7 @@ export default function Show({ user }: ShowUserProps) {
                                                     ) : (
                                                         <>
                                                             <XCircle className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-                                                            <p className="text-muted-foreground text-sm">Não verificado</p>
+                                                            <p className="text-muted-foreground text-sm">Não verificado — o painel fica bloqueado</p>
                                                         </>
                                                     )}
                                                 </div>
@@ -230,13 +230,13 @@ export default function Show({ user }: ShowUserProps) {
                                     </Card>
                                 )}
 
-                                {/* Card: Permissões Diretas */}
+                                {/* Card: Permissões Extras */}
                                 {user.permissions && user.permissions.length > 0 && (
                                     <Card className="border-border/40">
                                         <CardContent className="px-4 py-1.5 sm:px-6">
                                             <div className="mb-4 flex items-center gap-2">
                                                 <Shield className="h-4 w-4 text-cyan-600 transition-colors duration-200 dark:text-cyan-500" />
-                                                <h3 className="text-foreground text-base font-semibold">Permissões Diretas</h3>
+                                                <h3 className="text-foreground text-base font-semibold">Permissões Extras</h3>
                                                 <span className="text-muted-foreground/70 text-xs">
                                                     ({user.permissions.length} {user.permissions.length === 1 ? 'permissão' : 'permissões'})
                                                 </span>

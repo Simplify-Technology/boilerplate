@@ -28,6 +28,9 @@ class PasswordResetLinkController extends Controller
             $request->only('email')
         );
 
-        return back()->with('status', __('A reset link will be sent if the account exists.'));
+        // Sem chave em lang/pt_BR.json, o `__()` devolvia a própria string em
+        // inglês na tela de recuperação de senha. O painel não tem i18n — o
+        // texto em pt-BR fica aqui, como no resto da aplicação.
+        return back()->with('status', 'Se existir uma conta com esse e-mail, o link de redefinição será enviado.');
     }
 }

@@ -24,7 +24,7 @@ final class StartImpersonateController extends Controller
 
         // Prevent starting new impersonation if already impersonating
         if ($this->impersonationService->isImpersonating()) {
-            abort(403, 'Você já está impersonando um usuário. Finalize a impersonação atual antes de iniciar outra.');
+            abort(403, 'Você já está usando o painel como outra pessoa. Volte para a sua conta antes de trocar de novo.');
         }
 
         // Manual user lookup since model binding is not working in tests
@@ -39,6 +39,6 @@ final class StartImpersonateController extends Controller
 
         return redirect()
             ->route('dashboard')
-            ->with('success', "Você está impersonando {$targetUser->name}");
+            ->with('success', "Você está usando o painel como {$targetUser->name}");
     }
 }

@@ -110,13 +110,13 @@ export default function Roles({ roles, assignableRoles = [], permissions }: Perm
                         <SheetTrigger asChild>
                             <Button variant="outline" size="sm" className="w-full justify-start gap-2 sm:w-auto">
                                 <Menu className="h-4 w-4 shrink-0" />
-                                <span className="font-medium">Funções</span>
+                                <span className="font-medium">Cargos</span>
                                 <span className="text-muted-foreground truncate text-xs">• {selectedRoleData.label}</span>
                             </Button>
                         </SheetTrigger>
                         <SheetContent side="left" className="w-80 p-0 sm:max-w-sm">
                             <SheetHeader className="sr-only">
-                                <SheetTitle>Selecionar Função</SheetTitle>
+                                <SheetTitle>Selecionar cargo</SheetTitle>
                             </SheetHeader>
                             <div className="h-full overflow-y-auto">
                                 <RolesSidebar roles={roles} selectedRole={selectedRole} onSelectRole={handleRoleSelect} totalRoles={totalRoles} />
@@ -127,7 +127,7 @@ export default function Roles({ roles, assignableRoles = [], permissions }: Perm
 
                 {/* Main Content */}
                 <div className="flex flex-1 flex-col gap-3 overflow-hidden lg:flex-row lg:gap-4">
-                    {/* Sidebar - Roles Navigation (Desktop) */}
+                    {/* Sidebar - Navegação de cargos (Desktop) */}
                     <div className="hidden lg:block">
                         <RolesSidebar roles={roles} selectedRole={selectedRole} onSelectRole={setSelectedRole} totalRoles={totalRoles} />
                     </div>
@@ -149,7 +149,7 @@ export default function Roles({ roles, assignableRoles = [], permissions }: Perm
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-6 w-6 shrink-0 transition-all duration-200 ease-in-out hover:scale-105 hover:bg-cyan-50 hover:text-cyan-700 active:scale-95 dark:hover:bg-cyan-950/20 dark:hover:text-cyan-400"
-                                                aria-label="Informações sobre o módulo de permissões"
+                                                aria-label="Sobre a tela de cargos"
                                             >
                                                 <Info className="text-muted-foreground dark:text-muted-foreground/80 h-4 w-4 transition-colors duration-200" />
                                             </Button>
@@ -167,7 +167,7 @@ export default function Roles({ roles, assignableRoles = [], permissions }: Perm
                                     data-active
                                 >
                                     <Shield className="h-3.5 w-3.5" />
-                                    Roles
+                                    Cargos
                                 </Button>
                             </div>
                         </div>
@@ -184,7 +184,7 @@ export default function Roles({ roles, assignableRoles = [], permissions }: Perm
                                         </div>
                                         <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3">
                                             <p className="text-muted-foreground dark:text-muted-foreground/70 text-xs sm:text-sm">
-                                                Gerencie as permissões e usuários desta função
+                                                Quem tem este cargo passa a poder fazer o que estiver marcado abaixo
                                             </p>
                                             <span className="text-muted-foreground dark:text-muted-foreground/50 hidden text-xs sm:inline">•</span>
                                             <span className="text-muted-foreground dark:text-muted-foreground/70 text-xs">
@@ -228,7 +228,7 @@ export default function Roles({ roles, assignableRoles = [], permissions }: Perm
                                         <h3 className="dark:text-foreground text-base font-semibold">Permissões Disponíveis</h3>
                                     </div>
                                     <p className="text-muted-foreground dark:text-muted-foreground/70 text-sm">
-                                        Selecione as permissões que esta função deve possuir
+                                        Marque o que este cargo libera. Vale na hora para todo mundo que já o tem.
                                     </p>
                                 </div>
                                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -250,9 +250,7 @@ export default function Roles({ roles, assignableRoles = [], permissions }: Perm
                                         <Users className="h-4 w-4 text-cyan-600 transition-colors duration-200 dark:text-cyan-500" />
                                         <h3 className="dark:text-foreground text-base font-semibold">Usuários</h3>
                                     </div>
-                                    <p className="text-muted-foreground dark:text-muted-foreground/70 mt-1 text-sm">
-                                        Usuários que possuem esta função
-                                    </p>
+                                    <p className="text-muted-foreground dark:text-muted-foreground/70 mt-1 text-sm">Quem está neste cargo hoje</p>
                                 </div>
                                 <RoleUsersTable
                                     users={usersArray}
