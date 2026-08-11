@@ -44,7 +44,7 @@ final class SyncPermissionsCommand extends Command
         {--dry-run : Mostra o que mudaria e não escreve nada}
         {--force : Não pedir confirmação em produção}';
 
-    protected $description = 'Sincroniza permissions e papéis dos enums com o banco, remove órfãs e invalida os caches de permissões';
+    protected $description = 'Sincroniza permissões e cargos dos enums com o banco, remove órfãos e invalida os caches de permissões';
 
     public function handle(): int
     {
@@ -120,7 +120,7 @@ final class SyncPermissionsCommand extends Command
 
         $this->newLine();
         $this->info(sprintf(
-            'Pronto: %d papéis, %d permissões, %d usuário(s) remanejado(s), caches de %d usuário(s) invalidados.',
+            'Pronto: %d cargos, %d permissões, %d usuário(s) remanejado(s), caches de %d usuário(s) invalidados.',
             Role::query()->count(),
             Permission::query()->count(),
             $orphanUsers->count(),
@@ -145,7 +145,7 @@ final class SyncPermissionsCommand extends Command
         array $missingPermissions,
     ): void {
         if ($missingRoles !== []) {
-            $this->info(sprintf('Papéis do enum ausentes no banco (%d): %s', count($missingRoles), implode(', ', $missingRoles)));
+            $this->info(sprintf('Cargos do enum ausentes no banco (%d): %s', count($missingRoles), implode(', ', $missingRoles)));
         }
 
         if ($missingPermissions !== []) {
@@ -153,13 +153,13 @@ final class SyncPermissionsCommand extends Command
         }
 
         if ($deadRoles->isEmpty() && $deadPermissions->isEmpty()) {
-            $this->info('Nenhum papel ou permissão órfã a remover.');
+            $this->info('Nenhum cargo ou permissão órfã a remover.');
 
             return;
         }
 
         if ($deadRoles->isNotEmpty()) {
-            $this->warn(sprintf('Papéis órfãos a remover (%d):', $deadRoles->count()));
+            $this->warn(sprintf('Cargos órfãos a remover (%d):', $deadRoles->count()));
             $this->line('  ' . $deadRoles->pluck('name')->implode(', '));
         }
 

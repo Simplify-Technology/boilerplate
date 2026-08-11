@@ -23,10 +23,10 @@ export function PasswordInfoDialog({ open, onOpenChange }: PasswordInfoDialogPro
                         Sua senha é a primeira linha de defesa da sua conta. É importante usar uma senha forte e única para proteger suas informações.
                     </p>
                     <ul className="space-y-1.5 text-sm">
-                        <li>• Use pelo menos 8 caracteres</li>
-                        <li>• Combine letras maiúsculas, minúsculas, números e símbolos</li>
-                        <li>• Evite informações pessoais óbvias</li>
-                        <li>• Não reutilize senhas de outras contas</li>
+                        <li>• Quanto mais longa, melhor — comprimento vale mais que símbolo</li>
+                        <li>• Combine maiúsculas, minúsculas, números e símbolos</li>
+                        <li>• Evite nome, data de nascimento e coisas que estão no seu perfil</li>
+                        <li>• Não reutilize a senha de outra conta</li>
                     </ul>
                 </div>
             ),
@@ -47,17 +47,21 @@ export function PasswordInfoDialog({ open, onOpenChange }: PasswordInfoDialogPro
             ),
         },
         {
-            title: 'Requisitos de Senha',
+            title: 'O que o sistema exige',
             icon: Lock,
             iconColor: 'text-blue-600 dark:text-blue-400',
             content: (
-                <ul className="space-y-1.5 text-sm">
-                    <li>• Mínimo de 8 caracteres</li>
-                    <li>• Deve conter letras e números</li>
-                    <li>• Recomendado: símbolos especiais</li>
-                    <li>• Não pode ser igual à senha anterior</li>
-                    <li>• Deve ser diferente da senha atual</li>
-                </ul>
+                <div className="space-y-2 text-sm leading-relaxed">
+                    <ul className="space-y-1.5">
+                        <li>• Pelo menos 8 caracteres</li>
+                        <li>• A senha atual, para confirmar que é você</li>
+                        <li>• A nova senha digitada duas vezes iguais</li>
+                    </ul>
+                    <p className="text-muted-foreground">
+                        É só isso. Maiúsculas, números e símbolos ajudam muito, mas o sistema não obriga — a conta fica tão protegida quanto a senha
+                        que você escolher.
+                    </p>
+                </div>
             ),
         },
         {
@@ -66,11 +70,10 @@ export function PasswordInfoDialog({ open, onOpenChange }: PasswordInfoDialogPro
             iconColor: 'text-yellow-600 dark:text-yellow-400',
             content: (
                 <ul className="space-y-1.5 text-sm">
-                    <li>• Altere sua senha regularmente (a cada 3-6 meses)</li>
-                    <li>• Use um gerenciador de senhas para criar senhas fortes</li>
-                    <li>• Nunca compartilhe sua senha com ninguém</li>
-                    <li>• Se suspeitar de acesso não autorizado, altere imediatamente</li>
-                    <li>• Ative autenticação de dois fatores se disponível</li>
+                    <li>• Use um gerenciador de senhas: ele cria e guarda senhas fortes por você</li>
+                    <li>• Nunca compartilhe sua senha, nem com quem administra o painel</li>
+                    <li>• Suspeitou de acesso indevido? Troque na hora e avise o responsável</li>
+                    <li>• Trocar a senha por trocar não ajuda — troque quando houver motivo</li>
                 </ul>
             ),
         },
@@ -81,7 +84,7 @@ export function PasswordInfoDialog({ open, onOpenChange }: PasswordInfoDialogPro
             open={open}
             onOpenChange={onOpenChange}
             title="Informações sobre Senha"
-            description="Aprenda como gerenciar e proteger sua senha de acesso à plataforma."
+            description="O que o sistema exige, e o que de fato protege sua conta."
             icon={Lock}
             iconBgColor="bg-cyan-100 dark:bg-cyan-900/40"
             iconColor="text-cyan-600 dark:text-cyan-300"

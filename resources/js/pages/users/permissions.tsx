@@ -106,7 +106,7 @@ export default function UserPermissions({ user, all_permissions }: UserPermissio
                             <div className="flex min-w-0 flex-wrap items-center gap-2">
                                 <Shield className="h-4 w-4 shrink-0 text-cyan-600 transition-colors duration-200 dark:text-cyan-500" />
                                 <h2 className="truncate text-base font-semibold tracking-tight">Permissões: {user.name}</h2>
-                                <span className="text-muted-foreground/80 text-xs font-medium">• Gerenciamento</span>
+                                <span className="text-muted-foreground/80 text-xs font-medium">• O que esta pessoa pode fazer</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Link href={route('users.index')}>
