@@ -182,11 +182,13 @@ export default function Roles({ roles, assignableRoles = [], permissions }: Perm
                                                 {selectedRoleData.label}
                                             </h2>
                                         </div>
-                                        <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3">
-                                            <p className="text-muted-foreground dark:text-muted-foreground/70 text-xs sm:text-sm">
-                                                Quem tem este cargo passa a poder fazer o que estiver marcado abaixo
+                                        {/* A quem este cargo se destina. "Gerente" sozinho não diz. */}
+                                        {selectedRoleData.description && (
+                                            <p className="text-muted-foreground dark:text-muted-foreground/70 mt-1 text-xs sm:text-sm">
+                                                {selectedRoleData.description}
                                             </p>
-                                            <span className="text-muted-foreground dark:text-muted-foreground/50 hidden text-xs sm:inline">•</span>
+                                        )}
+                                        <div className="mt-1 flex flex-wrap items-center gap-2 sm:gap-3">
                                             <span className="text-muted-foreground dark:text-muted-foreground/70 text-xs">
                                                 {Object.keys(selectedRoleData.permissions || {}).length}{' '}
                                                 {Object.keys(selectedRoleData.permissions || {}).length === 1 ? 'permissão' : 'permissões'} vinculada

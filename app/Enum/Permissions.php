@@ -23,4 +23,21 @@ enum Permissions: string
             self::IMPERSONATE_USERS  => 'Personificar Usuários',
         };
     }
+
+    /**
+     * O que a pessoa passa a conseguir fazer — em consequência, não em nome de
+     * tela. Quem monta um cargo no painel decide por esta frase, então ela vale
+     * mais que o label: "Gerenciar Permissões" e "Atribuir Cargos" são parecidos
+     * o bastante para serem trocados um pelo outro.
+     */
+    public function description(): string
+    {
+        return match ($this) {
+            self::MANAGE_USERS       => 'Criar, editar, desativar e excluir quem entra no painel.',
+            self::MANAGE_ROLES       => 'Montar os cargos: escolher o que cada um pode fazer.',
+            self::MANAGE_PERMISSIONS => 'Dar ou tirar um acesso avulso de uma pessoa, fora do cargo dela.',
+            self::ASSIGN_ROLES       => 'Trocar o cargo de outra pessoa.',
+            self::IMPERSONATE_USERS  => 'Entrar no painel como outra pessoa para reproduzir um problema.',
+        };
+    }
 }

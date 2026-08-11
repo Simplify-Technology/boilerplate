@@ -1,12 +1,25 @@
-import { Permission, Role, User } from './index';
+import { Role, User } from './index';
 
 /**
  * Tipos relacionados ao módulo de Permissões
  */
 
+/**
+ * Uma permissão como as telas de RBAC a recebem: espelha
+ * `PermissionCatalogService::forDisplay()`. Label e descrição vêm do enum
+ * `App\Enum\Permissions`, não das colunas do banco — os dois mudam juntos.
+ */
+export type PermissionOption = {
+    name: string;
+    label: string;
+    description: string;
+};
+
 export type RoleData = {
     id: number;
     label: string;
+    /** Vem de `App\Enum\Roles::description()`; `roles` não tem coluna para ela. */
+    description: string;
     permissions: Record<string, string>; // permission name -> permission label
     users: User[] | Record<number, User>; // Array ou objeto keyed por id
 };
@@ -14,7 +27,7 @@ export type RoleData = {
 export type RolesData = Record<string, RoleData>; // role name -> role data
 
 export type PermissionCardProps = {
-    permission: Permission;
+    permission: PermissionOption;
     isChecked: boolean;
     onToggle: (permissionName: string, checked: boolean) => void;
 };
@@ -35,7 +48,7 @@ export type RoleInfoDialogProps = {
 export type PermissionsPageProps = {
     roles: RolesData;
     assignableRoles?: Role[];
-    permissions: Permission[];
+    permissions: PermissionOption[];
 };
 
 export type PermissionActionHandlers = {

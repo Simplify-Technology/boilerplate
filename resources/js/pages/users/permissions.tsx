@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useFlashMessages } from '@/hooks/use-flash-messages';
 import AppLayout from '@/layouts/app-layout';
-import { BreadcrumbItem, Permission, User } from '@/types';
+import { BreadcrumbItem, User } from '@/types';
+import type { PermissionOption } from '@/types/permissions';
 import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Edit, Save, Shield, User2 } from 'lucide-react';
 import { useCallback, useMemo, useState } from 'react';
@@ -33,7 +34,7 @@ interface UserPermissionsProps {
             }>;
         };
     };
-    all_permissions: Permission[];
+    all_permissions: PermissionOption[];
 }
 
 export default function UserPermissions({ user, all_permissions }: UserPermissionsProps) {

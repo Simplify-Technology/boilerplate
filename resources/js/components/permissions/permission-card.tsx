@@ -29,7 +29,7 @@ export function PermissionCard({ permission, isChecked, onToggle }: PermissionCa
                     'dark:border-foreground/30 dark:bg-card dark:data-[state=unchecked]:bg-card',
                     'border-foreground/20',
                 )}
-                aria-label={`Permissão: ${permission.label}`}
+                aria-label={`${permission.label}: ${permission.description}`}
             />
             <div className="flex-1">
                 <div className="flex items-center gap-2">
@@ -41,6 +41,11 @@ export function PermissionCard({ permission, isChecked, onToggle }: PermissionCa
                     />
                     <span className="dark:text-foreground text-sm font-medium">{permission.label}</span>
                 </div>
+                {/* A frase é o que decide a marcação — o nome sozinho confunde
+                    "Gerenciar Permissões" com "Atribuir Cargos". */}
+                {permission.description && (
+                    <p className="text-muted-foreground dark:text-muted-foreground/80 mt-1 pl-6 text-xs leading-relaxed">{permission.description}</p>
+                )}
             </div>
         </label>
     );

@@ -33,11 +33,13 @@ test('no visible label falls back to the abandoned terms', function(): void {
     }
 });
 
-test('seeding carries the enum label into the database the screen reads', function(): void {
-    // A tela de cargos monta os cards com `permissions.label` vindo do BANCO
-    // (`PermissionRole/IndexController`), não do enum. Trocar a palavra no enum
-    // só aparece depois de `php artisan permissions:sync` — ou de um deploy que
-    // rode o seeder.
+test('seeding carries the enum label into the database', function(): void {
+    // As telas de RBAC passaram a ler label e descrição do enum, via
+    // `PermissionCatalogService` — lá a palavra nova vale na hora. Mas a coluna
+    // `permissions.label` continua sendo a fonte de outros pontos (as
+    // permissões avulsas do usuário, por `getCustomPermissionsList()`), e quem
+    // a atualiza é o seeder. Sem `php artisan permissions:sync`, esses pontos
+    // seguem mostrando a palavra antiga.
     $this->seed(Database\Seeders\PermissionRoleSeeder::class);
 
     $label = App\Models\Permission::query()
