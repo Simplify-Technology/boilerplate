@@ -28,6 +28,19 @@ final class UpdateController extends Controller
 
         $data = $request->validated();
 
+        // Select de cargo vazio significa "não mexer no cargo", não "apagar o
+        // cargo". O ConvertEmptyStringsToNull transforma `role_id=''` em null, a
+        // regra é `nullable`, e o bloco de validação de cargo abaixo é guardado
+        // por isset() — que é false para null. O resultado era o pior dos dois
+        // mundos: o null passava para o update e apagava o cargo, mas o flush de
+        // `user:{id}:permissions` (que mora dentro daquele bloco) era pulado.
+        // Como o cache é rememberForever, a pessoa perdia o cargo no banco e
+        // ficava com as permissões dele para sempre. Para remover cargo existe a
+        // rota `user.revoke-role`.
+        if (array_key_exists('role_id', $data) && $data['role_id'] === null) {
+            unset($data['role_id']);
+        }
+
         // Se estiver impersonando, usa o usuário original (impersonador) para validações
         $effectiveUser = $this->impersonationService->getOriginalUser() ?? $request->user();
         $effectiveUser->load('role');

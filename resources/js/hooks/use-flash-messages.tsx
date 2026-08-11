@@ -34,7 +34,14 @@ if (typeof window !== 'undefined' && !(window as WindowWithFlashCleanup).__flash
 }
 
 export function useFlashMessages() {
-    const { flash, url } = usePage<{ flash?: FlashMessages; url?: string }>().props;
+    // `url` vive no objeto de página do Inertia, não entre as props — e o
+    // `share()` não publica nenhuma chave `url`. Lido de `props`, era sempre
+    // `undefined`, e o reset de dedupe ao trocar de página nunca acontecia:
+    // a mesma mensagem em outra tela ficava engolida pela chave global até o
+    // intervalo de limpeza de 10s passar.
+    const page = usePage<{ flash?: FlashMessages }>();
+    const { flash } = page.props;
+    const url = page.url;
     const componentRef = useRef<{ lastFlash: string; lastUrl: string }>({
         lastFlash: '',
         lastUrl: '',

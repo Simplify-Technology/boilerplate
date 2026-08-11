@@ -59,7 +59,7 @@ export const UserTableRow = React.memo(
                         ) : (
                             <span className="text-muted-foreground/60 text-xs">-</span>
                         )}
-                        {user.custom_permissions_count && user.custom_permissions_count > 0 && (
+                        {(user.custom_permissions_count ?? 0) > 0 && (
                             <Tooltip>
                                 <TooltipTrigger asChild>
                                     <Badge

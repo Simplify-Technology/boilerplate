@@ -8,21 +8,21 @@ export function usePermissions() {
 
     if (!user) return { hasPermission: () => false, hasRole: () => false };
 
-    // Extrair nomes de permissions (pode ser array de strings ou objetos Permission)
+    // `auth.permissions` e `auth.roles` são a fonte única — o `share()` do
+    // HandleInertiaRequests sempre publica as duas. O fallback que existia aqui
+    // lia `user.permissions` e `user.role`, campos que o `auth.user` nunca
+    // carregou (as relations não são eager-loaded no share), então só devolvia
+    // lista vazia: era um segundo canal com outro shape, e sem dados.
+
+    // Aceita array de nomes (string) ou objetos Permission/Role
     const authPermissions = auth?.permissions || [];
     const permissionsNames: string[] = authPermissions.map((p: string | Permission) => (typeof p === 'string' ? p : p.name));
 
-    // Extrair nomes de roles (pode ser array de strings ou objetos Role)
     const authRoles = auth?.roles || [];
     const rolesNames: string[] = authRoles.map((r: string | Role) => (typeof r === 'string' ? r : r.name));
 
-    // Fallback: se não estiver no auth, tentar do user
-    const userPermissionsNames = permissionsNames.length > 0 ? permissionsNames : (user.permissions || []).map((p: Permission) => p.name);
-
-    const userRolesNames = rolesNames.length > 0 ? rolesNames : user.role ? [user.role.name] : [];
-
-    const userRolesSet = new Set(userRolesNames);
-    const userPermissionsSet = new Set(userPermissionsNames);
+    const userRolesSet = new Set(rolesNames);
+    const userPermissionsSet = new Set(permissionsNames);
 
     const hasRole = (role: string) => userRolesSet.has(role);
     const hasPermission = (permission: string) => userPermissionsSet.has(permission);

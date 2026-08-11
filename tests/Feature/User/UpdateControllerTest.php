@@ -2,6 +2,7 @@
 
 declare(strict_types = 1);
 
+use App\Enum\Permissions;
 use App\Enum\Roles;
 use App\Models\Role;
 
@@ -87,6 +88,33 @@ it('rejects changing your own role', function(): void {
     ])->assertSessionHasErrors(['role_id']);
 
     $this->assertDatabaseMissing('users', ['id' => $superUser->id, 'role_id' => $adminRoleId]);
+});
+
+it('treats an empty role select as "leave the role alone"', function(): void {
+    // `role_id=''` vira null no ConvertEmptyStringsToNull e passa na regra
+    // `nullable`, mas o bloco que valida troca de cargo é guardado por isset() —
+    // false para null. O null ia para o update e apagava o cargo, enquanto o
+    // flush de `user:{id}:permissions`, que mora dentro daquele bloco, era
+    // pulado: banco sem cargo, cache rememberForever com as permissões dele.
+    actingAsSuperUser();
+    $target        = userWithRole(Roles::MANAGER);
+    $managerRoleId = $target->role_id;
+
+    // Aquece o cache, como qualquer navegação real do usuário faria.
+    expect($target->hasPermissionTo(Permissions::MANAGE_USERS))->toBeTrue();
+
+    $this->put(route('users.update', $target), [
+        'name'    => 'Nome Novo',
+        'email'   => $target->email,
+        'role_id' => '',
+    ])->assertRedirect(route('users.show', $target));
+
+    $fresh = $target->fresh();
+
+    expect($fresh?->name)->toBe('Nome Novo')
+        ->and($fresh?->role_id)->toBe($managerRoleId)
+        // Banco e cache continuam contando a mesma história.
+        ->and($fresh?->hasPermissionTo(Permissions::MANAGE_USERS))->toBeTrue();
 });
 
 it('forbids a manager from assigning a role above their own', function(): void {

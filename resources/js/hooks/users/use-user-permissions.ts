@@ -54,8 +54,19 @@ export function useUserPermissions() {
         [hasPermission, auth.user.id],
     );
 
+    /**
+     * Lê `manage_permissions`, não `manage_users`. São permissões diferentes no
+     * servidor desde sempre: o item "Permissões" da linha cai no
+     * `ShowUserPermissionsController`, que autoriza por
+     * `UserPolicy::managePermissions` → `manage_permissions`. O MANAGER é
+     * semeado com a primeira e sem a segunda, então o item aparecia para ele e
+     * devolvia 403 em todos os cliques.
+     *
+     * Quem responde "consegue mexer neste usuário?" é o `canEdit`; este aqui
+     * responde só "consegue mexer no acesso AVULSO de alguém?".
+     */
     const canManagePermissions = useCallback(() => {
-        return hasPermission('manage_users');
+        return hasPermission('manage_permissions');
     }, [hasPermission]);
 
     const canAssignRoles = useCallback(() => {
