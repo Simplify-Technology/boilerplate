@@ -18,6 +18,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Requests/** | .ai/rules/requests.md |
 | app/Http/Resources/** | .ai/rules/resources.md |
 | routes/** | .ai/rules/routes.md |
+| database/migrations/** | .ai/rules/migrations.md |
 | database/seeders/** | .ai/rules/seeders.md |
 | app/Support/** | .ai/rules/support.md |
 | tests/** | .ai/rules/tests.md |
