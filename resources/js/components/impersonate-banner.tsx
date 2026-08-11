@@ -1,4 +1,4 @@
-import { router } from '@inertiajs/react';
+import { stopImpersonation as stopImpersonationVisit } from '@/lib/impersonation';
 import type { MouseEvent } from 'react';
 
 interface ImpersonateBannerProps {
@@ -14,7 +14,7 @@ export function ImpersonateBanner({ active, originalUserName, impersonatedUserNa
 
     const stopImpersonation = (e: MouseEvent<HTMLAnchorElement>) => {
         e.preventDefault();
-        router.delete(route('users.impersonate.stop'));
+        stopImpersonationVisit();
     };
 
     // Mostra o nome de quem está sendo usado como persona (não quem entrou)

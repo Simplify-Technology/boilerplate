@@ -1,3 +1,4 @@
+import { startImpersonation } from '@/lib/impersonation';
 import type { User, UserActionHandlers } from '@/types/users';
 import { router } from '@inertiajs/react';
 import { useCallback } from 'react';
@@ -49,7 +50,7 @@ export function useUserActions(options: UseUserActionsOptions = {}): UserActionH
     );
 
     const handleImpersonate = useCallback((user: User) => {
-        router.post(route('users.impersonate', user.id), {});
+        startImpersonation(user.id);
     }, []);
 
     const handleAssignRole = useCallback(() => {
