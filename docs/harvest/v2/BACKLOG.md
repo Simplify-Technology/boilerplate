@@ -12,7 +12,7 @@ Classificação: `[absorver]` · `[guard-rail]` · `[dep-nova]` (exige aprovaç�
 
 Ordenados por (impacto × generalidade) ÷ risco. Fonte de todos: ctfinance @ `b8c6d57`.
 
-### A1 · `[guard-rail]` `can:` em toda rota de escrita autenticada · P · risco baixo
+### ~~A1~~ ✅ APLICADO · PR [#52](https://github.com/Simplify-Technology/boilerplate/pull/52) · `[guard-rail]` `can:` em toda rota de escrita autenticada · P · risco baixo
 
 - **Origem:** `routes/web.php:99-102` — `POST users/{user}/impersonate` tem só `throttle:10,1`, sem `can:impersonate_users`. O boilerplate acerta hoje, mas por disciplina, não por gate.
 - **Absorver:** teste de contrato que anda por `Route::getRoutes()` e exige autorização em toda rota de escrita autenticada, com allowlist explícita. Molde pronto em `tests/Feature/Auth/AuthRouteThrottleTest.php:22-32`.

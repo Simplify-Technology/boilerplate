@@ -62,7 +62,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 4/70 células (5,7%) · BACKLOG com **12 candidatos aplicáveis** + 7 adiados + 5 rejeitados
+**Progresso:** 4/70 células (5,7%) · BACKLOG: **1 aplicado (A1)**, 11 aplicáveis, 7 adiados, 5 rejeitados
 
 ### Ponteiros levantados no inventário (entram como candidatos nas dimensões, ainda SEM veredito)
 
@@ -81,17 +81,29 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 
 ## Fatias abertas
 
-Nenhuma.
-
 | Tema | Issue | Branch | Testes | Gates | PR | Estado |
 | ---- | ----- | ------ | ------ | ----- | -- | ------ |
-| — | — | — | — | — | — | — |
+| **A1** — guard-rail: rota de escrita autenticada declara autorização | [#51](https://github.com/Simplify-Technology/boilerplate/issues/51) | `51-harvest-v2-guard-rota-escrita-autorizada` | ✅ 3 testes + 3 mutações | ✅ ambos exit 0 | [#52](https://github.com/Simplify-Technology/boilerplate/pull/52) | **aguardando merge do dono** |
+
+### A1 — o que entrou
+
+`tests/Feature/Routes/WriteRoutesAuthorizationTest.php` (novo) + linha nova em `.ai/rules/routes.md`.
+
+Verificado **por mutação**, não só por passar verde:
+
+| Mutação aplicada | Resultado |
+| ---------------- | --------- |
+| Remover `can:impersonate_users` da rota de impersonation (o furo exato do ctfinance) | ⨯ 2 testes falham, nomeando `POST users/{user}/impersonate` |
+| Somar rota de escrita autenticada sem gate | ⨯ falha nomeando a rota nova |
+| Deixar entrada morta na allowlist | ⨯ falha nomeando a entrada obsoleta |
+
+Allowlist de self-service com 7 entradas, verificada nos dois sentidos. Cobre `can:` **e** o atributo nativo `#[Authorize]` (que produz `Illuminate\Auth\Middleware\Authorize:<ability>`, não o alias) — exigência que veio da lente de atualidade.
+
+Gates rodaram de verdade: o `pre-push` disparou no worktree principal (que tem `.husky/_`), com `composer ci:check` (307 testes) e `corepack pnpm ci:check` ambos em exit 0.
 
 ## Próxima unidade
 
-**Dimensões 4–6 do ctfinance** (Fluidez frontend, UX, UI).
-
-> Nota de sequenciamento: A1/A2/A3 do BACKLOG já são fatias aplicáveis (P, risco baixo, sem tema multi-fonte pendente) e pelo protocolo teriam prioridade sobre novas células. Ficam disponíveis para a próxima invocação — a escolha entre "aplicar A1–A3 agora" e "terminar a varredura do ctfinance" é do dono.
+**A2** — FK do payload escopada por dono (`Rule::exists()->where()`), próxima fatia aplicável do BACKLOG. Depois A3, e só então as dimensões 4–6 do ctfinance.
 
 ## Vereditos das dimensões 1–3 (ctfinance)
 
