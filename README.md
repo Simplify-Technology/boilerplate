@@ -5,7 +5,7 @@ Ponto de partida para SaaS de pequeno/médio porte: **Laravel 13 + Inertia v3 + 
 ## Requisitos
 
 - PHP 8.4 + Composer
-- Node 22 + pnpm 11 via Corepack (`corepack enable`) ou mise
+- Node 24 LTS + pnpm 11 via Corepack (`corepack enable`) ou mise
 - Redis (sessão, cache, filas e Horizon)
 - MySQL (padrão do `.env.example`; os testes usam SQLite `:memory:`)
 

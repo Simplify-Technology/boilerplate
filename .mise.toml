@@ -1,4 +1,4 @@
 # Toolchain do projeto (mise). Instale com: mise install
 [tools]
-node = "22"      # mesma major do CI (matrix node: [22])
-pnpm = "11.5.3"  # mesma versão do packageManager no package.json
+node = "24"      # Node 24 LTS — mesma major do CI (matrix node: [24])
+pnpm = "11.19.0" # mesma versão do packageManager no package.json

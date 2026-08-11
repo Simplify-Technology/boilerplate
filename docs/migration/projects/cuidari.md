@@ -9,8 +9,8 @@
 | ---- | ---------------- |
 | PHP / Laravel | `^8.4` / `laravel/framework ^13.0` |
 | Inertia | `inertiajs/inertia-laravel ^3.0` + `@inertiajs/react ^3.4.0` |
-| Frontend | React `^19.2.7`, Tailwind `^4.3.0`, pnpm `11.5.3` via corepack |
-| Testes | Pest `^4.1` (95 arquivos: 88 Feature — inclui suíte `Foundation` —, 7 Unit) + 5 testes vitest |
+| Frontend | React `^19.2.7`, Tailwind `^4.3.0`, pnpm `11.5.3` via corepack (boilerplate agora em `11.19.0`/Node 24 — alinhar na Fatia 2) |
+| Testes | Pest `^4.1` (95 arquivos: 88 Feature — inclui suíte `Foundation` —, 7 Unit) + 5 testes vitest (boilerplate agora em Pest `^5.1` + Vitest `^4.1` — Fatia 2) |
 | Qualidade | Pint `^1.18`, Rector `^2.0`; **sem Larastan/PHPStan** (nem `phpstan.neon`, nem `ci:stan`) |
 | Extras | Horizon `^5.45`, dompdf `^3.1`, spatie/activitylog `^5.0`, log-viewer, Ziggy `^2.4` |
 
@@ -19,7 +19,7 @@ Fork direto do boilerplate (`composer.json` ainda se chama `simplify-technology/
 ## 2. Já em conformidade
 
 - Laravel 13 + PHP 8.4 + Inertia v3 + React 19 + Tailwind 4 + Pest 4 (todo o alvo da Fatia 3).
-- `config/inertia.php` v3 presente; pnpm 11.5.3 por corepack igual ao CI do boilerplate.
+- `config/inertia.php` v3 presente; pnpm 11.5.3 por corepack (igual ao CI antigo do boilerplate; alvo re-congelado usa 11.19.0 — Fatia 2).
 - Husky com os 4 hooks (`pre-commit`, `pre-push`, `commit-msg`, `prepare-commit-msg`), `pint.json`, `rector.php`, scripts `ci:*` no composer/package.
 - CI com jobs frontend (types/lint/format/vitest/build), backend (Pest SQLite), quality (Pint) e `semgrep.yml`.
 - RBAC próprio (`HasRolesAndPermissions`, ADR 0001) + `PermissionRoleSeeder` + comando `sync-permissions`.
@@ -45,7 +45,7 @@ Fork direto do boilerplate (`composer.json` ainda se chama `simplify-technology/
 | ----- | ----- | -------------------- |
 | 1 | **Fatia 0 — Baseline** | Não é criar o CI, é atualizá-lo para paridade: SHA-pinning, `concurrency`, job `security`, Rector sem `continue-on-error`. Documentar a suíte atual (95 arquivos) no gate. |
 | 2 | **Fatia 1 — Redes de segurança** | Larastan do zero com baseline (`phpstan.neon.dist` + `ci:stan` no `ci:check`); gate MySQL real no CI (complementa o `SchemaIdentifierLengthTest` local); smoke browser mínimo das rotas-chave (login, pacientes, PDV, O.S., financeiro). Fluxos críticos já bem cobertos — só documentar. |
-| 3 | **Fatia 2 — Tooling/CI** | Quase pronta. Falta: `dependabot.yml`, `.mise.toml`, `minimumReleaseAge: 10080`. **Antecipar `.ai/rules/` + `CLAUDE.md`/`AGENTS.md` adaptados aqui.** |
+| 3 | **Fatia 2 — Tooling/CI** | Quase pronta. Falta: `dependabot.yml`, `.mise.toml`, `minimumReleaseAge: 10080`. **Antecipar `.ai/rules/` + `CLAUDE.md`/`AGENTS.md` adaptados aqui.** Inclui toolchain de teste → alvo novo (Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19). |
 | — | **Fatia 3 (a e b) — não se aplica** | Já é L13/PHP 8.4/Inertia v3/React 19. Ressalva: copiar `lang/pt_BR` do boilerplate (ver §3) antes da Fatia 4. |
 | 4 | **Fatia 4 — Hardening** | Aplicável na íntegra + Sentry. CSP em report-only primeiro (front sem terceiros aparente — janela pode ser curta); `PiiScrubber` prioritário (dados de saúde); trap `is_active` (§3); `TRUSTED_PROXIES` antes de HSTS em produção. |
 | 5 | **Fatia 5 — Kit BR / dedupe** | Dedupe reverso (§3): substituir os originais locais pelos do boilerplate e **deletar** os locais no mesmo PR. Preservar E.164 e CPF em dígitos; sem `CpfHasher`. Trazer `masked-input.tsx` + testes do kit. |
@@ -55,9 +55,9 @@ Fork direto do boilerplate (`composer.json` ainda se chama `simplify-technology/
 
 - [ ] ⬜ Fatia 0 — Baseline (paridade do ci.yml: SHA-pinning, concurrency, job security)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan + baseline, gate MySQL, smoke browser)
-- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, .mise.toml, minimumReleaseAge, .ai/rules antecipado)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, .mise.toml, minimumReleaseAge, .ai/rules antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
 - [ ] ⬜ Fatia 4 — Hardening (headers, PiiScrubber, EnsureUserIsActive, error pages, Sentry)
 - [ ] ⬜ Fatia 5 — Kit BR / dedupe (Support/Br + utils/format + masked-input, deletar locais)
 - [ ] ⬜ Fatia 6 — Convenções (validação inline restante, rate limiters, RBAC sync, rename do pacote)
 
-Última atualização: 2026-08-10 (gap-report inicial)
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)

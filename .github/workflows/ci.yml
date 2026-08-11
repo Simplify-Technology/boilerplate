@@ -25,7 +25,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [ 22 ]
+        node: [ 24 ]
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
@@ -37,7 +37,7 @@ jobs:
       - name: Setup pnpm (Corepack)
         run: |
           corepack enable
-          corepack prepare pnpm@11.5.3 --activate
+          corepack prepare pnpm@11.19.0 --activate
           pnpm --version
 
       - name: Get pnpm store directory
@@ -92,7 +92,7 @@ jobs:
     strategy:
       matrix:
         php: [ 8.4 ]
-        node: [ 22 ] # pode expandir para [20, 22] se quiser
+        node: [ 24 ]
 
     # A suíte roda em SQLite :memory: (phpunit.xml). O MySQL existe só para o gate
     # de migrations abaixo — pega migration incompatível com MySQL que o SQLite
@@ -144,7 +144,7 @@ jobs:
       - name: Setup pnpm (Corepack)
         run: |
           corepack enable
-          corepack prepare pnpm@11.5.3 --activate
+          corepack prepare pnpm@11.19.0 --activate
           pnpm --version
 
       - name: Get pnpm store directory
@@ -237,12 +237,12 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Setup pnpm (Corepack)
         run: |
           corepack enable
-          corepack prepare pnpm@11.5.3 --activate
+          corepack prepare pnpm@11.19.0 --activate
           pnpm --version
 
       # Ambos os audits leem apenas os lockfiles — não é preciso instalar dependências.

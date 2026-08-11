@@ -11,9 +11,9 @@ Projeto **#3** na ordem do [PLAYBOOK](../PLAYBOOK.md) (§2). Fork direto deste b
 | inertiajs/inertia-laravel | `^3.0` | v3.1.0 |
 | @inertiajs/react | `^3.4.0` | 3.4.0 (React `^19.2.7`) |
 | tailwindcss | `^4.3.0` | 4.3.0 |
-| pestphp/pest | `^4.1` | v4.7.2 |
+| pestphp/pest | `^4.1` (boilerplate agora em `^5.1` — Fatia 2) | v4.7.2 |
 | rector/rector · laravel/pint | `^2.0` · `^1.18` | 2.4.5 · v1.29.1 |
-| pnpm | `packageManager: pnpm@11.5.3` (corepack) | — |
+| pnpm | `packageManager: pnpm@11.5.3` (corepack; boilerplate agora em `11.19.0`/Node 24 — Fatia 2) | — |
 | Deltas composer vs boilerplate | `league/flysystem-aws-s3-v3 ^3.0` (S3/R2) | — |
 
 **Criticidade: ALTA — está em produção** (o próprio `pnpm-workspace.yaml` documenta "Este app está em produção"). Micro-SaaS de vitrine white-label **multi-instância** (uma instância por cliente, provisionada via Ploi + `scripts/deploy/deploy.sh`), com módulos ativáveis por env: **billing Asaas** (pagamentos), signup self-service, IA de fotos, métricas first-party e tracking Meta Pixel/CAPI. Usuários ativos reais e cobrança recorrente — mas sem checkout de e-commerce em tempo real como o spinmax.
@@ -50,7 +50,7 @@ Projeto **#3** na ordem do [PLAYBOOK](../PLAYBOOK.md) (§2). Fork direto deste b
 ## 4. Fatias aplicáveis (ordem para este projeto)
 
 1. **Fatia 0 — Baseline**: parcial — CI já espelha a estrutura antiga com SHA-pinning; falta paridade com o `ci.yml` novo (job quality, job security, concurrency, service MySQL). Documentar aqui o baseline verde (106 arquivos Feature).
-2. **Fatia 2 — Tooling/CI** (antecipada, é quase toda ganha): adicionar `dependabot.yml`, `.mise.toml`; **antecipar da Fatia 6**: `.ai/rules/` + `CLAUDE.md`/`AGENTS.md` adaptados. Pint/Rector/Husky/minimumReleaseAge já prontos.
+2. **Fatia 2 — Tooling/CI** (antecipada, é quase toda ganha): adicionar `dependabot.yml`, `.mise.toml`; **antecipar da Fatia 6**: `.ai/rules/` + `CLAUDE.md`/`AGENTS.md` adaptados. Pint/Rector/Husky/minimumReleaseAge já prontos. Inclui toolchain de teste → alvo novo (Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19).
 3. **Fatia 1 — Redes de segurança**: Larastan com `--generate-baseline` + `ci:stan`; gate de migrations em MySQL 8 real; smoke browser mínimo (páginas-chave + fluxo signup/billing demo). Cobertura Feature já é forte — foco no que falta, não em rescrever.
 4. **Fatia 3 — NÃO SE APLICA** (nem 3a nem 3b: já é L13 + Inertia v3 + React 19).
 5. **Fatia 4 — Hardening**: SecurityHeaders com **CSP report-only** (allowlist Meta/Turnstile/Asaas conforme módulos ativos), SetSensitiveCacheHeaders, EnsureUserIsActive (is_active já existe — só o gate falta), PiiScrubber, páginas de erro, strict mode com report, `TRUSTED_PROXIES`. Atualizar `.env.example` + docs de env no mesmo PR (testes-guarda).
@@ -60,10 +60,10 @@ Projeto **#3** na ordem do [PLAYBOOK](../PLAYBOOK.md) (§2). Fork direto deste b
 ## 5. Estado
 
 - [ ] ⬜ Fatia 0 — Baseline (paridade do CI + baseline documentado)
-- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, mise, `.ai/rules` + CLAUDE.md antecipados)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, mise, `.ai/rules` + CLAUDE.md antecipados; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate MySQL, smoke browser)
 - [ ] ⬜ Fatia 4 — Hardening (CSP report-only → enforce, middlewares, PiiScrubber)
 - [ ] ⬜ Fatia 5 — Kit BR/dedupe (masks/format/clipboard)
 - [ ] ⬜ Fatia 6 — Convenções (validação inline, limiters, lang/pt_BR, RBAC sync)
 
-Última atualização: 2026-08-10 (gap-report inicial)
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)
