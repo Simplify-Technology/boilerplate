@@ -62,7 +62,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 4/70 células (5,7%) · BACKLOG: **1 aplicado (A1)**, 11 aplicáveis, 7 adiados, 5 rejeitados
+**Progresso:** 4/70 células (5,7%) · BACKLOG: **2 aplicados (A1, A3)**, 1 realocado (A2), 9 aplicáveis, 7 adiados, 5 rejeitados
 
 ### Ponteiros levantados no inventário (entram como candidatos nas dimensões, ainda SEM veredito)
 
@@ -84,6 +84,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | Tema | Issue | Branch | Testes | Gates | PR | Estado |
 | ---- | ----- | ------ | ------ | ----- | -- | ------ |
 | **A1** — guard-rail: rota de escrita autenticada declara autorização | [#51](https://github.com/Simplify-Technology/boilerplate/issues/51) | `51-harvest-v2-guard-rota-escrita-autorizada` | ✅ 3 testes + 3 mutações | ✅ ambos exit 0 | [#52](https://github.com/Simplify-Technology/boilerplate/pull/52) | **aguardando merge do dono** |
+| **A3** — guard-rail: shape do `share()` + espelho TS | [#53](https://github.com/Simplify-Technology/boilerplate/issues/53) | `53-harvest-v2-contrato-share-props` | ✅ 1 teste novo + 3 mutações | ✅ ambos exit 0 | [#54](https://github.com/Simplify-Technology/boilerplate/pull/54) | **aguardando merge do dono** |
 
 ### A1 — o que entrou
 
@@ -101,9 +102,45 @@ Allowlist de self-service com 7 entradas, verificada nos dois sentidos. Cobre `c
 
 Gates rodaram de verdade: o `pre-push` disparou no worktree principal (que tem `.husky/_`), com `composer ci:check` (307 testes) e `corepack pnpm ci:check` ambos em exit 0.
 
+### A3 — o que entrou
+
+`tests/Feature/SharedPropsTest.php` (teste novo) + `resources/js/types/index.d.ts` + `resources/js/hooks/use-flash-messages.tsx`.
+
+| Mutação aplicada | Resultado |
+| ---------------- | --------- |
+| Chave nova no topo do `share()` | ⨯ `Unexpected properties were found on the root level` |
+| Chave nova dentro de `auth` | ⨯ `Unexpected properties were found in scope [auth]` |
+| Chave removida de `flash` | ⨯ `Property [flash.warning] does not exist` |
+
+Dois fatos medidos que corrigem o candidato original:
+
+1. **O `interacted()` NÃO roda sozinho no escopo raiz** do `AssertableInertia` — só nos escopos aninhados. Sem a chamada explícita, o guard passava verde com uma chave `telemetry` inventada no topo. Descoberto por mutação; o teste teria nascido meio cego.
+2. **O `[key: string]: unknown` de `SharedData` não pode sair** — é exigência do constraint `PageProps` do `@inertiajs/react`; removê-lo quebra `usePage<SharedData>()` em 7 arquivos (`TS2344`). Ou seja, a metade "proibir tipo TS mais largo que o payload" do candidato A3 é **inalcançável no nível de tipo**, e é exatamente por isso que o contrato de runtime importa. Registrado em comentário no próprio arquivo para ninguém tentar de novo.
+
+Achado de brinde, na mesma direção: `flash` era publicado pelo `share()` e não existia em `SharedData` — vivia numa interface privada dentro de `use-flash-messages.tsx`, o segundo canal para o mesmo dado que o `CLAUDE.md` proíbe.
+
+## ⚠️ Observação estratégica — guard-rail vazio não é guard-rail
+
+Aplicando A1 e A3 ficou visível um limite do BACKLOG atual: **a maioria dos guard-rails restantes do ctfinance prescreve para código que o boilerplate ainda não tem.**
+
+| Candidato | Superfície no boilerplate hoje |
+| --------- | ------------------------------ |
+| A2 — FK escopada por dono | zero recursos com dono (`app/Models/` = User, Role, Permission, PermissionUser) |
+| A7 — contrato de fila do job | `app/Jobs` não existe; zero `ShouldQueue` |
+| A9 — transação + `lockForUpdate` | zero código de dinheiro; e o SQLite da suíte compila `FOR UPDATE` para string vazia |
+| A12 — enum como máquina de estado | `app/Enum` = `Permissions`, `Roles` |
+| B4 — upload em disco privado | zero `Storage::`/`UploadedFile` |
+| B6 — exception de domínio | `app/Exceptions` não existe |
+
+Teste `arch()` sobre namespace inexistente devolve layer vazia e **passa vacuamente** — vira falso conforto. A1 e A3 escaparam disso porque tinham superfície real (rotas e o `share()`).
+
+**Recomendação:** juntar A2, A7, A9, A12, B4 e B6 numa **fatia única de `.ai/rules`** — prescrição honesta para código futuro, sem teste vazio fingindo cobertura — e reservar teste executável para quando a superfície existir. Decisão do dono; não executei.
+
 ## Próxima unidade
 
-**A2** — FK do payload escopada por dono (`Rule::exists()->where()`), próxima fatia aplicável do BACKLOG. Depois A3, e só então as dimensões 4–6 do ctfinance.
+**A6** — guard-rail de invariante de banco por dialeto (`DB::statement`/`getDriverName` em migration). É o próximo com superfície real: as 6 migrations existem e o teste tem molde irmão em `tests/Feature/Foundation/SchemaIdentifierLengthTest.php`.
+
+Depois dele, ou a fatia única de regras acima, ou as dimensões 4–6 do ctfinance.
 
 ## Vereditos das dimensões 1–3 (ctfinance)
 

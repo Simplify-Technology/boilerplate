@@ -20,7 +20,10 @@ Ordenados por (impacto × generalidade) ÷ risco. Fonte de todos: ctfinance @ `b
 - **Allowlist inicial (7, self-service):** `POST logout`, `POST confirm-password`, `POST email/verification-notification` (`routes/auth.php:50,57,59`) e as rotas de `routes/settings.php`.
 - **Por que primeiro:** é o mais barato dos 20, não tem runtime, e é o guard-rail que teria pego o furo real do ctfinance.
 
-### A2 · `[absorver]` FK do payload escopada por dono · P · risco baixo
+### A2 · ⏸️ REALOCADO para fatia de regras · `[absorver]` FK do payload escopada por dono · P · risco baixo
+
+> **Por que saiu da fila de fatias (2026-08-11):** depois da correção das lentes, sobrou pouco corpo executável. O caso simples é `Rule::exists()->where()` **nativo** (nada a escrever), e o caso com scope não tem onde pousar: `app/Models/` do boilerplate só tem `User`, `Role`, `Permission` e `PermissionUser` — **nenhum recurso com dono**. Uma fatia agora entregaria prescrição em `.ai/rules/requests.md` sem call site nem teste de comportamento, o que não fecha a Definition of Done do `CLAUDE.md`. Entra na primeira fatia de regras (junto de B4 e B6, que estão na mesma situação) ou na primeira fatia que introduza um recurso com dono — o que vier antes.
+
 
 - **Origem:** `app/Http/Requests/Transaction/StoreTransactionRequest.php:207-228` — closure `validateOwnedRecord`, **duplicada byte-a-byte 4×** (`RecurringIncome/Store:104`, `RecurringIncome/Update:157`, `Transaction/Update:240`).
 - **Ideia:** `exists:tabela,id` **não escopa dono**. FK que o cliente manda no payload precisa de segunda regra confirmando propriedade — senão vaza dado cruzado sem nunca tocar rota `{id}`.
@@ -28,7 +31,7 @@ Ordenados por (impacto × generalidade) ÷ risco. Fonte de todos: ctfinance @ `b
 - **Correção da lente REFUTAR:** o contraste citado era falso — `SyncPermissionsRequest.php:22` (`exists:permissions,name`) e `AssignRoleRequest.php:30` (`exists:roles,name`) são recursos **globais**, não IDOR. A regra entra sem call site real (mesmo status de `MoneyString`/`MoneyCast` hoje).
 - **Precaução da lente RISCO:** documentar que `$this->user()` aqui é o usuário **impersonado de propósito** (escopo de dado) — contra a regra do `CLAUDE.md` que manda resolver o original via `ImpersonationService`. Sem essa nota, alguém copia a regra para checagem de privilégio e inverte o sentido.
 
-### A3 · `[guard-rail]` shape do `share()` travado por inteiro · P · risco baixo
+### ~~A3~~ ✅ APLICADO · PR [#54](https://github.com/Simplify-Technology/boilerplate/pull/54) · `[guard-rail]` shape do `share()` travado por inteiro · P · risco baixo
 
 - **Origem:** `resources/js/types/index.d.ts:7` do ctfinance tipa `Auth.user` como o `User` inteiro, mais largo do que o `share()` entrega.
 - **Lacuna no boilerplate:** `tests/Feature/SharedPropsTest.php:30` trava `has('auth.user', 4)` e os `missing()` de PII, mas **nada trava a contagem de chaves de `auth` nem o topo**.
