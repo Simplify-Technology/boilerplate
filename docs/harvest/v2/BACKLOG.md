@@ -145,7 +145,7 @@ Fonte: ctfinance @ `b8c6d57`. **Particularidade desta célula:** três dos quatr
 - **Correção de largura (lente):** 9 telas no ctfinance (não 11 — os pares citados misturavam `SearchBar` e `FilterPanel`) e **1** no boilerplate (`pages/users/index.tsx:168`). A alavancagem (primitivo que os derivados copiam) vale; a largura alegada, não.
 - **Cuidados:** X e spinner disputam o canto (`right-2` `:62` × `right-3` `:74`) — slot de largura fixa alternando conteúdo, senão o X pisca. Não remover o `aria-live` de `pages/users/index.tsx:139-141`: a lacuna é só visual.
 
-### D3 · `[guard-rail]` closure em prop não é lazy · P · risco baixo · **só doc, sem gate**
+### ~~D3~~ ✅ APLICADO · PR [#64](https://github.com/Simplify-Technology/boilerplate/pull/64) · `[guard-rail]` closure em prop não é lazy · P · risco baixo · **só doc, sem gate**
 
 - **Fato (vendor do alvo):** `PropsResolver.php:278-280,355-360` só exclui do primeiro load quem implementa `IgnoreFirstLoad` (`OptionalProp.php:5`, `DeferProp.php:5`). Closure nua resolve sempre. No ctfinance, `DashboardPageBuilder.php:151,163-165` + `dashboard.tsx:166-168` fazem o trabalho duas vezes.
 - **⚠️ Teste arch é INVIÁVEL** — barrar `=> fn(` dá falso positivo em 100 % do uso correto (`Inertia::defer(fn() => ...)` contém a string). `arch()` também não assere posição de closure dentro de call. Fatia que tentar o gate está errada.

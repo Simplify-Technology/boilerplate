@@ -62,7 +62,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 5/70 células (7,1%) · BACKLOG: **6 aplicados (A1, A3, A6, D2, D5, D4)**, 1 realocado (A2), 9 aplicáveis (8 de dim. 1–3 + D3), 7 adiados, 5 rejeitados, 9 sem veredito (dim. 4), 1 achado interno (C1)
+**Progresso:** 5/70 células (7,1%) · BACKLOG: **7 aplicados (A1, A3, A6, D2, D3, D4, D5)**, 1 realocado (A2), 8 aplicáveis (todas de dim. 1–3), 7 adiados, 5 rejeitados, 9 sem veredito (dim. 4), 1 achado interno (C1)
 
 **Baseline de gates em `main` com as 4 fatias mescladas combinadas** (medido 2026-08-11, primeira vez que rodaram juntas): `composer ci:check` 311 testes / 1678 asserções, `corepack pnpm ci:check` 25 arquivos / 158 testes. Ambos exit 0.
 
@@ -99,6 +99,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **D2** — fix: cache de prefetch sobrevive à troca de identidade | [#57](https://github.com/Simplify-Technology/boilerplate/issues/57) | `57-harvest-v2-flush-prefetch-identidade` | ✅ 7 testes + 3 mutações | ✅ ambos exit 0 | [#58](https://github.com/Simplify-Technology/boilerplate/pull/58) | ✅ **MESCLADO** 2026-08-11 |
 | **D5** — fix: spinner de busca (nunca aparecia / nunca parava) | [#59](https://github.com/Simplify-Technology/boilerplate/issues/59) | `59-harvest-v2-spinner-busca` | ✅ 8 testes + 3 mutações | ✅ ambos exit 0 | [#60](https://github.com/Simplify-Technology/boilerplate/pull/60) | **aguardando merge do dono** |
 | **D4** — fix: fundo escuro inline com literal + `color-scheme` | [#61](https://github.com/Simplify-Technology/boilerplate/issues/61) | `61-harvest-v2-fundo-inline-tema` | ✅ 4 testes + 3 mutações | ✅ ambos exit 0 | [#62](https://github.com/Simplify-Technology/boilerplate/pull/62) | **aguardando merge do dono** |
+| **D3** — docs: closure em prop de render não adia nada | [#63](https://github.com/Simplify-Technology/boilerplate/issues/63) | `63-harvest-v2-regra-props-lazy` | — (só doc; gate inviável, ver BACKLOG) | ✅ ambos exit 0 | [#64](https://github.com/Simplify-Technology/boilerplate/pull/64) | **aguardando merge do dono** |
 
 ### A1 — o que entrou
 
@@ -191,7 +192,7 @@ Teste `arch()` sobre namespace inexistente devolve layer vazia e **passa vacuame
 
 ## Próxima unidade
 
-**Fatia D3** — regra de `.ai/rules/controllers.md` sobre closure em prop (a última P da dimensão 4; só doc, **sem teste arch — é inviável**, ver BACKLOG). Depois dela a fila de P da dim. 4 seca e a próxima unidade é a **dimensão 5 (UX) do ctfinance**.
+**Dimensão 5 (UX) do ctfinance.** A fila de fatias P secou: todas as quatro da dimensão 4 estão aplicadas (D2, D3, D4, D5) e o que resta do ctfinance é ou comportamental de raio médio (A4, A5, A10), ou a fatia única de regras que aguarda sua decisão (A2/A7/A9/A12/B4/B6), ou multi-fonte represado (D6). Varrer volta a ser o que mais rende — e a dimensão 5 alimenta os temas de UX/UI que hoje estão todos represados.
 
 ## Vereditos das dimensões 1–3 (ctfinance)
 
