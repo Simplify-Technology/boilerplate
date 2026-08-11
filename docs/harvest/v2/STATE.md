@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento · **1º merge do dono em 2026-08-11 (PR #56)**
+- **Situação:** Fase 0 concluída · varredura em andamento · **as 4 primeiras fatias (A1, A3, A6, D2) MESCLADAS em 2026-08-11**
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -62,7 +62,9 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 5/70 células (7,1%) · BACKLOG: **3 aplicados (A1, A3, A6)**, 1 realocado (A2), 12 aplicáveis (8 de dim. 1–3 + D2/D3/D4/D5), 7 adiados, 5 rejeitados, 9 sem veredito (dim. 4), 1 achado interno (C1)
+**Progresso:** 5/70 células (7,1%) · BACKLOG: **5 aplicados (A1, A3, A6, D2, D5)**, 1 realocado (A2), 10 aplicáveis (8 de dim. 1–3 + D3/D4), 7 adiados, 5 rejeitados, 9 sem veredito (dim. 4), 1 achado interno (C1)
+
+**Baseline de gates em `main` com as 4 fatias mescladas combinadas** (medido 2026-08-11, primeira vez que rodaram juntas): `composer ci:check` 311 testes / 1678 asserções, `corepack pnpm ci:check` 25 arquivos / 158 testes. Ambos exit 0.
 
 ### ⚠️ O que a dimensão 4 ensinou sobre a rodada
 
@@ -91,10 +93,11 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 
 | Tema | Issue | Branch | Testes | Gates | PR | Estado |
 | ---- | ----- | ------ | ------ | ----- | -- | ------ |
-| **A1** — guard-rail: rota de escrita autenticada declara autorização | [#51](https://github.com/Simplify-Technology/boilerplate/issues/51) | `51-harvest-v2-guard-rota-escrita-autorizada` | ✅ 3 testes + 3 mutações | ✅ ambos exit 0 | [#52](https://github.com/Simplify-Technology/boilerplate/pull/52) | **aguardando merge do dono** |
-| **A3** — guard-rail: shape do `share()` + espelho TS | [#53](https://github.com/Simplify-Technology/boilerplate/issues/53) | `53-harvest-v2-contrato-share-props` | ✅ 1 teste novo + 3 mutações | ✅ ambos exit 0 | [#54](https://github.com/Simplify-Technology/boilerplate/pull/54) | **aguardando merge do dono** |
+| **A1** — guard-rail: rota de escrita autenticada declara autorização | [#51](https://github.com/Simplify-Technology/boilerplate/issues/51) | `51-harvest-v2-guard-rota-escrita-autorizada` | ✅ 3 testes + 3 mutações | ✅ ambos exit 0 | [#52](https://github.com/Simplify-Technology/boilerplate/pull/52) | ✅ **MESCLADO** 2026-08-11 |
+| **A3** — guard-rail: shape do `share()` + espelho TS | [#53](https://github.com/Simplify-Technology/boilerplate/issues/53) | `53-harvest-v2-contrato-share-props` | ✅ 1 teste novo + 3 mutações | ✅ ambos exit 0 | [#54](https://github.com/Simplify-Technology/boilerplate/pull/54) | ✅ **MESCLADO** 2026-08-11 |
 | **A6** — guard-rail: invariante de banco que vira no-op no SQLite | [#55](https://github.com/Simplify-Technology/boilerplate/issues/55) | `55-harvest-v2-guard-invariante-por-dialeto` | ✅ 3 testes + 6 mutações | ✅ ambos exit 0 | [#56](https://github.com/Simplify-Technology/boilerplate/pull/56) | ✅ **MESCLADO** 2026-08-11 17:20 |
-| **D2** — fix: cache de prefetch sobrevive à troca de identidade | [#57](https://github.com/Simplify-Technology/boilerplate/issues/57) | `57-harvest-v2-flush-prefetch-identidade` | ✅ 7 testes + 3 mutações | ✅ ambos exit 0 | [#58](https://github.com/Simplify-Technology/boilerplate/pull/58) | **aguardando merge do dono** |
+| **D2** — fix: cache de prefetch sobrevive à troca de identidade | [#57](https://github.com/Simplify-Technology/boilerplate/issues/57) | `57-harvest-v2-flush-prefetch-identidade` | ✅ 7 testes + 3 mutações | ✅ ambos exit 0 | [#58](https://github.com/Simplify-Technology/boilerplate/pull/58) | ✅ **MESCLADO** 2026-08-11 |
+| **D5** — fix: spinner de busca (nunca aparecia / nunca parava) | [#59](https://github.com/Simplify-Technology/boilerplate/issues/59) | `59-harvest-v2-spinner-busca` | ✅ 8 testes + 3 mutações | ✅ ambos exit 0 | [#60](https://github.com/Simplify-Technology/boilerplate/pull/60) | **aguardando merge do dono** |
 
 ### A1 — o que entrou
 
@@ -187,9 +190,9 @@ Teste `arch()` sobre namespace inexistente devolve layer vazia e **passa vacuame
 
 ## Próxima unidade
 
-**Fatia D5** — o spinner de busca que nunca aparece e o que nunca para (`search-bar.tsx:73` + o early-return sem reset em `use-user-filters.ts:54`). Defeito real, 2 arquivos, esforço P, não é multi-fonte.
+**Fatia D4** — o token de tema que não existe no primeiro paint (`app.blade.php:30` referencia `--color-primary-dark`, declarado só em `app.css:107`, carregado depois). Regressão datada em `c2ffbc7`.
 
-Depois: D4 (token do primeiro paint), D3 (regra de closure, só doc), então a dimensão 5 do ctfinance.
+Depois: D3 (regra de closure, só doc), então a dimensão 5 do ctfinance.
 
 ## Vereditos das dimensões 1–3 (ctfinance)
 

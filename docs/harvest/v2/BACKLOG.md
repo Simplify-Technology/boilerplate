@@ -132,7 +132,11 @@ Fonte: ctfinance @ `b8c6d57`. **Particularidade desta célula:** três dos quatr
 - **Não absorver `data-theme`:** código morto no ctfinance — escrito em 3 lugares, `grep` não acha nenhum seletor que o consuma.
 - **Fatia:** hex literal no inline + `<meta name="color-scheme">` com os hexes da marca do boilerplate + teste de sincronia blade ↔ `app.css`.
 
-### D5 · `[guard-rail]` spinner de busca é código morto — e o único visível nunca para · P · risco baixo
+### ~~D5~~ ✅ APLICADO · PR [#60](https://github.com/Simplify-Technology/boilerplate/pull/60) · `[guard-rail]` spinner de busca é código morto — e o único visível nunca para · P · risco baixo
+
+> **Correção que a aplicação trouxe (2026-08-11):** a lente prescrevia "slot de largura fixa no canto direito alternando conteúdo". Medindo, isso é **pior**: o X aparece com o campo preenchido, que é exatamente quando a busca está em curso — ele piscaria a cada tecla. O indicador foi para o **canto esquerdo**, no lugar da lupa, que já é slot fixo e cujo glifo é decorativo. Zero disputa, zero piscar, botão de limpar estável.
+
+> **Mecanismo exato do defeito B, mapeado na aplicação:** o `setIsSearching(true)` roda **antes** do `setTimeout`, e o cleanup do efeito cancela esse timeout a cada tecla. Voltar o texto ao valor aplicado cai no early-return; como o request nunca saiu, não há `onFinish` para desligar. O teste do hook foi escrito antes da correção e falhava reproduzindo o estado travado.
 
 - **Defeito no boilerplate**, `resources/js/components/data-table/search-bar.tsx:73`: `{isSearching && !value && (` — o spinner só renderiza com o campo **vazio**, nunca enquanto se digita, que é quando serviria. Estado produzido e propagado corretamente (`use-user-search.ts:31,142`, `users/use-user-filters.ts:31,154`), descartado na renderização. `grep -rln "SearchBar" resources/js/test/` → vazio.
 - **Achado que dobra a fatia:** o estado `value === '' && isSearching === true` inclui caso travado — early-return em `use-user-filters.ts:54` sem reset. O único spinner hoje visível é, com frequência, um que **nunca para**. Dois arquivos, não um.
