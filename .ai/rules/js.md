@@ -17,5 +17,8 @@ Cada página Inertia chama useFlashMessages() no topo do componente — o hook e
 ## Tabelas com Table de @radix-ui/themes, não shadcn
 Construa tabelas de listagem (e Box/Flex/Tabs dessas telas) com @radix-ui/themes — o app já é envolvido em <Theme>; não use o components/ui/table.tsx do shadcn, que existe mas não é adotado.
 
+## Troca de identidade invalida o cache de prefetch
+Iniciar e encerrar impersonation passa por startImpersonation/stopImpersonation de lib/impersonation.ts, que chamam router.flushAll() antes da visita; não chame router.post/delete com as rotas users.impersonate direto, mesmo que pareça uma linha só. O cache de prefetch do Inertia guarda respostas por URL sem noção de quem estava autenticado, os controllers devolvem 302 (não Inertia::location()), e o default do framework só invalida a URL de destino — sem o flush, uma página prefetchada com o admin logado é servida durante a personificação. Use flushAll e não cacheTags/invalidateCacheTags para escopo de identidade: tag esquecida em um Link falha aberto e vaza em silêncio, enquanto flushAll no máximo refaz alguns prefetches. Dois testes em resources/js/test/lib/ travam o contrato, incluindo a proibição de nomear as rotas fora do módulo.
+
 ## Textos de UI em português hardcoded
 O frontend é monolíngue pt_BR: escreva textos de UI (páginas React, labels, mensagens) diretamente em português, sem biblioteca de i18n nem chaves JSON.

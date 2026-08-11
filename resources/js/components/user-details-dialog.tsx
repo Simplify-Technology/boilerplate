@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import { startImpersonation } from '@/lib/impersonation';
 import { router } from '@inertiajs/react';
 import { Calendar, Eye, Key, Mail, Phone, Settings, Shield, User, UserCheck } from 'lucide-react';
 import { useState } from 'react';
@@ -46,18 +47,14 @@ export function UserDetailsDialog({ open, onOpenChange, user, canManagePermissio
 
     const handleImpersonate = () => {
         setIsImpersonating(true);
-        router.post(
-            route('users.impersonate', user.id),
-            {},
-            {
-                onSuccess: () => {
-                    // Redirect will happen automatically
-                },
-                onError: () => {
-                    setIsImpersonating(false);
-                },
+        startImpersonation(user.id, {
+            onSuccess: () => {
+                // Redirect will happen automatically
             },
-        );
+            onError: () => {
+                setIsImpersonating(false);
+            },
+        });
     };
 
     const handleManagePermissions = () => {
