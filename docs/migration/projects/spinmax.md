@@ -9,10 +9,10 @@ Projeto **#7 (último) na ordem do [PLAYBOOK](../PLAYBOOK.md)** — deliberadame
 | PHP / Laravel | `^8.4` / `^12.0` | `^8.4` / `^13.0` | ❌ Fatia 3a |
 | Inertia (back/front) | `^2.0` / `@inertiajs/react ^2.3.27` | `^3.0` / `^3.4.0` | ❌ Fatia 3b |
 | React / Tailwind / Vite | `^19.2.8` / `^4.3.3` / `^7.3.6` | 19 / 4 / 7 | ✅ paridade |
-| Pest / Pint / Rector | `^4.1` / `^1.18` / `^2.0` + `pest-plugin-browser ^4.3` | idem (sem browser) | ✅ à frente no browser |
+| Pest / Pint / Rector | `^4.1` / `^1.18` / `^2.0` + `pest-plugin-browser ^4.3` | Pest `^5.1` / idem / idem (sem browser) | ❌ Pest → Fatia 2; à frente no browser |
 | Larastan | **ausente** (sem `phpstan.neon*`; `ci:check` = pint `--test` + pest) | `^3.10`, level 6 no `ci:check` | ❌ Fatia 1 |
 | Workflows GitHub | `ci.yml` + `semgrep.yml` **ativos** (actions por tag `@v4`, sem SHA) | ativos, SHA-pinned | ajuste Fatia 0/2 |
-| pnpm / Node | `11.17.0` / Node 24 (`.mise.toml`) | `11.5.3` / Node 22 | spinmax **à frente** — não rebaixar |
+| pnpm / Node | `11.17.0` / Node 24 (`.mise.toml`) | `11.19.0` / Node 24 | boilerplate agora em 11.19/24 — alinhar na Fatia 2 |
 | Banco / fila | MySQL (prod; suíte SQLite `:memory:`) + Redis/**Horizon** `^5.48` | MySQL no gate de CI | ✅ gate já existe |
 
 Extras relevantes: **Mercado Pago** (`mercadopago/dx-php ^3.10` + `@mercadopago/sdk-react`), `owen-it/laravel-auditing ^14.0`, `resend/resend-laravel ^1.4`, Ziggy, SSR (`build:ssr`), backup GPG→R2 com restore-drill, healthcheck de fila/backup. Sem realtime/broadcast.
@@ -41,7 +41,7 @@ spinmax é a maior fonte da harvest — reconciliar drift, não re-portar:
 6. **Dois trilhos de auditoria.** Local usa `owen-it/laravel-auditing` (tabela `audits` com dados de produção + `AuditUserResolver` + fila dedicada `AUDIT_QUEUE_CONNECTION`); boilerplate usa spatie/activitylog. **Não migrar** — registrar exceção documentada na Fatia 6; verificar compat do auditing no upgrade 3a.
 7. **Resend** como provider de e-mail — escolha por cliente, fica (inventário: "no" para o boilerplate).
 8. **`tests/Contract`** roda contra sandbox MP real — manter fora dos gates de fatia (já excluído da suíte padrão).
-9. **pnpm 11.17.0 / Node 24 à frente do boilerplate** (11.5.3 / Node 22) — não rebaixar na Fatia 2; reconciliar a régua ou registrar exceção.
+9. **pnpm 11.17.0 / Node 24** — o boilerplate re-congelado alcançou e passou (11.19.0 / Node 24): Node já em paridade; alinhar pnpm 11.17→11.19 na Fatia 2 (não é mais exceção).
 10. Menores: actions por tag (sem SHA), sem `dependabot.yml`, Husky sem `pre-push`/`prepare-commit-msg` (ci:check não roda no push), sem `.ai/rules`/`CLAUDE.md` (tem AGENTS.md + skills — mesclar, não sobrescrever), sem `SetSensitiveCacheHeaders`, sem `resources/views/errors/`, validação inline em ~7 controllers (Auth/Settings/PermissionRole), só 1 rate limiter nomeado (`mp-webhook`).
 
 ## 4. Fatias aplicáveis (ordem para este projeto)
@@ -49,7 +49,7 @@ spinmax é a maior fonte da harvest — reconciliar drift, não re-portar:
 0. **Pré-requisito (§4 do playbook): smoke de checkout completo verde.** `ShopSmokeTest` existe — ampliar para o fluxo Pix/cartão com fakes (pest-plugin-browser roda no processo do teste; `Http::fake` vale). Nenhuma fatia entra sem isso.
 1. **Fatia 0 — Baseline**: CI já ativo e estruturalmente próximo do alvo (spinmax é fonte do `ci.yml` do boilerplate). Deltas: SHA-pinning das actions, reconciliar `concurrency`/jobs com o boilerplate, documentar aqui a contagem/cobertura da suíte e o que está em `browser`/`contract`.
 2. **Fatia 1 — Redes de segurança**: introduzir Larastan (`phpstan.neon.dist` + `--generate-baseline`, `ci:stan` no `ci:check`). Gate MySQL **já existe**; smoke browser **já existe** — o trabalho novo é o Larastan e o smoke de checkout do item 0.
-3. **Fatia 2 — Tooling/CI**: `dependabot.yml`, SHA-pinning, Husky `pre-push` + `prepare-commit-msg` + `format-dirty.mjs`/`get-issue-id.sh`, `minimumReleaseAge` (mesclar com os overrides locais do `pnpm-workspace.yaml`). **Não** rebaixar pnpm/Node (risco #9). Antecipar `.ai/rules/` + `CLAUDE.md` mesclando com AGENTS.md/skills locais.
+3. **Fatia 2 — Tooling/CI**: `dependabot.yml`, SHA-pinning, Husky `pre-push` + `prepare-commit-msg` + `format-dirty.mjs`/`get-issue-id.sh`, `minimumReleaseAge` (mesclar com os overrides locais do `pnpm-workspace.yaml`). Alinhar pnpm 11.17→11.19.0 (risco #9; Node 24 já em paridade). Inclui toolchain de teste → alvo novo (Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19). Antecipar `.ai/rules/` + `CLAUDE.md` mesclando com AGENTS.md/skills locais.
 4. **Fatia 3a — Laravel 12→13**: Shift + revisão manual; diffar `config/` e `lang/` (trap §4); validar Horizon e laravel-auditing na major nova; janela de baixo tráfego, staging observado dias, fila drenada no deploy.
 5. **Fatia 3b — Inertia 2→3**: receita `fad56c0` já validada em ctjuris/sorteiopix/ctfinance; republicar `config/inertia.php` v3; tipar `resolve()` em `app.tsx`/`ssr.tsx` (SSR ativo); caçar eventos renomeados/cancelamento antigo; atenção ao `@mercadopago/sdk-react` no build. Gate = tsc + eslint + prettier + vitest + `build:ssr` + Pest + **smoke de checkout**.
 6. **Fatia 4 — Hardening**: evoluir o `SecurityHeaders` local para o do boilerplate com **CSP report-only** + allowlist Mercado Pago (risco #3); `SetSensitiveCacheHeaders`; páginas de erro; strict mode com `report()`. `EnsureUserIsActive` já existe — só reconciliar com `LoginRequest`.
@@ -61,11 +61,11 @@ spinmax é a maior fonte da harvest — reconciliar drift, não re-portar:
 - [ ] ⬜ Pré-requisito — smoke de checkout completo verde (bloqueia todas as fatias)
 - [ ] ⬜ Fatia 0 — Baseline (SHA-pinning, reconciliar ci.yml, documentar suíte)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline; gate MySQL e browser já existem)
-- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, pre-push, `.ai/rules` antecipado; sem downgrade pnpm/Node)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, pre-push, `.ai/rules` antecipado; pnpm → 11.19.0; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
 - [ ] ⬜ Fatia 3a — Laravel 12→13 (Horizon/auditing compat, janela de baixo tráfego)
 - [ ] ⬜ Fatia 3b — Inertia 2→3 (receita `fad56c0` madura, SSR, sdk MP)
 - [ ] ⬜ Fatia 4 — Hardening (CSP report-only + allowlist Mercado Pago)
 - [ ] ⬜ Fatia 5 — Kit BR/dedupe (⚠️ compat do hash de CPF antes do merge)
 - [ ] ⬜ Fatia 6 — Convenções (Form Requests, rate limiters, exceção auditing/Resend)
 
-Última atualização: 2026-08-10 (gap-report inicial)
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)

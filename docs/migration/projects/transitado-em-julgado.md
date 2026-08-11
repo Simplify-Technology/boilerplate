@@ -11,8 +11,8 @@ Projeto piloto da rodada (posição 1 na ordem do [PLAYBOOK](../PLAYBOOK.md) §2
 | inertiajs/inertia-laravel | `^3.0` (lock: **v3.1.1**) | `^3.0` ✅ |
 | @inertiajs/react | `^3.6.1` | `^3.4.0` (projeto **à frente**) |
 | react / react-dom | `^19.2.7` | 19 ✅ |
-| tailwindcss / typescript / vite | `^4.3.3` / `^5.9.3` / `^7.3.6` | paridade ✅ |
-| pestphp/pest | `^4.1` (lock: **v4.7.5**) + vitest `^3.2.7` | paridade ✅ |
+| tailwindcss / typescript / vite | `^4.3.3` / `^5.9.3` / `^7.3.6` | tailwind/vite ✅; typescript: boilerplate agora em `~6.0` — gap (Fatia 2) |
+| pestphp/pest | `^4.1` (lock: **v4.7.5**) + vitest `^3.2.7` | boilerplate agora em Pest `^5.1` + Vitest `^4.1` — gap (Fatia 2) |
 | larastan/larastan | `^3.10` + `phpstan.neon.dist` nível 6, **zero erros** (desde a Fatia 1) | `^3.10`, nível 6 ✅ |
 | `require` de produção | idêntico ao boilerplate (Horizon, activitylog, ziggy, log-viewer) | ✅ |
 
@@ -35,12 +35,12 @@ Projeto piloto da rodada (posição 1 na ordem do [PLAYBOOK](../PLAYBOOK.md) §2
 
 1. **Larastan inexistente** — não está no `require-dev`, sem `phpstan.neon`, `ci:check` sem `ci:stan`. Único gap de análise estática da rodada. **[resolvido na Fatia 1]**
 2. **CI defasado estruturalmente** — sem jobs `quality` e `security` (composer/pnpm audit), sem gate de migrations em MySQL real, sem `concurrency`/`cancel-in-progress`. **[jobs/concurrency na Fatia 0; gate MySQL na Fatia 1]**
-3. **Sem `.ai/rules/`** — diretório `.ai` não existe.
+3. **Sem `.ai/rules/`** — diretório `.ai` não existe. **[resolvido na Fatia 2]**
 4. **Sem `lang/`** — boilerplate tem `lang/pt_BR` + `pt_BR.json`; mensagens de validação hoje saem em inglês.
 5. **`tests/` só tem `Feature`** — sem `Unit`, `Arch` e browser/smoke. **[`Arch` adicionado na Fatia 1; browser/smoke adiado por decisão para a Fatia 4 (par natural da CSP); `Unit` naturalmente na Fatia 5 (kit BR)]**
 6. **Hardening ausente por completo** — verificado no disco: sem `SecurityHeaders`, `SetSensitiveCacheHeaders`, `EnsureUserIsActive`, `PiiScrubber`/tap de logging, `TRUSTED_PROXIES`, páginas de erro (`errors/500.blade.php` + `error-page.tsx`) e strict mode com `report()`. `bootstrap/app.php` só registra `ViagemNoTempoLocal`, `HandleAppearance`, `HandleInertiaRequests`.
 7. **Kit BR/frontend com drift** — `resources/js/utils/format/masks.ts` é subconjunto antigo (sem `applyPhoneAutoMask`/`applyCepMask`); sem `money.ts`, sem `via-cep.ts`; `data-table/` sem `constants.ts`/`date.ts` e `query-params.ts` divergente; `users/constants.ts` divergente.
-8. **Supply-chain** — sem `.github/dependabot.yml`, sem `.mise.toml`, `pnpm-workspace.yaml` com `minimumReleaseAge: 0` (boilerplate: 10080).
+8. **Supply-chain** — sem `.github/dependabot.yml`, sem `.mise.toml`, `pnpm-workspace.yaml` com `minimumReleaseAge: 0` (boilerplate: 10080). **[resolvido na Fatia 2]**
 
 **Código local que fica (delta legítimo, não é dívida):** `ViagemNoTempoLocal` (interruptor de data dev-only), `EnsureIntimadaIdentificada` + `PortaoCapitulosService` (portão de domínio; assets respondem 404), `WhatsAppService` + módulo WhatsApp, `COWORK.md`.
 
@@ -59,7 +59,7 @@ Projeto piloto da rodada (posição 1 na ordem do [PLAYBOOK](../PLAYBOOK.md) §2
 | ----- | ------- | ----------------------- |
 | **0 — Baseline** | Sim | CI já existe; a fatia é levar `ci.yml` à paridade estrutural (jobs `quality`/`security`, concurrency, SHA-pinning) e documentar o verde atual (21 arquivos Feature). |
 | **1 — Redes de segurança** | Sim | Larastan do zero (sem baseline legado grande — projeto pequeno, mirar zero erros como o boilerplate, não baseline). Gate MySQL 8 no CI. Cobrir fluxos críticos: portão da intimada, desbloqueio por data (com relógio congelado), recados agendados, disparo WhatsApp. Smoke browser mínimo do hub. |
-| **2 — Tooling/CI** | Parcial | Pint/Rector/Husky/scripts já conformes. Falta: `dependabot.yml`, `.mise.toml`, `minimumReleaseAge: 10080`, SHA-pinning. **Antecipar `.ai/rules/` + adaptação de `CLAUDE.md`/`AGENTS.md` para cá** (recomendação da Fatia 6). |
+| **2 — Tooling/CI** | Parcial | Pint/Rector/Husky/scripts já conformes. Falta: `dependabot.yml`, `.mise.toml`, `minimumReleaseAge: 10080`, SHA-pinning. **Antecipar `.ai/rules/` + adaptação de `CLAUDE.md`/`AGENTS.md` para cá** (recomendação da Fatia 6). Inclui toolchain de teste → alvo novo (Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19). Nota: Fatias 0 e 2 (✅) fecharam contra o alvo antigo (Node 22/pnpm 11.5.3) — o realinhamento para o alvo novo é follow-up do tema desta fatia, sem reabri-las. |
 | **3a — Laravel 12→13** | **Não se aplica** | Já é L13 (v13.21.1). |
 | **3b — Inertia 2→3** | **Não se aplica** | Já é Inertia v3; frontend inclusive à frente do boilerplate (react 3.6.1). |
 | **4 — Hardening** | Sim (integral) | Nada existe hoje — copiar o pacote completo (§Fatia 4 do playbook): SecurityHeaders com CSP report-only primeiro, `stamp()` no exception handler, PiiScrubber, `TRUSTED_PROXIES`, páginas de erro, strict mode com report, `EnsureUserIsActive` (com migration `is_active`). Preservar o contrato 404-para-assets do portão. |
@@ -73,7 +73,8 @@ Ordem recomendada: **0 → 1 → 2 → 4 → 5 → 6** (3a/3b puladas).
 - [x] ✅ Fatia 0 — Baseline (CI em paridade estrutural + verde documentado) (2026-08-10)
 - [x] ✅ Fatia 1 — Redes de segurança (Larastan zero-erros, gate MySQL, fluxos críticos, Arch) (2026-08-10)
   - **Desvio registrado (decisão do dono, 2026-08-10):** smoke **browser** adiado para a Fatia 4. Racional: o ganho residual hoje (erro de runtime JS na montagem) é estreito frente ao custo (Playwright no CI, flakiness, e o relógio congelado não atravessa processo servidor/teste porque `ViagemNoTempoLocal` é no-op fora de local); o smoke server-side existente (`assertInertia` em todas as páginas-chave) cobre o resto. O browser smoke vira item da Fatia 4, cujo gate do playbook já exige "smoke browser verde" — é o detector natural de quebra por CSP.
-- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, mise, minimumReleaseAge, SHA-pinning, `.ai/rules` antecipado)
+- [x] ✅ Fatia 2 — Tooling/CI (dependabot, mise, minimumReleaseAge, SHA-pinning, `.ai/rules` antecipado) (2026-08-10)
+  - **Nota (2026-08-10, alvo re-congelado pós-update de deps):** a fatia fechou contra o alvo antigo (Node 22/pnpm 11.5.3, Pest 4/Vitest 3) — como a Fatia 0. Follow-up pendente, sem reabrir fatias: toolchain de teste → alvo novo (Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19), incluindo o realinhamento do CI/`.mise.toml` para Node 24/pnpm 11.19.
 - [ ] ⬜ Fatia 4 — Hardening (pacote completo, CSP report-only primeiro) **+ smoke browser adiado da Fatia 1** (instalar `pest-plugin-browser`/Playwright faz parte desta fatia)
 - [ ] ⬜ Fatia 5 — Kit BR / dedupe frontend
 - [ ] ⬜ Fatia 6 — Convenções (lang/pt_BR, rate limiters, kebab-case, sync trait RBAC)
@@ -95,4 +96,13 @@ Ordem recomendada: **0 → 1 → 2 → 4 → 5 → 6** (3a/3b puladas).
 - **`tests/Arch`** novo (presets `php` + `security` e regras do boilerplate adaptadas: sem `App\ValueObjects` → regra para `App\DataTransferObjects` readonly; exceções comentadas para `shuffle` do quiz e `DB::transaction` do `ReordenarController`) + testsuite `Arch` no `phpunit.xml`. Suíte: **124 testes / 669 assertions** (117 Feature + 7 Arch).
 - Gates verdes antes e depois: `composer ci:check` (agora com `ci:stan`) e `pnpm ci:check`.
 
-Última atualização: 2026-08-10 (Fatia 1 concluída; próxima: Fatia 2 — Tooling/CI)
+**Fatia 2 — concluída (2026-08-10, branch `chore/8-fatia-2-tooling`, issue #8; empilhada sobre a Fatia 1 — PRs #6/#7 ainda abertos):**
+
+- **Supply-chain:** `.github/dependabot.yml` e `.mise.toml` copiados fiéis do boilerplate; `minimumReleaseAge` 0→10080 preservando os `overrides` da #4. SHA-pinning já estava em paridade total desde a Fatia 0 (diff dos `uses:` contra o boilerplate: idêntico) — o item virou verificação, não mudança.
+- **Trap do `minimumReleaseAge` em forma nova:** o pnpm 11.5 verifica o lockfile INTEIRO contra a política (inclusive em `pnpm run`, via verify-deps) — ligar 10080 quebrou na hora porque o piso de segurança `nanoid@3.3.18` da #4 tinha 3 dias de publicado. Válvula: `minimumReleaseAgeExclude: [nanoid@3.3.18]` (version-scoped, pnpm ≥10.19), com data de remoção anotada no próprio arquivo (≥2026-08-14). Playbook §4 atualizado com a lição.
+- **`.ai/rules/` antecipado (Fatia 6-docs):** `index.md` + 18 arquivos de área, adaptados com fact-check contra o código — não cópia cega. Desvios do boilerplate: sem `value-objects.md` (não há Money/ValueObjects; a regra de DTO readonly vive em `app.md`); `tests.md` documenta os helpers próprios (`viajarPara`/`identificar`/`comoIntimada`/`escreverRecado`) e o contrato do relógio congelado, sem afirmar `preventStrayRequests` (inativo aqui); regra NOVA `conteudo.md` para `resources/conteudo/**` (server-side por contrato, recados `AAAA-MM-DD-slug.php`, mídia só via rotas allowlisted); `middleware.md` grava os contratos ViagemNoTempoLocal no-op fora de local e 404 de assets; `enum.md` separa RBAC (SCREAMING_SNAKE) do `Capitulo` (PascalCase, calendário do presente). Regras de alvo prescritivo onde o diretório ainda não existe (`commands.md`, `support.md`) e onde a Fatia 6 migrará legado (throttle nomeado; `it()` para testes novos — suíte hoje mista, 7 arquivos `it`/11 `test`).
+- **Fiação:** ponteiro em `CLAUDE.md` (Required reading → ler a linha do `index.md` cujo glob casa com o arquivo). `AGENTS.md` intocado — invariante Boost de cópia idêntica ×3; o próprio boilerplate não referencia `.ai/rules` nos docs de agente (trap nova no playbook).
+- **Drift descoberto p/ resync da Fatia 6:** Form Requests de `Musicas/` autorizam `true` (User/PermissionRole re-checam `can()` — a convenção em camadas); requests usam a string `'manage_users'` em vez do enum `Permissions`.
+- Gates verdes antes e depois: `composer ci:check` e `pnpm ci:check` (este, após a válvula do nanoid).
+
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps; Fatia 2 concluída — próxima: Fatia 4 — Hardening + smoke browser adiado da Fatia 1)

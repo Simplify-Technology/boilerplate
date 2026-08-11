@@ -9,10 +9,10 @@ Projeto **#4 na ordem do [PLAYBOOK](../PLAYBOOK.md)** — estreia a Fatia 3b (In
 | PHP / Laravel | `^8.4` / `^13.0` | `^8.4` / `^13.0` | ✅ paridade |
 | Inertia (back/front) | `^2.0` / `@inertiajs/react ^2.3.23` | `^3.0` / `^3.4.0` | ❌ Fatia 3b |
 | React / Tailwind / Vite | `^19.2.6` / `^4.3.0` / `^7.3.3` | 19 / 4 / 7 | ✅ paridade |
-| Pest / Pint / Rector | `^4.1` / `^1.18` / `^2.0` | idem | ✅ paridade |
+| Pest / Pint / Rector | `^4.1` / `^1.18` / `^2.0` | Pest `^5.1` / idem / idem | ❌ Pest → Fatia 2 (Pint/Rector ✅) |
 | Larastan | **ausente** (sem `phpstan.neon*`; `ci:check` = lint+rector+test) | `^3.10`, level 6 no `ci:check` | ❌ Fatia 1 |
 | Workflows GitHub | `ci.yml.disabled`, `semgrep.yml.disabled`, `ci-docx.yml.disabled` | ativos | ❌ Fatia 0 |
-| pnpm | `11.1.2` (packageManager) | `11.5.3` | Fatia 2 |
+| pnpm | `11.1.2` (packageManager) | `11.19.0` (+ Node 24) | Fatia 2 |
 | Banco / fila | **PostgreSQL** (`pgsql`) + Redis/Horizon | MySQL no gate de CI | adaptar gate |
 
 Extras relevantes: monorepo pnpm-workspace com sidecar Node `services/docx` (CI própria, shared secret); Sentry full-stack; S3/flysystem; `composer name` ainda é `simplify-technology/boilerplate` (nunca renomeado).
@@ -41,13 +41,13 @@ ctjuris é a **fonte** de boa parte da harvest — não re-portar, apenas reconc
 7. **Sidecar `services/docx`** — pnpm workspace + `ci-docx.yml.disabled` + `DOCX_SHARED_SECRET`. Fatias 0/2 não podem quebrar o workspace; `minimumReleaseAge` no `pnpm-workspace.yaml` afeta também o sidecar.
 8. **Multi-tenant é código próprio e fica** — `TenantContext`/scopes/`PinTenantFromUser` não têm equivalente default no boilerplate (kit é opt-in documentado). Não "limpar" na Fatia 6.
 9. **Sem `.ai/rules`** (só `.ai/mcp`) e `CLAUDE.md` próprio com protocolo SESSION.md ativo — na Fatia 2/6, **mesclar** as regras do boilerplate sem destruir o protocolo de sessão local.
-10. Menores: throttles mágicos (`throttle:6,1`, `throttle:10,1`) → rate limiters nomeados (Fatia 6); `composer name` ainda "simplify-technology/boilerplate"; sem `tests/Browser`; pnpm 11.1.2 → 11.5.3.
+10. Menores: throttles mágicos (`throttle:6,1`, `throttle:10,1`) → rate limiters nomeados (Fatia 6); `composer name` ainda "simplify-technology/boilerplate"; sem `tests/Browser`; pnpm 11.1.2 → 11.19.0.
 
 ## 4. Fatias aplicáveis (ordem para este projeto)
 
-1. **Fatia 0 — Baseline**: remover `.disabled` de `ci.yml`/`semgrep.yml` e reconciliar com o boilerplate (pnpm 11.5.3, actions por SHA, concurrency); **service `postgres` no lugar de `mysql`**; manter/reativar `ci-docx.yml` do sidecar.
+1. **Fatia 0 — Baseline**: remover `.disabled` de `ci.yml`/`semgrep.yml` e reconciliar com o boilerplate (pnpm 11.19.0, actions por SHA, concurrency); **service `postgres` no lugar de `mysql`**; manter/reativar `ci-docx.yml` do sidecar.
 2. **Fatia 1 — Redes de segurança**: introduzir Larastan (`phpstan.neon.dist` + `--generate-baseline`, `ci:stan` no `ci:check`); gate de migrations em **PostgreSQL** real; smoke browser mínimo (não há `tests/Browser`) dos fluxos críticos: login, intake WhatsApp→caso, cálculo, geração de petição (docx). Cobertura Feature/Arch/Unit já é boa — documentar contagem aqui.
-3. **Fatia 2 — Tooling/CI**: só deltas — `.mise.toml`, pnpm 11.5.3, `dependabot.yml`, SHA-pinning, `minimumReleaseAge` (testar contra o workspace docx). Hooks já são o padrão. Antecipar `.ai/rules/` + mescla de `CLAUDE.md`/`AGENTS.md`.
+3. **Fatia 2 — Tooling/CI**: só deltas — `.mise.toml`, pnpm 11.19.0, `dependabot.yml`, SHA-pinning, `minimumReleaseAge` (testar contra o workspace docx). Hooks já são o padrão. Antecipar `.ai/rules/` + mescla de `CLAUDE.md`/`AGENTS.md`. Inclui toolchain de teste → alvo novo (Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19).
 4. **Fatia 3a — NÃO se aplica** (já é L13/PHP 8.4).
 5. **Fatia 3b — Inertia 2→3**: receita `fad56c0` (gabarito via `git show`); republicar `config/inertia.php` v3; tipar `resolve()` em `app.tsx`/`ssr.tsx`; caçar eventos renomeados e cancelamento antigo nos 55 arquivos; gate = tsc + eslint + prettier + vitest + `build:ssr` + health SSR + Pest. **Primeiro projeto a rodar 3b — registrar arestas no playbook.**
 6. **Fatia 4 — Hardening**: `SecurityHeaders` (CSP **report-only** 1–2 semanas; allowlist ViaCEP/Sentry) + `stamp()` no exception handler; `SetSensitiveCacheHeaders`; `EnsureUserIsActive` (auditar sessões de inativos antes); páginas de erro; strict mode com `report()`. PiiScrubber: diff local vs boilerplate, adotar a canônica.
@@ -58,10 +58,10 @@ ctjuris é a **fonte** de boa parte da harvest — não re-portar, apenas reconc
 
 - [ ] ⬜ Fatia 0 — Baseline (CI reativado, service PostgreSQL)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate pgsql, smoke browser)
-- [ ] ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.5.3, dependabot, `.ai/rules` antecipado)
+- [ ] ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.19.0, dependabot, `.ai/rules` antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
 - [ ] ⬜ Fatia 3b — Inertia 2→3 (estreia da receita `fad56c0`)
 - [ ] ⬜ Fatia 4 — Hardening (CSP report-only, EnsureUserIsActive, error pages)
 - [ ] ⬜ Fatia 5 — Kit BR/dedupe (⚠️ compat `CpfHasher` antes do merge)
 - [ ] ⬜ Fatia 6 — Convenções (rate limiters, Form Requests, RBAC sync)
 
-Última atualização: 2026-08-10 (gap-report inicial)
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)

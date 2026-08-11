@@ -9,10 +9,10 @@ Projeto **#5 na ordem do [PLAYBOOK](../PLAYBOOK.md)** — envolve dinheiro (Pix 
 | PHP / Laravel | `^8.4` / `^12.0` | `^8.4` / `^13.0` | ❌ Fatia 3a |
 | Inertia (back/front) | `^2.0` / `@inertiajs/react ^2.3.17` | `^3.0` / `^3.4.0` | ❌ Fatia 3b |
 | React / Tailwind | `^19.2.4` / `^4.2.1` | 19 / 4 | ✅ paridade |
-| Pest / Pint / Rector | `^4.1` / `^1.18` / `^2.0` | idem | ✅ paridade |
+| Pest / Pint / Rector | `^4.1` / `^1.18` / `^2.0` | Pest `^5.1` / idem / idem | ❌ Pest → Fatia 2 (Pint/Rector ✅) |
 | Larastan | **ausente** (sem `larastan` no require-dev, sem `phpstan.neon*`; `ci:check` = lint+rector+test) | `^3.10`, level 6 no `ci:check` | ❌ Fatia 1 |
 | Workflows GitHub | `ci.yml` + `semgrep.yml` **ativos** | idem | reconciliar (Fatia 0) |
-| pnpm | `10.32.1` (packageManager) | `11.5.3` | Fatia 2 |
+| pnpm | `10.32.1` (packageManager) | `11.19.0` (+ Node 24) | Fatia 2 |
 | Banco / fila / realtime | MySQL + Redis (Horizon `^5.45`) + **Reverb** (broadcast) | MySQL no gate de CI | gate falta no CI |
 
 Extras relevantes: PWA completo (service worker, manifest, pull-to-refresh), Web Push VAPID (`webpush ^10.5`), Google OAuth (Socialite), RBAC caseiro por enum, impersonation, auditoria `owen-it/laravel-auditing ^14`, log-viewer; SSR ativo (`build:ssr` + `ssr.tsx`); 32 arquivos de teste Pest + 41 vitest; `composer name` ainda é `simplify-technology/boilerplate`.
@@ -47,9 +47,9 @@ sorteiopix é **fonte** de vários itens da harvest — não re-portar, apenas r
 
 ## 4. Fatias aplicáveis (ordem para este projeto)
 
-1. **Fatia 0 — Baseline**: reconciliar `ci.yml` com o do boilerplate (SHA-pinning, concurrency, job security, rector bloqueante, pnpm 11.5.3) **mantendo as versões atuais** (L12/Inertia 2 — o CI descreve o presente); `semgrep.yml` já é o padrão. Documentar aqui a contagem verde (32 Pest + 41 vitest).
+1. **Fatia 0 — Baseline**: reconciliar `ci.yml` com o do boilerplate (SHA-pinning, concurrency, job security, rector bloqueante, pnpm 11.19.0) **mantendo as versões atuais** (L12/Inertia 2 — o CI descreve o presente); `semgrep.yml` já é o padrão. Documentar aqui a contagem verde (32 Pest + 41 vitest).
 2. **Fatia 1 — Redes de segurança**: introduzir Larastan (`phpstan.neon.dist` + `--generate-baseline`, `ci:stan` no `ci:check`); gate de migrations em **MySQL 8 real** no CI; smoke browser mínimo (não há `tests/Browser`) dos fluxos que pagam as contas: login, criação de grupo, ciclo, **sorteio** (com `bindFixedEntropy()`), confirmação de pagamento PIX, notificações.
-3. **Fatia 2 — Tooling/CI**: só deltas — `.mise.toml`, pnpm 10.32.1→11.5.3, `dependabot.yml`, `minimumReleaseAge: 10080` no `pnpm-workspace.yaml` (preservar `onlyBuiltDependencies: esbuild`). Hooks/pint/rector já são o padrão. Antecipar `.ai/rules/` + `CLAUDE.md` mesclado ao `AGENTS.md` existente.
+3. **Fatia 2 — Tooling/CI**: só deltas — `.mise.toml`, pnpm 10.32.1→11.19.0, `dependabot.yml`, `minimumReleaseAge: 10080` no `pnpm-workspace.yaml` (preservar `onlyBuiltDependencies: esbuild`). Hooks/pint/rector já são o padrão. Antecipar `.ai/rules/` + `CLAUDE.md` mesclado ao `AGENTS.md` existente. Inclui toolchain de teste → alvo novo (Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19).
 4. **Fatia 3a — Laravel 12→13**: Shift + revisão manual; diffar `config/`, `bootstrap/app.php` e `lang/` (trap de chaves L12, §4); atenção aos 6 pacotes fora do baseline (risco #1). Gate: suíte + gate MySQL + staging com Reverb/Horizon/push funcionando e **service worker atualizando** (risco #4).
 5. **Fatia 3b — Inertia 2→3**: receita `fad56c0` já rodada no ctjuris; republicar `config/inertia.php` v3; tipar `resolve()` em `app.tsx`/`ssr.tsx`; caçar eventos renomeados/cancelamento nos 40 arquivos; gate = tsc + eslint + prettier + vitest + `build:ssr` + health SSR + Pest.
 6. **Fatia 4 — Hardening**: `SecurityHeaders` com CSP **report-only** 1–2 semanas (allowlist `wss://` Reverb, `worker-src`, googleusercontent — risco #7) + `stamp()` no exception handler; `SetSensitiveCacheHeaders`; `EnsureUserIsActive` + checagem no `LoginRequest` (auditar inativos logados antes — risco #5); páginas de erro (não existem); strict mode com `report()` + error tracking Sentry (risco #6).
@@ -60,11 +60,11 @@ sorteiopix é **fonte** de vários itens da harvest — não re-portar, apenas r
 
 - [ ] ⬜ Fatia 0 — Baseline (reconciliar ci.yml: SHA-pin, concurrency, security job)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate MySQL, smoke browser do sorteio/pagamento)
-- [ ] ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.5.3, dependabot, `.ai/rules` antecipado)
+- [ ] ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.19.0, dependabot, `.ai/rules` antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
 - [ ] ⬜ Fatia 3a — Laravel 12→13 (compat Reverb/Horizon/webpush/Socialite/auditing)
 - [ ] ⬜ Fatia 3b — Inertia 2→3 (receita `fad56c0` herdada do ctjuris)
 - [ ] ⬜ Fatia 4 — Hardening (CSP report-only c/ wss, EnsureUserIsActive, strict+report, Sentry)
 - [ ] ⬜ Fatia 5 — Kit BR/dedupe (⚠️ diff `currency.ts`/centavos antes do merge)
 - [ ] ⬜ Fatia 6 — Convenções (rate limiters, Form Requests, RBAC sync, composer name)
 
-Última atualização: 2026-08-10 (gap-report inicial)
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)

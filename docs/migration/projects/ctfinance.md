@@ -11,10 +11,10 @@ Projeto #6 na ordem do [PLAYBOOK](../PLAYBOOK.md) (§2): penúltimo, deliberadam
 | inertiajs/inertia-laravel | **^2.0** | ^3.0 |
 | @inertiajs/react | **^2.3.21** | ^3.4.0 |
 | React / Tailwind / Vite | 19.2 / 4.2 / 7.3 | paridade ✅ |
-| pestphp/pest | ^4.1 (Feature + Browser/Playwright, 115 arquivos de teste) | ^4 ✅ |
+| pestphp/pest | ^4.1 (Feature + Browser/Playwright, 115 arquivos de teste) | **^5.1** (gap — Fatia 2) |
 | larastan | **ausente** (sem phpstan.neon) | ^3.10, nível 6 |
 | pint / rector | ^1.18 / ^2.0 | presentes ✅ |
-| Node/pnpm (.mise.toml) | node 22.22.1 / **pnpm 10.33.0** | pnpm 11.5.3 |
+| Node/pnpm (.mise.toml) | node 22.22.1 / **pnpm 10.33.0** | Node 24 / pnpm 11.19.0 |
 | Extras backend | Socialite, Pulse, owen-it/laravel-auditing, log-viewer, Ziggy | — |
 
 **Criticidade: ALTA.** SaaS financeiro BR (pessoal/família/MEI) com dados financeiros persistidos de usuários e **cobrança recorrente via Asaas** (`config/billing.php`, `app/Services/Billing/AsaasService.php`, webhook com `VerifyAsaasSignature`, `EnsureSubscriptionActive`). Fluxo LGPD com exclusão agendada/hard delete já em uso. Tratar como produção com pagamento real: deploy de fatias comportamentais fora de pico e staging observado.
@@ -40,7 +40,7 @@ Projeto #6 na ordem do [PLAYBOOK](../PLAYBOOK.md) (§2): penúltimo, deliberadam
 7. **Sem Sentry** (ADR `0006-error-tracking-sentry`) e sem strict mode com report em produção.
 8. **Sem PiiScrubber nos logs** — app financeiro logando sem scrubbing de PII é risco LGPD direto; prioridade dentro da Fatia 4.
 9. **Rate limiters mágicos** (`throttle:5,1`/`10,1`/`6,1`) em vez de nomeados; ao migrar, atualizar o `AuthRouteThrottleTest` junto (o contrato é o valor, não a sintaxe).
-10. **Supply-chain incompleto:** sem `.github/dependabot.yml`; `pnpm-workspace.yaml` só tem `allowBuilds` (sem `minimumReleaseAge`); pnpm 10.33.0 vs 11.5.3 do boilerplate; SHA-pinning das actions a verificar.
+10. **Supply-chain incompleto:** sem `.github/dependabot.yml`; `pnpm-workspace.yaml` só tem `allowBuilds` (sem `minimumReleaseAge`); pnpm 10.33.0 vs 11.19.0 do boilerplate (e Node 22 vs 24); SHA-pinning das actions a verificar.
 11. **Sem `.ai/rules/`** (tem `.cursor/rules` própria) e `declare(strict_types=1)` ausente em arquivos pontuais (`EnsureSubscriptionActive`, `HandleInertiaRequests`, `HandleAppearance`).
 12. **Inline validation residual:** 7 controllers com `$request->validate(` (Fatia 6, por módulo).
 13. **PWA (vite-plugin-pwa):** o service worker cacheia bundles — no upgrade Inertia/Vite (3b), validar denylist e fluxo de update do SW junto com o `resolve-inertia-page`, senão bundle stale vira incidente.
@@ -51,7 +51,7 @@ Projeto #6 na ordem do [PLAYBOOK](../PLAYBOOK.md) (§2): penúltimo, deliberadam
 | --- | --- | --- |
 | 0 — Baseline | ✅ (auditoria de paridade) | Workflows já existem; falta paridade com o `ci.yml` do boilerplate: job `quality` com Larastan, gate MySQL 8, job `security` (composer/pnpm audit), SHA-pinning. CI descreve o presente (L12/Inertia 2). Documentar aqui a contagem/cobertura da suíte. |
 | 1 — Redes de segurança | ✅ | Foco: **Larastan + baseline** (hoje inexistente) e gate MySQL. Cobertura Feature/Browser já é forte — ampliar smoke browser para billing Asaas (assinatura de webhook + bloqueio por `EnsureSubscriptionActive`) e fluxos LGPD. |
-| 2 — Tooling/CI | ✅ (delta pequeno) | Adicionar dependabot.yml, `minimumReleaseAge: 10080`, pnpm 10→11.5.3 (+ `.mise.toml` e `packageManager`), conferir scripts `ci:*`. **Antecipar `.ai/rules/` + AGENTS.md** (reconciliar com `.cursor/rules` existente, não duplicar). |
+| 2 — Tooling/CI | ✅ (delta pequeno) | Adicionar dependabot.yml, `minimumReleaseAge: 10080`, pnpm 10→11.19.0 e Node 22→24 (+ `.mise.toml` e `packageManager`), conferir scripts `ci:*`. **Antecipar `.ai/rules/` + AGENTS.md** (reconciliar com `.cursor/rules` existente, não duplicar). Inclui toolchain de teste → alvo novo (Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19). |
 | 3a — Laravel 12→13 | ✅ | Shift + diff de `config/` e `lang/` (trap §4: chaves L12≠L13; `lang/pt_BR` local é mais completo que o do boilerplate — preservar). Staging observado antes da 3b. |
 | 3b — Inertia 2→3 | ✅ | Receita do commit `fad56c0`. Atenção extra: SSR habilitado, PWA/service worker (item 13 acima) e `resolve-inertia-page` customizado no `app.tsx`/`ssr.tsx`. Gate inclui `build:ssr` + suíte browser inteira. |
 | 4 — Hardening | ✅ (parcial) | Alinhar `SecurityHeaders`/`SetSensitiveCacheHeaders` locais à versão do boilerplate (+ `stamp()` no handler). CSP **report-only 1–2 semanas** com allowlist Asaas. Adicionar: PiiScrubber (prioridade), `EnsureUserIsActive` (trap §4: sessões vivas), TRUSTED_PROXIES, páginas de erro, strict mode + Sentry. |
@@ -62,11 +62,11 @@ Projeto #6 na ordem do [PLAYBOOK](../PLAYBOOK.md) (§2): penúltimo, deliberadam
 
 - [ ] ⬜ Fatia 0 — Baseline (paridade de CI + documentação da suíte)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan + baseline, gate MySQL, smoke billing/LGPD)
-- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, minimumReleaseAge, pnpm 11, `.ai/rules` antecipado)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, minimumReleaseAge, pnpm 11, `.ai/rules` antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
 - [ ] ⬜ Fatia 3a — Upgrade Laravel 12→13
 - [ ] ⬜ Fatia 3b — Upgrade Inertia 2→3
 - [ ] ⬜ Fatia 4 — Hardening (CSP report-only→enforce, PiiScrubber, Sentry, strict mode)
 - [ ] ⬜ Fatia 5 — Kit BR / dedupe (com testes de paridade monetária)
 - [ ] ⬜ Fatia 6 — Convenções (Form Requests, limiters nomeados, decisão de auditoria)
 
-Última atualização: 2026-08-10 (gap-report inicial)
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)
