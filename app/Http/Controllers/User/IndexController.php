@@ -9,6 +9,7 @@ use App\Http\Resources\RoleResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\RoleFilterService;
+use App\Support\Listing\ListQueryNormalizer;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -60,20 +61,17 @@ final class IndexController extends Controller
             }
         }
 
-        // Ordenação
-        $sortBy    = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-
+        // Ordenação — campo E direção vêm da URL, então os dois são normalizados
+        // antes de tocar o builder (direção fora de asc/desc faz orderBy lançar).
         $allowedSortFields = ['name', 'email', 'created_at', 'updated_at'];
 
-        if (in_array($sortBy, $allowedSortFields)) {
-            $query->orderBy($sortBy, $sortOrder);
-        } else {
-            $query->orderBy('created_at', 'desc');
-        }
+        $sortBy    = ListQueryNormalizer::sortField($request->get('sort_by'), $allowedSortFields, 'created_at');
+        $sortOrder = ListQueryNormalizer::direction($request->get('sort_order'));
 
-        // Paginação
-        $perPage = $request->get('per_page', 15);
+        $query->orderBy($sortBy, $sortOrder);
+
+        // Paginação — com piso e teto, senão ?per_page=999999 puxa a tabela inteira
+        $perPage = ListQueryNormalizer::perPage($request->get('per_page'));
         $users   = $query->paginate($perPage)->withQueryString();
 
         // Para o filtro, usa roles visíveis baseado no usuário atual da sessão

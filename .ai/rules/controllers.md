@@ -22,3 +22,6 @@ Após mutações, redirecione com uma das quatro flash keys `success|error|warni
 
 ## Validação de escrita de domínio sempre via Form Request
 Toda validação de escrita em controllers de domínio usa Form Request — nunca $request->validate() inline. O Form Request carrega rules(), authorize() com $this->user()->can(Permissions::X) espelhando o can: da rota, e messages() em pt-BR. O scaffold herdado de Auth/Settings é a única exceção.
+
+## Ordenação e page size de URL são entrada não confiável
+Em listagem, `sort_by`, `sort_order` e `per_page` chegam do cliente e não podem ir crus para o builder: direção fora de `asc`/`desc` faz `Query\Builder::orderBy()` lançar `InvalidArgumentException` (500 alcançável por link) e page size sem teto puxa a tabela inteira num request. Normalize os três com `App\Support\Listing\ListQueryNormalizer` (`sortField` com allow-list explícita, `direction`, `perPage`) antes de tocar o query builder — allow-list só do campo não basta, a direção também precisa. E o eco em `filters` publica o valor NORMALIZADO, nunca o cru: com `withQueryString()` o valor volta para a URL, e ecoar o lixo torna o erro compartilhável por link.
