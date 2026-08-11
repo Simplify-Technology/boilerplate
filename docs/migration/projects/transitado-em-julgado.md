@@ -13,7 +13,7 @@ Projeto piloto da rodada (posição 1 na ordem do [PLAYBOOK](../PLAYBOOK.md) §2
 | react / react-dom | `^19.2.7` | 19 ✅ |
 | tailwindcss / typescript / vite | `^4.3.3` / `^5.9.3` / `^7.3.6` | paridade ✅ |
 | pestphp/pest | `^4.1` (lock: **v4.7.5**) + vitest `^3.2.7` | paridade ✅ |
-| larastan/larastan | **ausente** (sem `phpstan.neon`, sem `ci:stan`) | `^3.10`, nível 6 |
+| larastan/larastan | `^3.10` + `phpstan.neon.dist` nível 6, **zero erros** (desde a Fatia 1) | `^3.10`, nível 6 ✅ |
 | `require` de produção | idêntico ao boilerplate (Horizon, activitylog, ziggy, log-viewer) | ✅ |
 
 **Criticidade:** em produção (Parte 1 "live" desde 12/06/2026), MySQL com dados persistidos modestos (users, RBAC, músicas, activity_log). **Sem pagamentos, sem realtime**; base de usuários mínima (projeto pessoal: usuária final + admin). Conteúdo **data-gated** (Parte 3 desbloqueia 23/10/2026) e integração WhatsApp Cloud API (Meta) com job mensal dia 19 — código pronto, `WHATSAPP_ENABLED=false` aguardando setup. Risco de negócio: baixo.
@@ -33,11 +33,11 @@ Projeto piloto da rodada (posição 1 na ordem do [PLAYBOOK](../PLAYBOOK.md) §2
 
 **Gaps de padrão (o que falta do boilerplate):**
 
-1. **Larastan inexistente** — não está no `require-dev`, sem `phpstan.neon`, `ci:check` sem `ci:stan`. Único gap de análise estática da rodada.
-2. **CI defasado estruturalmente** — sem jobs `quality` e `security` (composer/pnpm audit), sem gate de migrations em MySQL real, sem `concurrency`/`cancel-in-progress`.
+1. **Larastan inexistente** — não está no `require-dev`, sem `phpstan.neon`, `ci:check` sem `ci:stan`. Único gap de análise estática da rodada. **[resolvido na Fatia 1]**
+2. **CI defasado estruturalmente** — sem jobs `quality` e `security` (composer/pnpm audit), sem gate de migrations em MySQL real, sem `concurrency`/`cancel-in-progress`. **[jobs/concurrency na Fatia 0; gate MySQL na Fatia 1]**
 3. **Sem `.ai/rules/`** — diretório `.ai` não existe.
 4. **Sem `lang/`** — boilerplate tem `lang/pt_BR` + `pt_BR.json`; mensagens de validação hoje saem em inglês.
-5. **`tests/` só tem `Feature`** — sem `Unit`, `Arch` e browser/smoke.
+5. **`tests/` só tem `Feature`** — sem `Unit`, `Arch` e browser/smoke. **[`Arch` adicionado na Fatia 1; browser/smoke adiado por decisão para a Fatia 4 (par natural da CSP); `Unit` naturalmente na Fatia 5 (kit BR)]**
 6. **Hardening ausente por completo** — verificado no disco: sem `SecurityHeaders`, `SetSensitiveCacheHeaders`, `EnsureUserIsActive`, `PiiScrubber`/tap de logging, `TRUSTED_PROXIES`, páginas de erro (`errors/500.blade.php` + `error-page.tsx`) e strict mode com `report()`. `bootstrap/app.php` só registra `ViagemNoTempoLocal`, `HandleAppearance`, `HandleInertiaRequests`.
 7. **Kit BR/frontend com drift** — `resources/js/utils/format/masks.ts` é subconjunto antigo (sem `applyPhoneAutoMask`/`applyCepMask`); sem `money.ts`, sem `via-cep.ts`; `data-table/` sem `constants.ts`/`date.ts` e `query-params.ts` divergente; `users/constants.ts` divergente.
 8. **Supply-chain** — sem `.github/dependabot.yml`, sem `.mise.toml`, `pnpm-workspace.yaml` com `minimumReleaseAge: 0` (boilerplate: 10080).
@@ -49,7 +49,7 @@ Projeto piloto da rodada (posição 1 na ordem do [PLAYBOOK](../PLAYBOOK.md) §2
 - **Conteúdo data-gated:** capítulos/recados abrem por data real (`Capitulo`, recados `AAAA-MM-DD-slug.php`). Testes novos das fatias devem congelar o relógio (`Carbon::setTestNow`) para não flakear conforme o calendário; evitar deploy no entorno de 23/10/2026 (desbloqueio da Parte 3).
 - **`ViagemNoTempoLocal` é no-op fora de `local` por contrato** — qualquer mexida na pilha de middleware (Fatia 4) precisa preservar isso; um teste garantindo o no-op em produção é barato e obrigatório.
 - **Job WhatsApp dia 19** roda via scheduler/Horizon — deploys não podem deixar `schedule:work`/Horizon mortos; smoke pós-deploy deve conferir.
-- **`EnsureUserIsActive` exige coluna `is_active`** — aqui provavelmente precisa de migration própria; trap de sessões vivas do playbook §4 é irrelevante (2 usuários), mas a migration roda em MySQL de produção.
+- **`EnsureUserIsActive` e a coluna `is_active`** — verificado na Fatia 1: a coluna **já existe** desde a migration inicial (`create_users_table`, default `true`) e o factory a popula — a Fatia 4 **não** precisa de migration própria. Trap de sessões vivas do playbook §4 segue irrelevante (2 usuários).
 - **CSP:** sem gateway de pagamento, mas as páginas servem mídia própria (músicas/capítulos) — ainda assim começar em report-only, conforme Fatia 4.
 - **`minimumReleaseAge` 0→10080** pode segurar deps recém-publicadas (trap §4 do playbook).
 
@@ -71,9 +71,10 @@ Ordem recomendada: **0 → 1 → 2 → 4 → 5 → 6** (3a/3b puladas).
 ## 5. Estado
 
 - [x] ✅ Fatia 0 — Baseline (CI em paridade estrutural + verde documentado) (2026-08-10)
-- [ ] ⬜ Fatia 1 — Redes de segurança (Larastan zero-erros, gate MySQL, fluxos críticos, smoke)
+- [x] ✅ Fatia 1 — Redes de segurança (Larastan zero-erros, gate MySQL, fluxos críticos, Arch) (2026-08-10)
+  - **Desvio registrado (decisão do dono, 2026-08-10):** smoke **browser** adiado para a Fatia 4. Racional: o ganho residual hoje (erro de runtime JS na montagem) é estreito frente ao custo (Playwright no CI, flakiness, e o relógio congelado não atravessa processo servidor/teste porque `ViagemNoTempoLocal` é no-op fora de local); o smoke server-side existente (`assertInertia` em todas as páginas-chave) cobre o resto. O browser smoke vira item da Fatia 4, cujo gate do playbook já exige "smoke browser verde" — é o detector natural de quebra por CSP.
 - [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, mise, minimumReleaseAge, SHA-pinning, `.ai/rules` antecipado)
-- [ ] ⬜ Fatia 4 — Hardening (pacote completo, CSP report-only primeiro)
+- [ ] ⬜ Fatia 4 — Hardening (pacote completo, CSP report-only primeiro) **+ smoke browser adiado da Fatia 1** (instalar `pest-plugin-browser`/Playwright faz parte desta fatia)
 - [ ] ⬜ Fatia 5 — Kit BR / dedupe frontend
 - [ ] ⬜ Fatia 6 — Convenções (lang/pt_BR, rate limiters, kebab-case, sync trait RBAC)
 
@@ -84,4 +85,14 @@ Ordem recomendada: **0 → 1 → 2 → 4 → 5 → 6** (3a/3b puladas).
 - `composer ci:check` (pint `--test` + rector dry-run + pest) e `pnpm ci:check` (lint + format:check + types + vitest + build) verdes antes e depois da fatia.
 - **Desvios deliberados no CI novo:** (1) job `quality` sem step de PHPStan — Larastan só entra na Fatia 1; o CI descreve o presente. (2) job `security` nasceu com `continue-on-error: true` porque os audits acusavam advisories reais do lockfile (composer: guzzle <7.15.2, league/commonmark <2.9.0 | pnpm: axios <1.18.0 e nanoid <3.3.17, transitivos) — **resolvido no mesmo dia** (issue #4): guzzle 7.15.2 + commonmark 2.9.1 via `composer update` pontual; no pnpm, `overrides` com seletor de range no `pnpm-workspace.yaml` — nanoid 3.3.16→3.3.18, e o axios 1.17.0 (peer **opcional** do @inertiajs/core e do laravel-precognition; Inertia v3 usa fetch) saiu da árvore inteiro, pois com os peer-ranges reescritos nada mais o requeria; `continue-on-error` removido em seguida — job `security` bloqueante, paridade plena com o boilerplate.
 
-Última atualização: 2026-08-10 (Fatia 0 concluída)
+**Fatia 1 — concluída (2026-08-10, branch `chore/5-fatia-1-redes-de-seguranca`, issue #5; smoke browser adiado → Fatia 4, ver desvio no checklist):**
+
+- **Larastan:** `larastan/larastan ^3.10` no `require-dev`, `phpstan.neon.dist` copiado do boilerplate (nível 6; app, database, routes, bootstrap/app.php), `ci:stan` no `composer.json` e encadeado no `ci:check`, step "Run PHPStan (larastan)" no job `quality`. Passivo inicial de **96 erros zerado** (sem baseline, conforme decidido em §4).
+- **Como os 96 foram zerados:** tipagem portada dos arquivos de origem comum do boilerplate — models RBAC (`Role`, `Permission`, `User` + novo pivot `PermissionUser` com `->using()` no trait), `HasRolesAndPermissions` (anotações), `UserResource`/`RoleResource` (`@mixin` + fix de `toArrayCollection` via `resolve()`), `PermissionMetaDTO`, `UserFactory` (`@extends Factory<User>`), docblocks de `rules()` nos 6 Form Requests, casts `(int)` no `CpfCnpj`, e **fix de bug latente** no `RoleUserUpdatedEvent` (referenciava relação inexistente `roles`; agora `role?->name`, como no boilerplate). Domínio próprio anotado à mão (`Faixa`, `MusicaNossa`, `WhatsAppService`, `Parte1Controller`, `Roles::options`).
+- **Divergências de comportamento deliberadamente NÃO portadas** (cada uma pertence à sua fatia): `is_active` na query do `LoginRequest` (Fatia 4), `unsetRelation` no `refreshPermissionsCache` + `GuardsDemoSeeding` no `UserSeeder` + generalização do `RoleFilterService` (removeu SALES/FINANCE) + `AssignRoleRequest` extraído (tudo Fatia 6 — resync RBAC).
+- **Gate MySQL:** service `mysql:8.0` + step "Migrations (MySQL 8)" no job `backend` (DB `transitado_em_julgado_ci`), `pdo_mysql` nas extensions; validado localmente com `migrate --force` contra MySQL 8 real em banco descartável — 8 migrations OK.
+- **Fluxos críticos:** auditoria da suíte existente concluiu que **já estão cobertos** (portão da intimada com 404 de assets, desbloqueio por data com relógio congelado, recados agendados com unhappy paths, WhatsApp com `Http::fake`, no-op da `ViagemNoTempoLocal` fora de local) — nenhum teste Feature novo foi necessário.
+- **`tests/Arch`** novo (presets `php` + `security` e regras do boilerplate adaptadas: sem `App\ValueObjects` → regra para `App\DataTransferObjects` readonly; exceções comentadas para `shuffle` do quiz e `DB::transaction` do `ReordenarController`) + testsuite `Arch` no `phpunit.xml`. Suíte: **124 testes / 669 assertions** (117 Feature + 7 Arch).
+- Gates verdes antes e depois: `composer ci:check` (agora com `ci:stan`) e `pnpm ci:check`.
+
+Última atualização: 2026-08-10 (Fatia 1 concluída; próxima: Fatia 2 — Tooling/CI)
