@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\PermissionRole;
 
+use App\Enum\Roles as RolesEnum;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\RoleResource;
 use App\Http\Resources\UserResource;
-use App\Models\Permission;
+use App\Services\PermissionCatalogService;
 use App\Services\RoleFilterService;
 use Illuminate\Http\Request;
 use Inertia\Response;
@@ -13,7 +14,8 @@ use Inertia\Response;
 class IndexController extends Controller
 {
     public function __construct(
-        private readonly RoleFilterService $roleFilterService
+        private readonly RoleFilterService $roleFilterService,
+        private readonly PermissionCatalogService $permissionCatalog
     ) {
     }
 
@@ -33,8 +35,11 @@ class IndexController extends Controller
             ->mapWithKeys(function($role) {
                 return [
                     $role->name => [
-                        'id'          => $role->id,
-                        'label'       => $role->label ?? $role->name,
+                        'id'    => $role->id,
+                        'label' => $role->label ?? $role->name,
+                        // A descrição é do enum, não do banco: `roles` não tem
+                        // coluna para ela, e o enum é a fonte de verdade do RBAC.
+                        'description' => RolesEnum::tryFrom($role->name)?->description() ?? '',
                         'permissions' => $role->permissions->pluck('label', 'name'),
                         'users'       => UserResource::collection($role->users->keyBy->id),
                     ],
@@ -47,7 +52,7 @@ class IndexController extends Controller
         return inertia('permission-role/roles', [
             'roles'           => $roles,
             'assignableRoles' => $assignableRolesArray,
-            'permissions'     => Permission::all(),
+            'permissions'     => $this->permissionCatalog->forDisplay(),
         ]);
     }
 }
