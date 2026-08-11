@@ -124,7 +124,9 @@ Fonte: ctfinance @ `b8c6d57`. **Particularidade desta célula:** três dos quatr
 - **Fact-check da lente:** "o flush precisa vir antes do `router.post`, senão o redirect resolve do cache" é **falso** — o cache só é consultado em `sendRequest()` (`dist:3186`), alcançado por `router.visit`/`<Link>`; o 302 é seguido pelo axios e não reentra ali. A página velha aparece no **clique seguinte**. O bug permanece; cai só o racional de ordenação.
 - **Fatia:** `flushAll()` nos 3 call sites + regra em `.ai/rules/js.md` + 1 teste Vitest por componente. **Mutação que prova:** apagar a linha → teste quebra.
 
-### D4 · `[guard-rail]` primeiro paint em dark depende de token que ainda não existe · P · risco baixo
+### ~~D4~~ ✅ APLICADO · PR [#62](https://github.com/Simplify-Technology/boilerplate/pull/62) · `[guard-rail]` primeiro paint em dark depende de token que ainda não existe · P · risco baixo
+
+> **Medição que a aplicação acrescentou (2026-08-11):** a lente já dizia que era problema de dev, e o manifest do build confirma o mecanismo — `resources/js/app.tsx` → `css: ['assets/app-*.css']`, ou seja, o `@vite` emite `<link>` render-blocking e o token existe no primeiro paint em produção. **O ganho real em produção é a meta `color-scheme`**, não o hex: sem ela, canvas, barras de rolagem e controles nativos ignoram o tema (a página de erro já cuidava disso, o app não).
 
 - **Regressão datada no boilerplate:** `resources/views/app.blade.php:30` usa `background-color: var(--color-primary-dark)`, mas `--color-primary-dark: #0f2a44` só existe em `resources/css/app.css:107`, carregado pelo `@vite(...)` da linha 52 — **depois** do `<style>` inline da linha 23. `git blame`: era `oklch(0.14 0.006 220)` literal até `c2ffbc7` ("feat: add Aptos, Montserrat…"). A linha irmã `:25` continua literal.
 - **Correção de severidade (lente RISCO):** em produção o `@vite` emite o CSS como `<link>` render-blocking, então o token existe antes do primeiro paint e o `var()` quebrado é **latente**. A janela visível está em `composer dev` (CSS injetado por JS). A fatia conserta acoplamento frágil + canvas/scrollbars nativos — **não** vender como flash em produção.
