@@ -5,11 +5,20 @@ namespace App\Http\Middleware;
 use App\Services\ImpersonationService;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Inertia\Middleware;
 use Tighten\Ziggy\Ziggy;
 
 class HandleInertiaRequests extends Middleware
 {
+    /**
+     * Campos do usuário autenticado publicados em toda página. Mexer aqui exige
+     * atualizar o tipo `AuthUser` em resources/js/types no mesmo commit.
+     *
+     * @var list<string>
+     */
+    private const SHARED_USER_FIELDS = ['id', 'name', 'email', 'email_verified_at'];
+
     protected $rootView = 'app';
 
     public function version(Request $request): ?string
@@ -39,7 +48,12 @@ class HandleInertiaRequests extends Middleware
             'name'  => config('app.name'),
             'quote' => ['message' => trim($message), 'author' => trim($author)],
             'auth'  => [
-                'user'          => $user,
+                // Só o que o front realmente lê. `$hidden` do model esconde
+                // apenas password e remember_token, então compartilhar o model
+                // inteiro mandava cpf_cnpj, phone, mobile e user_notes em TODA
+                // navegação do painel, para qualquer tela. O espelho deste shape
+                // é o tipo `AuthUser` em resources/js/types.
+                'user'          => $user ? Arr::only($user->toArray(), self::SHARED_USER_FIELDS) : null,
                 'permissions'   => $permissions,
                 'roles'         => $roles,
                 'impersonating' => [

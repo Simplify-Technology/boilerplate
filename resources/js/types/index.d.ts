@@ -2,8 +2,25 @@ import { LucideIcon } from 'lucide-react';
 import { ReactNode } from 'react';
 import type { Config } from 'ziggy-js';
 
+/**
+ * Usuário autenticado como ele chega em toda página, e nada além disso.
+ * Espelha `HandleInertiaRequests::SHARED_USER_FIELDS` — os dois mudam juntos.
+ *
+ * Cargo e permissões NÃO vêm por aqui: são `auth.roles` e `auth.permissions`.
+ * Para o usuário completo (cpf_cnpj, phone, mobile, user_notes) use o `User`
+ * que as páginas do módulo recebem via `UserResource`.
+ */
+export interface AuthUser {
+    id: number;
+    name: string;
+    email: string;
+    email_verified_at: string | null;
+    /** Nunca vem do servidor — só existe para o `<AvatarImage>`. */
+    avatar?: string;
+}
+
 export interface Auth {
-    user: User;
+    user: AuthUser;
     roles: string[] | Role[]; // Array de nomes (string) ou objetos Role
     permissions: string[] | Permission[]; // Array de nomes (string) ou objetos Permission
     impersonating?: {
