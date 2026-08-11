@@ -49,8 +49,17 @@ export function useUserFilters({ initialFilters = {}, routeName, debounceMs = SE
 
     // Debounced search effect - só dispara quando usuário digita
     useEffect(() => {
-        // Pula mount inicial e se busca já corresponde ao filtro atual
-        if (isInitialMount.current || localSearch === (initialFilters.search || '')) {
+        if (isInitialMount.current) {
+            return;
+        }
+
+        // O texto voltou ao que já está aplicado — nada a buscar. O cleanup do
+        // ciclo anterior já cancelou o timeout, então o `onFinish` que
+        // desligaria isSearching nunca vai acontecer: sem este reset, o estado
+        // fica preso em true (e a barra passa a exibir um spinner que não para).
+        if (localSearch === (initialFilters.search || '')) {
+            setIsSearching(false);
+
             return;
         }
 
