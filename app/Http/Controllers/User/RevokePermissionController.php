@@ -20,7 +20,7 @@ final class RevokePermissionController extends Controller
 
     public function __invoke(User $user, string $permission): RedirectResponse
     {
-        Gate::authorize('managePermissions', $user);
+        Gate::authorize('mutatePermissions', $user);
 
         $permissionModel = Permission::where('name', $permission)->firstOrFail();
 

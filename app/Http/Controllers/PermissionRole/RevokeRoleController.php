@@ -15,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 
 final class RevokeRoleController extends Controller
@@ -45,6 +46,24 @@ final class RevokeRoleController extends Controller
         // Impede que usuário remova cargo de si mesmo (verifica o usuário efetivo)
         if ($effectiveUser->id === $user->id) {
             return redirect()->back()->withErrors(['error' => 'Você não pode remover o seu próprio cargo!']);
+        }
+
+        // Teto sobre o cargo ATUAL do alvo. A checagem abaixo pergunta apenas se
+        // o ator poderia atribuir `visitor` — e todo mundo com `assign_roles`
+        // pode, porque `visitor` é o piso. Sem esta guarda, um gerente (70)
+        // jogava o administrador (90) em `visitor` e o trancava fora do painel.
+        if (Gate::denies('assignRole', $user)) {
+            Log::warning('User attempted to revoke the role of a user at or above their own priority', [
+                'auth_user_id'      => $authUser->id,
+                'effective_user_id' => $effectiveUser->id,
+                'target_user_id'    => $user->id,
+                'target_user_role'  => $user->role?->name,
+                'is_impersonating'  => $this->impersonationService->isImpersonating(),
+            ]);
+
+            return redirect()->back()->withErrors([
+                'error' => 'Você não pode remover o cargo deste usuário!',
+            ]);
         }
 
         // Verifica se pode atribuir o role VISITOR (mesma validação de prioridade)

@@ -20,7 +20,7 @@ final class GrantPermissionController extends Controller
 
     public function __invoke(GrantPermissionRequest $request, User $user): RedirectResponse
     {
-        Gate::authorize('managePermissions', $user);
+        Gate::authorize('mutatePermissions', $user);
 
         $this->permissionManagementService->grantPermissionToUser(
             user: $user,

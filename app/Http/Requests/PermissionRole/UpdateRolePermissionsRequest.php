@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types = 1);
+
 namespace App\Http\Requests\PermissionRole;
 
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
-class UpdateRolePermissionsRequest extends FormRequest
+final class UpdateRolePermissionsRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -23,6 +25,9 @@ class UpdateRolePermissionsRequest extends FormRequest
         ];
     }
 
+    /**
+     * @return array<string, string>
+     */
     public function messages(): array
     {
         return [

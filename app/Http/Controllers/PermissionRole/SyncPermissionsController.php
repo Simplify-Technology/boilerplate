@@ -16,7 +16,7 @@ final class SyncPermissionsController extends Controller
 {
     public function __invoke(SyncPermissionsRequest $request, User $user): RedirectResponse
     {
-        Gate::authorize('managePermissions', $user);
+        Gate::authorize('mutatePermissions', $user);
 
         $permissionIds = Permission::getIdsFromNames($request->validated('permissions') ?? []);
 
