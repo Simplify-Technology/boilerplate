@@ -54,7 +54,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 
 | # | Projeto | Inv | 1 Seg | 2 Arq | 3 Perf-BE | 4 Front | 5 UX | 6 UI | 7 Copy | 8 Ops | Crítico | Projeto |
 | - | ------- | --- | ----- | ----- | --------- | ------- | ---- | ---- | ------ | ----- | ------- | ------- |
-| 1 | ctfinance | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 1 | ctfinance | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 2 | spinmax | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 3 | sorteiopix | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 4 | ctjuris | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -62,7 +62,15 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 4/70 células (5,7%) · BACKLOG: **3 aplicados (A1, A3, A6)**, 1 realocado (A2), 8 aplicáveis, 7 adiados, 5 rejeitados, 1 achado interno (C1)
+**Progresso:** 5/70 células (7,1%) · BACKLOG: **3 aplicados (A1, A3, A6)**, 1 realocado (A2), 12 aplicáveis (8 de dim. 1–3 + D2/D3/D4/D5), 7 adiados, 5 rejeitados, 9 sem veredito (dim. 4), 1 achado interno (C1)
+
+### ⚠️ O que a dimensão 4 ensinou sobre a rodada
+
+Das 6 candidaturas julgadas, **três não eram código a portar — eram defeitos que o boilerplate já tem**, revelados só pela leitura comparada (cache de prefetch na impersonation, spinner morto, token de tema inexistente no primeiro paint). O ativo colhido do projeto-fonte foi o **diagnóstico**, não o arquivo.
+
+Isso corrige a expectativa da rodada: "harvest" não é só copiar o melhor de cada derivado. Ler o derivado ao lado do boilerplate é o que torna visível o defeito de casa. As dimensões seguintes devem manter o par de perguntas explícito — a segunda vem rendendo mais que a primeira.
+
+Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e o caçador errou fatos verificáveis em 5 dos 6.** Entre outros: `manualChunks` "não existe mais no Vite 8" (existe, via Rolldown); `once()` "substitui o `??=`" (é cache no cliente, não memoização); "11 telas afetadas" (eram 9, misturando dois componentes); "o dev achou que closure era lazy" (o teste da fonte prova o contrário); "flush precisa vir antes do post" (o cache nem é consultado no redirect). A verificação adversarial está pagando o próprio custo.
 
 ### Ponteiros levantados no inventário (entram como candidatos nas dimensões, ainda SEM veredito)
 
@@ -162,7 +170,9 @@ Teste `arch()` sobre namespace inexistente devolve layer vazia e **passa vacuame
 
 ## Próxima unidade
 
-**Dimensão 4 (Fluidez & performance frontend) do ctfinance.** A fila de fatias com superfície real secou: dos candidatos aplicáveis do ctfinance, A4 e A5 são comportamentais de raio médio (A4 exige inverter o modo de falha antes; A5 depende de decisão sobre `auth.session`), A10 depende de decisão de payload, e A2/A7/A9/A12/B4/B6 são a fatia única de regras que aguarda decisão do dono (ver observação estratégica abaixo). Varrer é o que mais rende agora — e as dimensões 4–6 alimentam os temas multi-fonte de UI/UX, que hoje estão todos represados.
+**Fatia D2** — `router.flushAll()` na troca de identidade. É a melhor fatia disponível na rodada inteira até agora: bug de **privacidade** vivo e alcançável no boilerplate (prefetch de `/settings/profile` com nome e e-mail do admin servido durante impersonation), superfície real e não-vacuária (3 call sites + 6 `<Link prefetch>`), esforço P, 3/3 nas lentes, e mutação óbvia que prova a guarda.
+
+Depois dela, na ordem: D5 (spinner morto, 2 arquivos), D4 (token do primeiro paint), D3 (regra de closure, só doc). Nenhuma das quatro é multi-fonte.
 
 ## Vereditos das dimensões 1–3 (ctfinance)
 

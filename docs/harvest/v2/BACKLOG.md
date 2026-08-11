@@ -107,6 +107,64 @@ Ordenados por (impacto × generalidade) ÷ risco. Fonte de todos: ctfinance @ `b
 - **⚠️ Correção da lente RISCO — a cláusula "remover o case legado no mesmo ciclo" é perigosa AQUI:** neste boilerplate, case de enum **é dado persistido** (`SyncPermissionsCommand` materializa `Permissions::cases()` em tabela). Remover case sem migração de dados quebra permissões vivas.
 - **Nota da lente ATUALIDADE:** "nunca aceita status arbitrário do payload" tem API nativa a prescrever por nome — `Rule::enum(Status::class)->only([...])`.
 
+## Aplicáveis agora — ctfinance (dimensão 4)
+
+Fonte: ctfinance @ `b8c6d57`. **Particularidade desta célula:** três dos quatro candidatos não são "código a portar" — são **defeitos que o boilerplate já tem** e que a leitura comparada do ctfinance revelou. O ativo colhido é o diagnóstico, não o arquivo.
+
+### D2 · `[guard-rail]` cache de prefetch sobrevive à troca de identidade · P · risco baixo · **prioridade máxima da célula**
+
+- **Origem:** `resources/js/components/sidebar-context-switcher.tsx:36-38` — `router.flushAll()` antes de trocar de contexto, com o comportamento travado em teste (`resources/js/test/components/sidebar-context-switcher.test.tsx:8,13,90`).
+- **Bug vivo no boilerplate**, com os dois ingredientes: 6 superfícies `<Link prefetch>` (`nav-main.tsx:58`, `app-sidebar.tsx:39`, `user-menu-content.tsx:25`, `app-header.tsx:97`, `settings/settings-sidebar.tsx:73`, `layouts/settings/layout.tsx:47`) e **3** pontos de troca de identidade sem invalidação — `user-details-dialog.tsx:47-61`, `impersonate-banner.tsx:15-18` e `hooks/users/use-user-actions.ts:51-53` (este último o caçador perdeu; achado da lente). `grep -rn "flushAll\|flushByCacheTags\|invalidateCacheTags" resources/js` → **0 linhas**.
+- **O default do Inertia não cobre** (core 3.6.1, `dist:2488-2490`): após visita bem-sucedida só há `flushByCacheTags([])` — que não remove nada, `tags.includes(tag)` é falso em array vazio — e `router.flush(url)`, que limpa apenas a URL de destino.
+- **Cheque decisivo (duas lentes, nenhum caçador):** `StartImpersonateController.php:39-42` e `StopImpersonateController.php:26-28` devolvem `RedirectResponse` puro, **não** `Inertia::location()`. Fosse `location()`, a navegação dura limparia o cache e o candidato seria vazio.
+- **Impacto:** `pages/settings/profile.tsx:44-45` renderiza `auth.user.name`/`auth.user.email` — prefetch velho mostra nome e e-mail do **admin** durante impersonation.
+- **Forma decidida — `flushAll()`, não `cacheTags`:** a lente de atualidade propôs o idioma v3 (`cacheTags` + `invalidateCacheTags`); REFUTAR e RISCO rejeitaram por **modo de falha**. Tag **falha aberto** (esquecer a tag em 1 dos 6 `<Link>`, ou no 7º futuro, devolve dado alheio em silêncio); `flushAll` **falha fechado** (pior caso: alguns requests extras, num momento raro).
+- **Fact-check da lente:** "o flush precisa vir antes do `router.post`, senão o redirect resolve do cache" é **falso** — o cache só é consultado em `sendRequest()` (`dist:3186`), alcançado por `router.visit`/`<Link>`; o 302 é seguido pelo axios e não reentra ali. A página velha aparece no **clique seguinte**. O bug permanece; cai só o racional de ordenação.
+- **Fatia:** `flushAll()` nos 3 call sites + regra em `.ai/rules/js.md` + 1 teste Vitest por componente. **Mutação que prova:** apagar a linha → teste quebra.
+
+### D4 · `[guard-rail]` primeiro paint em dark depende de token que ainda não existe · P · risco baixo
+
+- **Regressão datada no boilerplate:** `resources/views/app.blade.php:30` usa `background-color: var(--color-primary-dark)`, mas `--color-primary-dark: #0f2a44` só existe em `resources/css/app.css:107`, carregado pelo `@vite(...)` da linha 52 — **depois** do `<style>` inline da linha 23. `git blame`: era `oklch(0.14 0.006 220)` literal até `c2ffbc7` ("feat: add Aptos, Montserrat…"). A linha irmã `:25` continua literal.
+- **Correção de severidade (lente RISCO):** em produção o `@vite` emite o CSS como `<link>` render-blocking, então o token existe antes do primeiro paint e o `var()` quebrado é **latente**. A janela visível está em `composer dev` (CSS injetado por JS). A fatia conserta acoplamento frágil + canvas/scrollbars nativos — **não** vender como flash em produção.
+- **Cai do candidato:** "`classList.add` sem remove" **não é bug** — a classe `dark` só chega por `@class([...])` em `:2`, e nesse ramo o guard `appearance === 'system'` é falso. O runtime já usa `classList.toggle('dark', isDark)` (`use-appearance.tsx:25`).
+- **Não absorver `data-theme`:** código morto no ctfinance — escrito em 3 lugares, `grep` não acha nenhum seletor que o consuma.
+- **Fatia:** hex literal no inline + `<meta name="color-scheme">` com os hexes da marca do boilerplate + teste de sincronia blade ↔ `app.css`.
+
+### D5 · `[guard-rail]` spinner de busca é código morto — e o único visível nunca para · P · risco baixo
+
+- **Defeito no boilerplate**, `resources/js/components/data-table/search-bar.tsx:73`: `{isSearching && !value && (` — o spinner só renderiza com o campo **vazio**, nunca enquanto se digita, que é quando serviria. Estado produzido e propagado corretamente (`use-user-search.ts:31,142`, `users/use-user-filters.ts:31,154`), descartado na renderização. `grep -rln "SearchBar" resources/js/test/` → vazio.
+- **Achado que dobra a fatia:** o estado `value === '' && isSearching === true` inclui caso travado — early-return em `use-user-filters.ts:54` sem reset. O único spinner hoje visível é, com frequência, um que **nunca para**. Dois arquivos, não um.
+- **Correção de largura (lente):** 9 telas no ctfinance (não 11 — os pares citados misturavam `SearchBar` e `FilterPanel`) e **1** no boilerplate (`pages/users/index.tsx:168`). A alavancagem (primitivo que os derivados copiam) vale; a largura alegada, não.
+- **Cuidados:** X e spinner disputam o canto (`right-2` `:62` × `right-3` `:74`) — slot de largura fixa alternando conteúdo, senão o X pisca. Não remover o `aria-live` de `pages/users/index.tsx:139-141`: a lacuna é só visual.
+
+### D3 · `[guard-rail]` closure em prop não é lazy · P · risco baixo · **só doc, sem gate**
+
+- **Fato (vendor do alvo):** `PropsResolver.php:278-280,355-360` só exclui do primeiro load quem implementa `IgnoreFirstLoad` (`OptionalProp.php:5`, `DeferProp.php:5`). Closure nua resolve sempre. No ctfinance, `DashboardPageBuilder.php:151,163-165` + `dashboard.tsx:166-168` fazem o trabalho duas vezes.
+- **⚠️ Teste arch é INVIÁVEL** — barrar `=> fn(` dá falso positivo em 100 % do uso correto (`Inertia::defer(fn() => ...)` contém a string). `arch()` também não assere posição de closure dentro de call. Fatia que tentar o gate está errada.
+- **⚠️ NÃO escrever "use `once()` em vez de `??=`"** — seria orientação ativamente errada. `once()` é cache **no cliente entre visitas** (`ResolvesOnce.php` com `until()`/`expiresAt()`/`fresh()`; `PropsResolver.php:371-373` condiciona ao que o cliente carregou), não memoização intra-request, e introduz staleness nova em dado por usuário.
+- **A regra PRECISA separar dois casos:** prop de `Inertia::render` (closure = eager) × shared prop de `share()` (closure = **correta**, reavalia por request — `'ziggy' => fn(): array =>` em `HandleInertiaRequests.php:74`). Sem isso, um agente "conserta" o Ziggy e quebra o `location` por navegação.
+- **Fact-check:** a narrativa "o dev achou que closure era lazy" é falsa — `DashboardTest.php:80-84` do ctfinance assere `->has('categories')` no primeiro load. O defeito é partial reload redundante.
+
+### D1 · `[guard-rail]` chunk manual por pacote de UI · P · **2/3 — rescopado, prioridade baixa**
+
+- **Premissa do caçador invertida por 2 lentes:** `manualChunks` **não** sumiu no Vite 8. `vite/dist/node/index.d.ts:2182` → `rollupOptions?: RolldownOptions` sem `Omit`; rolldown 1.2.2 tipa `manualChunks?: ManualChunksFunction` (`define-config-DSMNXceb.d.mts:806`, `@deprecated`) e traduz em runtime para `codeSplitting.groups`. O hazard está **vivo**; a "rede do `tsc`" alegada não existe.
+- **Derrubado por REFUTAR na evidência:** o incidente TDZ **nunca foi atestado** no ctfinance — `git log --all --grep=TDZ -i` devolve só `490de93`, que *cita* o caveat; os "reverts" são `refactor(vite)` e `chore(ci)`, nenhum `fix(`. O boilerplate não tem `recharts`, e a etiologia é do Rollup, não verificada no Rolldown.
+- **Resolução (Guardrail 5):** se um dia existir, a regra cita a **doc do Rolldown** ("manual splitting can affect application behavior if side effects occur before modules are loaded", com `strictExecutionOrder` nativo — `define-config-DSMNXceb.d.mts:978`), nunca o incidente do ctfinance. Como o boilerplate não tem chunk manual algum, nasceria sem call site.
+
+### Registrados sem veredito (dimensão 4) — entram na fila quando a fila de P secar
+
+| # | Candidato | Tipo | Nota |
+| - | --------- | ---- | ---- |
+| D7 | `will-change` estático + `transition-all` em linha de lista | `[guard-rail]` P | O boilerplate é a **origem** do anti-padrão (`utils/users/constants.ts:8-9`), que o ctfinance multiplicou em 8 gêmeos byte-a-byte |
+| D8 | Barrel de 190 ícones lucide resolvido por string em runtime | `[guard-rail]` P | Tree-shaking impossível por construção. O boilerplate ainda está limpo — a regra vale **antes** de alguém portar o arquivo |
+| D9 | Code splitting no nível do componente (`React.lazy` + `Suspense`) | `[absorver]` M | `grep` por `Suspense\|React.lazy\|=> import(` no boilerplate → **0 linhas** |
+| D10 | Gate de tamanho de chunk no CI | `[guard-rail]` M | No ctfinance o gate é **manual**; o boilerplate não tem nem isso |
+| D11 | Deferred props com grupo + fallback skeleton | `[absorver]` M | **É o A10 visto de outro ângulo** — a implementação de referência que o ADR 0003 promete e o boilerplate nunca escreveu. Consolidar com A10 |
+| D12 | Guarda de paridade `app.tsx` ↔ `ssr.tsx` no resolver | `[guard-rail]` M | O boilerplate já tem a paridade; **nada a fixa**. `grep -rln "ssr" resources/js/test/` → vazio |
+| D13 | PWA / service worker | `[dep-nova]` G | **Multi-fonte** (ctfinance × sorteiopix). O `navigateFallback` é "arma engatilhada" — candidato E trap |
+| D14 | Auditoria de overflow em 53 rotas a 390 px | `[dep-nova]` G | **Multi-fonte** com a suíte browser do spinmax. Depende da aprovação de `pest-plugin-browser` |
+| D6 | `prefers-reduced-motion` | `[guard-rail]` P | **Multi-fonte** — colide com o sweep de motion do ctjuris. Represado até varrer ctjuris |
+
 ## Achados internos do boilerplate (não são harvest — medidos durante fatias)
 
 Não vieram de projeto-fonte, então não têm origem `projeto/path@SHA`. Ficam aqui para não se perderem.
@@ -163,6 +221,8 @@ Candidato cujo tema aparece em mais de um projeto só vira fatia depois que as c
 | Multi-tenant | ctjuris × cuidari | ambas | — | — |
 | Auditoria impersonation-aware | `AuditUserResolver` sobre owen-it (ctfinance) × sorteiopix × `ActivityCauserResolver` sobre spatie (boilerplate) | sorteiopix | — | pilhas divergentes (owen-it × spatie) — comparar antes |
 | Tooling de a11y | ctjuris × spinmax | ambas | — | — |
+| Motion / `prefers-reduced-motion` | ctfinance (só um hook pontual, sem tratamento global) × sweep de motion no Vitest do ctjuris | ctjuris | — | boilerplate hoje tem **0** ocorrências contra 17 usos de `animate-*` |
+| Code splitting / chunking | ctfinance (`manualChunks` Rollup + `React.lazy` por widget) × demais a varrer | 6 projetos | — | premissa do caçador invertida: `manualChunks` segue vivo no Vite 8 via Rolldown |
 | i18n / `lang` | ctfinance (`messages.php` 198 l. com 4 grupos de plataforma + `pt_BR.json`) × ctjuris × sorteiopix × spinmax | 3 | — | — |
 | Suíte browser | ctfinance (`browser.yml` + `MobileResponsiveAuditTest` de 56 rotas) × spinmax (`pest-plugin-browser` + Playwright + `tests/Contract`) | spinmax | — | `[dep-nova]` nos dois casos |
 
