@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (7/70 células) · **12 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22) · **1 PR aberto** (#76, tema fora do React)
+- **Situação:** Fase 0 concluída · varredura em andamento (7/70 células) · **12 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22) · **2 PRs abertos** (#76 tema fora do React, #80 teto de PII)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -138,6 +138,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **F22** — fix: `<a><button>` aninhado em 6 links-botão | [#73](https://github.com/Simplify-Technology/boilerplate/issues/73) | `73-harvest-v2-link-botao` | ✅ 8 testes + 3 mutações | ✅ ambos exit 0 (364/1896 · 29/192) | [#74](https://github.com/Simplify-Technology/boilerplate/pull/74) | ✅ **MESCLADO** 2026-08-12 |
 | **F42+F35** — fix: tema fora do React (500 de último recurso + cromo nativo) | [#75](https://github.com/Simplify-Technology/boilerplate/issues/75) | `75-harvest-v2-tema-fora-do-react` | ✅ 17 testes + **9 mutações** | ✅ ambos exit 0 (373/1911 · 30/204) | [#76](https://github.com/Simplify-Technology/boilerplate/pull/76) | **aguardando merge do dono** |
 | **F23** — fix: `<button>` sem `type` + regra `react/button-has-type` | [#77](https://github.com/Simplify-Technology/boilerplate/issues/77) | `77-harvest-v2-button-type` | ✅ lint como gate + 2 mutações | ✅ ambos exit 0 (364/1896 · 30/204) | [#78](https://github.com/Simplify-Technology/boilerplate/pull/78) | ✅ **MESCLADO** 2026-08-12 |
+| **S1** — fix(seguranca): teto de PII no `UserResource` | [#79](https://github.com/Simplify-Technology/boilerplate/issues/79) | `79-harvest-v2-teto-pii-resource` | ✅ 10 testes + 4 mutações | ✅ ambos exit 0 (374/1931 · 30/204) | [#80](https://github.com/Simplify-Technology/boilerplate/pull/80) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -420,13 +421,33 @@ Três notas:
 2. **Severidade menor que o rótulo sugere: é latente, não bug vivo.** Nenhum dos três vive dentro de `<form>` hoje (`settings/appearance.tsx` e `users/index.tsx` não têm formulário; o rail fica no shell). O valor está na regra, não nos três atributos — registrado assim no PR para não vender conserto que não houve.
 3. **Sem entrada em `.ai/rules`, de propósito.** O ESLint é o teste e falha o gate; prosa em paralelo criaria segunda fonte para o mesmo fato. Primeira fatia da rodada que fecha sem tocar em `.ai/rules`, e o motivo vale como precedente.
 
+### S1 — o que entrou (2026-08-12)
+
+`app/Policies/UserPolicy.php` (`viewSensitive`) + `app/Http/Resources/UserResource.php` + `tests/Feature/User/UserResourceSensitiveCeilingTest.php` (novo, 10 testes) + `.ai/rules/resources.md`. PR [#80](https://github.com/Simplify-Technology/boilerplate/pull/80).
+
+**Primeira correção de segurança real da rodada** — as anteriores eram guard-rail ou defeito de UI. Um `manager` (70) lia CPF, telefones e notas internas do `admin` (90) em claro, em 5 controllers, sem nenhum teste tocando o resource.
+
+| Mutação | Resultado |
+| ------- | --------- |
+| Campos sem condicional (o defeito original) | ⨯ 3 falham |
+| Teto frouxo: prioridade maior **ou igual** | ⨯ 3 falham |
+| "A si mesmo" medido na **persona**, não no humano | ⨯ falha |
+| Sem a checagem de `manage_users` | ⨯ falha |
+
+**⚠️ As duas últimas passaram VERDES na primeira passada — e são o achado de método da fatia.** Escrevi 8 testes que cobriam o defeito de todos os ângulos que eu tinha imaginado, e mesmo assim:
+
+1. Trocar `effectiveActor($user)->id` por `$user->id` na regra de "a si mesmo" **não quebrava nada** — e é escalada: um gerente vestindo um administrador leria o CPF desse administrador, porque a persona é o próprio alvo. O caso que discrimina exige persona ACIMA do humano, que nenhum dos 8 testes montava.
+2. Apagar a checagem de `manage_users` **não quebrava nada** — o único negativo existente (`viewer` 10 × `manager` 70) já era barrado pela prioridade. Separar as condições exige ator sem a permissão e ACIMA do alvo (`viewer` 10 × `visitor` 5).
+
+Generalização para o resto da rodada: **teste de teto com duas condições (permissão E prioridade) precisa de um caso onde cada uma falha SOZINHA.** Cobertura que só usa o alvo "óbvio" prova uma condição e finge provar duas.
+
 ## Próxima unidade
 
 ~~**F1**~~ ✅ PR #70 · ~~**F5**~~ ✅ PR #72 · ~~**F22**~~ ✅ PR #74 — **todos mesclados pelo dono em 2026-08-12**. Reconciliação da 4ª invocação: zero PR aberto, zero fatia em andamento, e os 7 SHAs das fontes seguem idênticos aos pinados (sem drift na rodada).
 
 ~~**F42+F35**~~ ✅ aplicados juntos — PR [#76](https://github.com/Simplify-Technology/boilerplate/pull/76) aberto.
 
-~~**Célula: spinmax × dimensão 1 (Segurança)**~~ ✅ — 28 candidatos, 16 agentes. **Fatia S1 é a próxima unidade**: teto de PII no `UserResource`, a única escalada de leitura VIVA da célula, verificada por mim de primeira mão. As duas peças (`Roles::priority()`, `ImpersonationService::getOriginalUser()`) já existem no boilerplate; falta aplicá-las no resource, que hoje tem **zero** testes.
+~~**Célula: spinmax × dimensão 1 (Segurança)**~~ ✅ — 28 candidatos, 16 agentes. ~~**Fatia S1 é a próxima unidade**~~ ✅ aplicada (PR #80): teto de PII no `UserResource`, a única escalada de leitura VIVA da célula, verificada por mim de primeira mão. As duas peças (`Roles::priority()`, `ImpersonationService::getOriginalUser()`) já existem no boilerplate; falta aplicá-las no resource, que hoje tem **zero** testes.
 
 ~~**Célula: spinmax × dimensão 1 (Segurança).**~~ O inventário deixou 12 ponteiros, 5 deles de segurança, e o spinmax é o projeto de criticidade MÁXIMA (e-commerce em produção com pagamento). É a célula com maior densidade de material pronto.
 
