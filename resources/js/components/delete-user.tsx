@@ -1,5 +1,5 @@
 import { useForm } from '@inertiajs/react';
-import { FormEventHandler, useRef } from 'react';
+import { FormEventHandler, useRef, useState } from 'react';
 
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -10,22 +10,40 @@ import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, Di
 
 export default function DeleteUser() {
     const passwordInput = useRef<HTMLInputElement>(null);
+    const [open, setOpen] = useState(false);
     const { data, setData, delete: destroy, processing, reset, errors, clearErrors } = useForm<Required<{ password: string }>>({ password: '' });
+
+    /**
+     * Funil ÚNICO de abertura e fechamento.
+     *
+     * O diálogo era não controlado e a limpeza (`clearErrors` + `reset`)
+     * estava pendurada só no botão Cancelar. O X, o Escape e o clique no
+     * overlay fechavam por fora dela — e como o `useForm` vive FORA do
+     * `<Dialog>`, ele não desmonta: quem errava a senha, fechava com Esc e
+     * reabria encontrava "senha incorreta" sobre um campo vazio, como se a
+     * tentativa nova já tivesse sido rejeitada. Numa tela de exclusão
+     * permanente de conta.
+     *
+     * Mesma forma do `ui/confirm-dialog.tsx`, que já era o padrão da casa.
+     */
+    const handleOpenChange = (next: boolean) => {
+        setOpen(next);
+
+        if (!next) {
+            clearErrors();
+            reset();
+        }
+    };
 
     const deleteUser: FormEventHandler = (e) => {
         e.preventDefault();
 
         destroy(route('profile.destroy'), {
             preserveScroll: true,
-            onSuccess: () => closeModal(),
+            onSuccess: () => handleOpenChange(false),
             onError: () => passwordInput.current?.focus(),
             onFinish: () => reset(),
         });
-    };
-
-    const closeModal = () => {
-        clearErrors();
-        reset();
     };
 
     return (
@@ -45,7 +63,7 @@ export default function DeleteUser() {
                     <p className="text-sm">Por favor, proceda com cautela. Esta ação não pode ser desfeita.</p>
                 </div>
 
-                <Dialog>
+                <Dialog open={open} onOpenChange={handleOpenChange}>
                     <DialogTrigger asChild>
                         <Button variant="destructive">Excluir Conta</Button>
                     </DialogTrigger>
@@ -77,10 +95,13 @@ export default function DeleteUser() {
                             </div>
 
                             <DialogFooter className="gap-2">
+                                {/*
+                                 * Sem `onClick` próprio: o `DialogClose` já
+                                 * dispara o `onOpenChange`, e limpar em dois
+                                 * lugares é como o Esc ficou de fora.
+                                 */}
                                 <DialogClose asChild>
-                                    <Button variant="secondary" onClick={closeModal}>
-                                        Cancelar
-                                    </Button>
+                                    <Button variant="secondary">Cancelar</Button>
                                 </DialogClose>
 
                                 <Button variant="destructive" disabled={processing} asChild>

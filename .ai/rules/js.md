@@ -37,3 +37,6 @@ Listagem vazia porque o filtro não casou nada pede "limpar filtros"; listagem v
 
 ## EmptyState não emite linha de tabela
 `EmptyState` renderiza só o conteúdo; quem abre `<Table.Row>`/`<Table.Cell>` é o call-site. O componente já teve um ramo `type="row"` que montava a linha por dentro enquanto o call-site também montava — e o DOM recebia `<tr>` dentro de `<div>` dentro de `<td>`. Ao usar em tabela, abra a célula na tabela e ponha o `EmptyState` dentro dela, sem embrulho extra.
+
+## Diálogo é controlado, e fechar tem um funil só
+`<Dialog>` recebe `open` e `onOpenChange`, e toda limpeza (resetar formulário, `clearErrors`, zerar seleção) mora DENTRO do `onOpenChange` — nunca pendurada no `onClick` do botão Cancelar. O X do `DialogContent`, o Escape e o clique no overlay fecham por fora de qualquer handler de botão; se o estado do formulário vive fora do `<Dialog>` (o caso do `useForm`), ele não desmonta e o erro da tentativa anterior reaparece na próxima abertura. O padrão é o do `ui/confirm-dialog.tsx`: `onOpenChange={(next) => { if (!next) limpar(); }}`. Fechamento programático (ex.: `onSuccess`) chama o MESMO funil, porque `onOpenChange` não dispara sozinho quando o estado muda por código.
