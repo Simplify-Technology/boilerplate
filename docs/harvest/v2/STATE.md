@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **21 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20) · **2 PRs abertos, ambos MERGEABLE após merge de `main`** (#94 estado vazio com saída, #96 diálogo controlado)
+- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **22 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15) · **1 PR aberto, MERGEABLE** (#96 diálogo controlado)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -145,7 +145,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **C4** — fix(auth): limite no `confirm-password` | [#87](https://github.com/Simplify-Technology/boilerplate/issues/87) | `87-harvest-v2-limite-confirm-password` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (395/1982) | [#88](https://github.com/Simplify-Technology/boilerplate/pull/88) | ✅ **MESCLADO** 2026-08-12 |
 | **S3** — fix(lgpd): objeto e chave composta no scrubber | [#89](https://github.com/Simplify-Technology/boilerplate/issues/89) | `89-harvest-v2-scrubber-objeto-e-chave-composta` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (416/2046) | [#90](https://github.com/Simplify-Technology/boilerplate/pull/90) | ✅ **MESCLADO** 2026-08-12 |
 | **E6+E20** — fix(a11y): erro anunciado + fusão de ARIA | [#91](https://github.com/Simplify-Technology/boilerplate/issues/91) | `91-harvest-v2-erro-anunciado` | ✅ 9 testes + 5 mutações | ✅ ambos exit 0 (31/212) | [#92](https://github.com/Simplify-Technology/boilerplate/pull/92) | ✅ **MESCLADO** 2026-08-12 |
-| **E14+E15** — fix(ux): estado vazio com saída + metade visual | [#93](https://github.com/Simplify-Technology/boilerplate/issues/93) | `93-harvest-v2-vazio-com-saida` | ✅ 7 testes + 5 mutações | ✅ ambos exit 0 (31/211) | [#94](https://github.com/Simplify-Technology/boilerplate/pull/94) | **aguardando merge do dono** |
+| **E14+E15** — fix(ux): estado vazio com saída + metade visual | [#93](https://github.com/Simplify-Technology/boilerplate/issues/93) | `93-harvest-v2-vazio-com-saida` | ✅ 7 testes + 5 mutações | ✅ ambos exit 0 (31/211) | [#94](https://github.com/Simplify-Technology/boilerplate/pull/94) | ✅ **MESCLADO** 2026-08-12 |
 | **E30** — fix(ux): diálogo de excluir conta controlado | [#95](https://github.com/Simplify-Technology/boilerplate/issues/95) | `95-harvest-v2-dialogo-controlado` | ✅ 5 testes + 4 mutações | ✅ ambos exit 0 (31/209) | [#96](https://github.com/Simplify-Technology/boilerplate/pull/96) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
@@ -638,6 +638,8 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 **`rerere` está ligado neste repositório** e gravou as duas resoluções, então repetições idênticas se resolvem sozinhas. Não confie nisso para conflito de conteúdo real — só para este, que é mecânico.
 
 **Alternativa para a próxima leva:** manter no máximo um PR de frontend aberto por vez, ou aceitar o merge de `main` como passo fixo antes de pedir revisão. A segunda é mais barata e é o que ficou feito aqui.
+
+**Repetiu na mesma tarde, como previsto.** Mesclado o #94, o #96 conflitou de novo no mesmo arquivo — agora contra as duas seções do `EmptyState`. Mesma resolução pelos estágios do índice, mesmo resultado (3 linhas acrescentadas, zero removida), gates verdes na árvore mesclada (33 arquivos / 224 testes). **O `rerere` NÃO ajudou**: ele casa o conflito exato, e cada merge novo traz um lado diferente. O custo real é um merge de `main` por PR por leva — o que confirma a leitura de que isto é estrutural e não vale tentar evitar com truque de ferramenta.
 
 ## Próxima unidade
 
