@@ -334,20 +334,28 @@ Fonte: ctfinance @ `b8c6d57`, comparado ao boilerplate `main` @ `9814f46`. **28 
   - No mesmo diff, os dois achados que pesam mais e ele omitiu: devolver `w-full sm:w-auto` aos botões do rodapé (rotear com D14) e pôr fallback na `DialogDescription` em vez do render condicional.
 - Copy do texto default é dimensão 7. Modernização futura anotada: trocar o `Dialog` + `role` hand-rolled pelo `AlertDialog` de `@radix-ui/themes` (sem dep nova) — fora do escopo.
 
-### E23 · `[absorver]` `<div role="button">` na busca: não focável, sem teclado · P · risco baixo
+### E23 · ✅ **APLICADO** (PR [#102](https://github.com/Simplify-Technology/boilerplate/pull/102), 2026-08-12) · `[absorver]` `<div role="button">` na busca: não focável, sem teclado · P · risco baixo
+
+- **Divergiu da origem de propósito:** o ctfinance usa `<button type="button">`; aqui o papel falso saiu e o slot virou `aria-hidden`, sem promover a botão. O controle só duplica "focar o campo ao lado", que já é o próximo na ordem de tabulação — botão real ali é parada de tab inútil. Regra generalizada em `.ai/rules/js.md`.
+- O item separado "remover `app-header.tsx` + `app-header-layout.tsx`" saiu junto na fatia **E27+E29** (PR #100).
 
 - **Único defeito vivo desta família:** `components/data-table/search-bar.tsx:56` — `<div className="cursor-pointer" onClick={focusInput} role="button" aria-label="Focar busca">`, sem `tabIndex`, sem handler de teclado. O ctfinance usa `<button type="button">` (`search-bar.tsx:57-68`).
 - **⚠️ O fato central do título original era falso:** "botões só-ícone sem nome em toda página autenticada" — `AppHeaderLayout` **não é importado por ninguém** e `layouts/app-layout.tsx:1` importa fixo o `app-sidebar-layout`; nenhum dos dois botões renderiza jamais. O cabeçalho real (`app-sidebar-header.tsx:9`) usa `SidebarTrigger`, que **tem** nome acessível (`ui/sidebar.tsx:272`).
 - Teste Vitest sobre `SearchBar`: todo elemento com role interativo é focável e tem nome. **Não escrever teste contra `AppHeader`.**
 - Item separado, decisão de escopo do boilerplate e não de a11y: **remover `app-header.tsx` + `app-header-layout.tsx`** (código morto com botão inerte).
 
-### E18 · `[guard-rail]` toast de erro anunciado como `polite` · P · risco baixo
+### E18 · ✅ **APLICADO** (PR [#102](https://github.com/Simplify-Technology/boilerplate/pull/102), 2026-08-12) · `[guard-rail]` toast de erro anunciado como `polite` · P · risco baixo
+
+- **Confirmado na aplicação:** o default `{ role: 'status', 'aria-live': 'polite' }` está literalmente no `dist/index.js` do `react-hot-toast@2.6.0` — a entrada estava certa. `duration` não foi tocado, como a entrada exigia. Teste trava os DOIS sentidos: erro/aviso assertive **e** sucesso/info seguindo polite (mutação que sobe o sucesso para assertive falha).
 
 - `toast-config.ts:45-58` e `:63` — acrescentar `ariaProps: { role: 'alert', 'aria-live': 'assertive' }` em `toastErrorOptions` e `toastWarningOptions`, mantendo `polite` em success/info. Teste em `test/hooks/use-flash-messages.test.ts`.
 - **⚠️ Não mexer em `duration`, e em hipótese alguma usar `Infinity`** — `ui/toast-provider.tsx` não tem botão de dispensa; viraria toast preso. No máximo ~8s, e só com afordância de fechar entregue junto.
 - Justificar pelo comportamento de live region inserida dinamicamente, **não** por "fila de anúncios" (especulação do caçador).
 
-### E25 · `[guard-rail]` a live region da busca anuncia o começo e nunca o resultado · P · risco baixo
+### E25 · ✅ **APLICADO** (PR [#102](https://github.com/Simplify-Technology/boilerplate/pull/102), 2026-08-12) · `[guard-rail]` a live region da busca anuncia o começo e nunca o resultado · P · risco baixo
+
+- **Confirmado na aplicação:** a correção da entrada contra o caçador (mover para dentro do `SearchBar`, que já é dono de `isSearching`, em vez de criar componente novo) era a certa. `resultCount` opcional veio de `pagination.total`, como a entrada previu.
+- **Detalhe travado por mutação e que não estava na entrada:** a região tem de ser renderizada SEMPRE, mesmo vazia — envolvê-la em `{searchStatus && ...}` desfaz o conserto sem mudar nada visível. Mesmo mecanismo do `role="alert"` do E6.
 
 - `pages/users/index.tsx:139-141` anuncia "Buscando…" e nunca o desfecho. Mover a região para dentro de `components/data-table/search-bar.tsx` (que **já** é dona da prop `isSearching` — `:16`; o caçador propôs componente novo desnecessário), com prop opcional de contagem/rótulo. Teste Vitest cobrindo as três fases.
 - Onde a implementação emperra de verdade e o caçador não apontou: a contagem de resultados não existe no hook, tem de vir das props da página. Texto exato é dimensão 7.

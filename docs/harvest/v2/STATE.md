@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **23 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30) · **2 PRs abertos** (#98 navegação/landmark · #100 poda + personificação)
+- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **23 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30) · **3 PRs abertos** (#98 navegação/landmark · #100 poda + personificação · #102 busca anunciada)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -64,7 +64,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 9/70 células (13%) · BACKLOG: **31 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 9/70 células (13%) · BACKLOG: **34 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -150,6 +150,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **E30** — fix(ux): diálogo de excluir conta controlado | [#95](https://github.com/Simplify-Technology/boilerplate/issues/95) | `95-harvest-v2-dialogo-controlado` | ✅ 5 testes + 4 mutações | ✅ ambos exit 0 (31/209) | [#96](https://github.com/Simplify-Technology/boilerplate/pull/96) | ✅ **MESCLADO** 2026-08-12 20:55 |
 | **E22+E24** — fix(a11y): landmark, `aria-current` e skip-link | [#97](https://github.com/Simplify-Technology/boilerplate/issues/97) | `97-harvest-v2-navegacao-landmark` | ✅ 10 testes + **8 mutações** | ✅ ambos exit 0 (416/2046 · 34/234) | [#98](https://github.com/Simplify-Technology/boilerplate/pull/98) | **aguardando merge do dono** |
 | **E27+E29** — fix(ux): poda de código morto + caminho vivo de personificar | [#99](https://github.com/Simplify-Technology/boilerplate/issues/99) | `99-harvest-v2-poda-e-personificacao` | ✅ 5 testes + **8 mutações** | ✅ ambos exit 0 (416/2046 · 34/229) | [#100](https://github.com/Simplify-Technology/boilerplate/pull/100) | **aguardando merge do dono** |
+| **E18+E23+E25** — fix(a11y): busca anuncia o desfecho + severidade de toast | [#101](https://github.com/Simplify-Technology/boilerplate/issues/101) | `101-harvest-v2-busca-anunciada` | ✅ 17 testes + **6 mutações** | ✅ ambos exit 0 (416/2046 · 34/237) | [#102](https://github.com/Simplify-Technology/boilerplate/pull/102) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -645,6 +646,14 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 **Repetiu na mesma tarde, como previsto.** Mesclado o #94, o #96 conflitou de novo no mesmo arquivo — agora contra as duas seções do `EmptyState`. Mesma resolução pelos estágios do índice, mesmo resultado (3 linhas acrescentadas, zero removida), gates verdes na árvore mesclada (33 arquivos / 224 testes). **O `rerere` NÃO ajudou**: ele casa o conflito exato, e cada merge novo traz um lado diferente. O custo real é um merge de `main` por PR por leva — o que confirma a leitura de que isto é estrutural e não vale tentar evitar com truque de ferramenta.
 
 ## Próxima unidade
+
+**Reconciliação da 9ª invocação (2026-08-12):** `main` **inalterada** em `9650ea5`; #98 e #100 seguem abertos e MERGEABLE — primeira invocação da rodada que entra com PR do dono ainda por mesclar. **Segundo drift do ctvitrine:** `89251fc` → `bda5e6b`. O pin segue `53d7d9a`; a instrução de ler por `git show` continua valendo e ficou mais necessária.
+
+~~**E18+E23+E25**~~ ✅ aplicado — PR [#102](https://github.com/Simplify-Technology/boilerplate/pull/102) aberto. A região viva desceu da página para o `SearchBar` e passou a anunciar o **desfecho** (inclusive "nenhum resultado", o caso em que o silêncio confunde mais); o `<div role="button">` da lupa perdeu o papel falso; erro e aviso viraram `assertive` no `ariaProps`, sucesso e info ficaram `polite` com teste travando os dois sentidos. 17 testes, 6 mutações.
+
+**Decisão de escopo que diverge do ctfinance e vale registrar:** lá o slot da lupa virou `<button type="button">`. Aqui **não** — o único efeito do controle é focar o campo que está ao lado e já é o próximo na ordem de tabulação, então um botão real seria parada de tab que não leva a lugar nenhum. Regra generalizada em `.ai/rules/js.md`: promova a `<button>` só quando a ação não existir em outro lugar alcançável; caso contrário remova o papel falso e marque `aria-hidden`. **Absorver o ctfinance não é copiá-lo** — é a terceira vez nesta rodada que o escopo certo é menor que o da origem.
+
+**Custo de leva confirmado, agora com 3 PRs:** #98, #100 e #102 todos apendam em `.ai/rules/js.md`. O conflito é textual e append-only nos três (resolução = manter as três seções), mas ele existe e cresce linearmente com PRs de frontend abertos por leva. Isso é argumento operacional para intercalar unidades de VARREDURA entre fatias, não só a razão de mérito.
 
 **Reconciliação da 8ª invocação (2026-08-12):** **#96 (E30) mesclado** — o STATE dava como aberto. `main` em `9650ea5`. Zero PR aberto e zero fatia em andamento na entrada, então Prioridade 1 (fatia pronta) foi a unidade correta.
 
