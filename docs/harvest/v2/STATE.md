@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (6/70 células) · **5 fatias MESCLADAS** (A1, A3, A6, D2, D3) · **3 PRs abertos aguardando merge do dono** (#60 D5, #62 D4, #66 E17)
+- **Situação:** Fase 0 concluída · varredura em andamento (6/70 células) · **8 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17) · **1 PR aberto** (#68, canal de flash nativo)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 6/70 células (8,6%) · BACKLOG: **8 aplicados (A1, A3, A6, D2, D3, D4, D5, E17)**, 1 realocado (A2), **37 aplicáveis** (8 de dim. 1–3 + 29 de dim. 5: E1–E30 menos o E17 aplicado), 7 adiados, **10 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`), **1 decisão de arquitetura pendente do dono** (flash nativo do Inertia 3.6)
+**Progresso:** 6/70 células (8,6%) · BACKLOG: **10 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13)**, 1 realocado (A2), **35 aplicáveis** (8 de dim. 1–3 + 27 de dim. 5: E1–E30 menos E17, E2 e E13), 7 adiados, **10 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`), **1 decisão de arquitetura pendente do dono** (flash nativo do Inertia 3.6)
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -104,7 +104,8 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **D4** — fix: fundo escuro inline com literal + `color-scheme` | [#61](https://github.com/Simplify-Technology/boilerplate/issues/61) | `61-harvest-v2-fundo-inline-tema` | ✅ 4 testes + 3 mutações | ✅ ambos exit 0 | [#62](https://github.com/Simplify-Technology/boilerplate/pull/62) | **aguardando merge do dono** |
 | **D3** — docs: closure em prop de render não adia nada | [#63](https://github.com/Simplify-Technology/boilerplate/issues/63) | `63-harvest-v2-regra-props-lazy` | — (só doc; gate inviável, ver BACKLOG) | ✅ ambos exit 0 | [#64](https://github.com/Simplify-Technology/boilerplate/pull/64) | ✅ **MESCLADO** 2026-08-11 18:56 |
 
-| **E17** — fix: ordenação e page size crus na listagem (500 por URL) | [#65](https://github.com/Simplify-Technology/boilerplate/issues/65) | `65-harvest-v2-normaliza-ordenacao-listagem` | ✅ 41 testes + 4 mutações | ✅ ambos exit 0 (352/1831) | [#66](https://github.com/Simplify-Technology/boilerplate/pull/66) | **aguardando merge do dono** |
+| **E17** — fix: ordenação e page size crus na listagem (500 por URL) | [#65](https://github.com/Simplify-Technology/boilerplate/issues/65) | `65-harvest-v2-normaliza-ordenacao-listagem` | ✅ 41 testes + 4 mutações | ✅ ambos exit 0 (352/1831) | [#66](https://github.com/Simplify-Technology/boilerplate/pull/66) | ✅ **MESCLADO** 2026-08-11 |
+| **E2+E13** — refactor: canal de flash nativo do Inertia 3 | [#67](https://github.com/Simplify-Technology/boilerplate/issues/67) | `67-harvest-v2-flash-nativo` | ✅ 15 testes + 2 mutações | ✅ ambos exit 0 (364/1896) | [#68](https://github.com/Simplify-Technology/boilerplate/pull/68) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -207,7 +208,7 @@ Célula de maior rendimento da rodada: 32 candidatos caçados em 4 frentes, **28
 
 ### ⚠️ Decisão do dono represando fatias
 
-**Canal de flash.** O Inertia 3.6 tem flash nativo (`Inertia::flash()` + `Page['flash']` + `router.on('flash')`); o boilerplate reimplementa com `->with()` + prop no `share()` + `use-flash-messages.tsx` + 9 chamadas por página. Migrar resolve E2 **e** E13 de uma vez e apaga o hook caseiro. Não conflita com ADR vigente — é escolha ainda não registrada. **Nenhuma fatia de flash abre antes dessa decisão.** Alternativa conservadora registrada no BACKLOG.
+~~**Canal de flash.**~~ ✅ **DECIDIDO pelo dono em 2026-08-11: usar o nativo.** Aplicado no PR #68 — `Inertia::flash()` nos 13 call sites, um `router.on('flash')` em `app.tsx`, `use-flash-messages.tsx` e as 9 chamadas por página apagados. E2 e E13 saem juntos do BACKLOG.
 
 Segue pendente, de antes: a **fatia única de `.ai/rules`** juntando A2, A7, A9, A12, B4 e B6 (guard-rails sem superfície executável no boilerplate hoje).
 
@@ -230,11 +231,29 @@ Três fatos medidos nesta fatia:
 2. **O ponto de pouso sugerido pela lente estava em conflito com a convenção da casa.** O BACKLOG dizia "extrair para trait/FormRequest do kit", mas `.ai/rules/controllers.md` proíbe camada de query objects e reserva `App\Services` para lógica reusada por vários controllers. `App\Support\Listing\` (final, estático, puro) é o encaixe que `.ai/rules/support.md` já descreve — e um FormRequest daria **422 num GET de listagem**, quebrando bookmark antigo, quando o comportamento desejado é fallback gracioso.
 3. **`sort_by`/`sort_order` não são emitidos pela UI hoje** — `resources/js` só **lê** `per_page`, nunca envia nenhum dos três. O bug só era alcançável por URL montada à mão. É o E19 (ordenação clicável) que o tornaria alcançável por clique — daí a ordem obrigatória.
 
+### E2+E13 — o que entrou (2026-08-11)
+
+`resources/js/lib/flash.ts` (novo) + `app.tsx` + 13 call sites de backend + `share()` + tipos + 2 arquivos de teste novos, contra a remoção de `use-flash-messages.tsx`, das 9 chamadas por página e do teste do hook. PR [#68](https://github.com/Simplify-Technology/boilerplate/pull/68).
+
+| Mutação aplicada | Resultado |
+| ---------------- | --------- |
+| Republicar `flash` como prop no `share()` | ⨯ o guard A3 (`SharedPropsTest`) falha com "Unexpected properties" |
+| `Inertia::flash()` antes do `session()->invalidate()` | ⨯ o teste do usuário desativado falha |
+
+Quatro fatos medidos:
+
+1. **O flash nativo é chave do OBJETO DE PÁGINA, não prop.** Medido no payload real de um partial reload pedindo só `users`: `props` traz `errors` e `users`, e `flash.success` chega no topo. O E13 deixa de ser possível por construção — não é remendo.
+2. **`assertInertiaFlash` / `hasFlash` / `missingFlash` são macros nativos do adapter**, mas o `AssertableInertia` **não parseia resposta parcial** ("Not a valid Inertia response"). O teste do partial reload assere no payload cru, o que por acaso trava melhor o ponto: `props` **não** tem `flash` e a página tem.
+3. **Pegadinha de ordem que virou regra:** `Inertia::flash()` escreve na sessão na hora, ao contrário do `->with()`, aplicado só no envio. Em `EnsureUserIsActive` a chamada precisa vir **depois** do `invalidate()`. Está em `.ai/rules/controllers.md` e travada por mutação.
+4. **Dado morto encontrado:** `RevokeRoleController:98` usava a forma em array e flashava `'role' => $user->role?->name`. O `share()` só publicava as quatro chaves de mensagem — ninguém nunca leu. A forma em array também escapou do primeiro grep de migração; vale lembrar que `->with([...])` existe.
+
+**Some junto** toda a deduplicação do hook antigo (Map global, `setInterval` de 5s, refs por componente): ela existia porque o dado morava em props e reaparecia a cada re-render e a cada volta no histórico.
+
 ## Próxima unidade
 
-**Fatia E14+E15 — `empty-state.tsx`** (HTML inválido no ramo `type="row"` + estado vazio sem `action`). Um arquivo, dois call-sites, teste de regressão portado do ctfinance com as duas adaptações já anotadas no BACKLOG (sem `type="row"`, sem a asserção de token). É a próxima P de risco baixo com superfície real.
+**Dimensão 6 (UI) do ctfinance** — decisão do dono em 2026-08-11 ("próxima sessão"). A célula está barata: a dimensão 5 já deixou ~14 ponteiros verificados para ela, e **cinco candidatos enfileirados adiam explicitamente a metade visual para a 6** (E14/E15 o corpo do `empty-state`, E6 a className do `InputError`, E16 o desenho do card, E12 o texto default, E18/E23 o `search-bar`). Varrer a 6 antes de aplicá-los evita abrir os mesmos arquivos duas vezes, em dois PRs.
 
-Depois dela, a fila registrada: **E21+E12** (`delete-confirmation-dialog.tsx`) · **E30** (`delete-user.tsx`) · **E22+E24** · **E6+E20** · **E23** · **E18** · **E27+E29**.
+Só **depois** da 6, a fila de aplicação: **E14+E15** (`empty-state.tsx`) · **E21+E12** (`delete-confirmation-dialog.tsx`) · **E30** (`delete-user.tsx`, bug que todo derivado tem) · **E22+E24** (landmark + skip-link) · **E6+E20** (ARIA de campo) · **E23** · **E18** · **E27+E29** (limpeza de código morto).
 
 ~~**Fatia E17**~~ ✅ aplicada — PR #66 aberto. Justificativa que valeu e segue valendo para a fila acima: Prioridade 1 do protocolo (fatia de aplicação pronta), e a fila de P deixou de estar seca: a dimensão 5 entregou 20 candidatos P de risco baixo.
 

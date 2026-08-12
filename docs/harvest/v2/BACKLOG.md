@@ -257,7 +257,7 @@ Candidato cujo tema aparece em mais de um projeto só vira fatia depois que as c
 
 Fonte: ctfinance @ `b8c6d57`, comparado ao boilerplate `main` @ `9814f46`. **28 sobreviventes de 32 candidatos; 22 deles são defeitos vivos no próprio boilerplate.** O escopo abaixo é o CORRIGIDO pelas 3 lentes.
 
-### E17 · `[absorver]` `sort_order`/`per_page` crus — 500 alcançável por URL · P · risco baixo · **primeiro da fila**
+### ~~E17~~ ✅ APLICADO · PR [#66](https://github.com/Simplify-Technology/boilerplate/pull/66) (mesclado) · `[absorver]` `sort_order`/`per_page` crus — 500 alcançável por URL · P
 
 - **Defeito vivo no boilerplate:** `app/Http/Controllers/User/IndexController.php:64-73` tem allow-list só do CAMPO; `:76` passa `sort_order` cru ao `orderBy()`, que lança em `Builder.php:2985-2993`. `/users?sort_order=<lixo>` e `?sort_order[]=a` devolvem **500**. `per_page` não tem teto — `?per_page=999999` pagina tudo.
 - **Origem da correção (verbatim, não inventar):** `RecurringExpense/IndexController.php:94-103` e `RecurringIncome/IndexController.php:72-81` — allow-list do campo **e** da direção, `$perPage = max(5, min(50, (int) $request->integer('per_page', 15)))` com o helper nativo.
@@ -265,7 +265,9 @@ Fonte: ctfinance @ `b8c6d57`, comparado ao boilerplate `main` @ `9814f46`. **28 
 - **Escopo:** portar a forma para `User/IndexController`; testes Pest de negação (`?sort_order=<lixo>`, `?sort_order[]=a`, `?per_page=999999` → 200 com fallback, nunca 500); regra em `.ai/rules/controllers.md` (ordenação/paginação de URL é entrada não confiável; o eco em `$filters` publica o valor **normalizado**, senão o lixo volta pela URL via `withQueryString()`). Como esta listagem é o template dos próximos módulos, extrair para trait/FormRequest do kit.
 - **Precede o E19** (ligar ordenação sem isto cria um 500 alcançável por clique).
 
-### E13 · `[absorver]` `flash` no `share()` não é `Inertia::always()` · P · risco baixo
+### ~~E13~~ ✅ APLICADO · PR [#68](https://github.com/Simplify-Technology/boilerplate/pull/68) · `[absorver]` `flash` no `share()`
+
+> **Resolvido pelo canal NATIVO, não por `Inertia::always()`** (decisão do dono, 2026-08-11). O flash nativo não é prop, então não há filtro de partial reload a driblar — o `Inertia::always()` que este candidato propunha virou desnecessário.
 
 - **Defeito vivo:** `HandleInertiaRequests.php:68-73` publica `flash` como array cru com `pull`. Em partial reload que não pede `flash`, a prop é filtrada — mas o `pull` **já rodou**, e a mensagem some sem nunca chegar à tela.
 - **Escopo:** `'flash' => Inertia::always(fn (): array => [...])` — uma linha, shape TS inalterado. Teste Pest: redirect com `->with('success')` seguido de GET com `X-Inertia-Partial-Data` sem `flash`, assertando que `flash.success` **chega** no payload.
@@ -325,7 +327,9 @@ Fonte: ctfinance @ `b8c6d57`, comparado ao boilerplate `main` @ `9814f46`. **28 
 - Onde a implementação emperra de verdade e o caçador não apontou: a contagem de resultados não existe no hook, tem de vir das props da página. Texto exato é dimensão 7.
 - Valor honesto: ganho de **uma** tela hoje; o retorno está em não replicar nos derivados o copy-paste de 11 páginas do ctfinance.
 
-### E2 · `[absorver]` consumo de flash é opt-in por página — 8 de 17 não chamam o hook · M · risco baixo
+### ~~E2~~ ✅ APLICADO · PR [#68](https://github.com/Simplify-Technology/boilerplate/pull/68) · `[absorver]` consumo de flash opt-in por página
+
+> Aplicado como **um** `router.on('flash')` em `app.tsx`, não como hook subido para dois layouts. `use-flash-messages.tsx` e as 9 chamadas por página foram apagados.
 
 - **Regra escrita e violada:** `.ai/rules/js.md:15` diz "cada página Inertia chama `useFlashMessages()`". Medido: 17 páginas, **9** chamam, 8 não (as 6 de `auth/`, `dashboard.tsx`, `errors/error-page.tsx`).
 - **Três mensagens comprovadamente mortas:** `EnsureUserIsActive.php:29-31` (`->with('error', 'Sua conta foi desativada…')` → `login.tsx` só renderiza a prop `status`, `:43-45`) · `bootstrap/app.php:67-68` (419 → `back()` → login) · `StartImpersonateController.php:41-42` (→ `dashboard.tsx`, mitigado só pelo banner).
