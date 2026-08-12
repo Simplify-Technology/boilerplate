@@ -4,9 +4,11 @@ declare(strict_types = 1);
 
 namespace App\Policies;
 
+use App\Enum\Permissions;
 use App\Enum\Roles;
 use App\Models\User;
 use App\Services\ImpersonationService;
+use Illuminate\Auth\Access\Response;
 
 /**
  * `manage_users` sozinho não basta. Sem checagem de prioridade, quem tivesse a
@@ -104,14 +106,54 @@ class UserPolicy
      * exatamente a permissão que o seeder lhe nega. Aqui o alvo precisa ter
      * prioridade estritamente menor que a do ator real, o que também barra o
      * auto-alvo.
+     *
+     * O terceiro teto é sobre o CONTEÚDO, e faltava: alcançar o alvo não diz
+     * nada sobre o que se pode dar a ele. Sem `$granting`, o administrador
+     * gravava num gerente a `impersonate_users` que o seeder lhe nega — pela
+     * tela de Cargos a mesma tentativa já era 403.
+     *
+     * @param list<string> $granting Permissões que a chamada quer que o alvo
+     *                               passe a ter. Vazio em revogação, que não
+     *                               concede nada.
      */
-    public function mutatePermissions(User $user, User $model): bool
+    public function mutatePermissions(User $user, User $model, array $granting = []): bool|Response
     {
         if (!$user->hasPermissionTo('manage_permissions')) {
             return false;
         }
 
-        return $this->outranks($user, $model);
+        if (!$this->outranks($user, $model)) {
+            return false;
+        }
+
+        return $this->grantsWithinOwnSurface($user, $granting);
+    }
+
+    /**
+     * Mesma régua do `PermissionRole/UpdateController`, pela mesma função:
+     * quem monta o conjunto só distribui o que já é seu. `super_user` compõe
+     * qualquer coisa, e a superfície é a do humano por trás da sessão — senão
+     * vestir uma persona alta viraria caminho para conceder o que a matriz nega.
+     *
+     * O payload INTEIRO é medido, não só o que o alvo ainda não tem. Um teto
+     * por delta deixaria o mesmo formulário reafirmar o que o ator não pode
+     * dar, e voltaríamos a ter duas respostas para a mesma pergunta.
+     *
+     * @param list<string> $granting
+     */
+    private function grantsWithinOwnSurface(User $user, array $granting): bool|Response
+    {
+        $actor = $this->effectiveActor($user);
+
+        if ($actor->hasRole(Roles::SUPER_USER)) {
+            return true;
+        }
+
+        $beyond = $actor->permissionsBeyondOwn($granting);
+
+        return $beyond === []
+            ? true
+            : Response::deny(Permissions::grantDenialMessage($beyond));
     }
 
     /**

@@ -21,6 +21,9 @@ final class RevokePermissionController extends Controller
 
     public function __invoke(User $user, string $permission): RedirectResponse
     {
+        // Sem conjunto: revogar não concede nada, e medir o teto contra o que o
+        // alvo já tem impediria o ator de LIMPAR justamente o que ele não pode
+        // dar — o contrário do que se quer.
         Gate::authorize('mutatePermissions', $user);
 
         $permissionModel = Permission::where('name', $permission)->firstOrFail();

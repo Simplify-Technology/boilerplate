@@ -17,9 +17,14 @@ final class SyncPermissionsController extends Controller
 {
     public function __invoke(SyncPermissionsRequest $request, User $user): RedirectResponse
     {
-        Gate::authorize('mutatePermissions', $user);
+        /** @var list<string> $permissionNames */
+        $permissionNames = $request->validated('permissions') ?? [];
 
-        $permissionIds = Permission::getIdsFromNames($request->validated('permissions') ?? []);
+        // O conjunto vai junto: alcançar o alvo é uma pergunta, poder dar a ele
+        // estas permissões é outra — e só a primeira era feita aqui.
+        Gate::authorize('mutatePermissions', [$user, $permissionNames]);
+
+        $permissionIds = Permission::getIdsFromNames($permissionNames);
 
         // Sync permissions (preserva metadados existentes via syncWithPivotValues se necessário)
         $user->permissions()->sync($permissionIds);

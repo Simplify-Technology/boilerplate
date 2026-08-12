@@ -40,4 +40,26 @@ enum Permissions: string
             self::IMPERSONATE_USERS  => 'Entrar no painel como outra pessoa para reproduzir um problema.',
         };
     }
+
+    /**
+     * A recusa de "você não dá o que você não tem", nomeando o que travou.
+     *
+     * As duas telas de RBAC oferecem o catálogo INTEIRO — `PermissionCatalog
+     * Service::forDisplay()` não filtra pela superfície de quem está olhando —,
+     * então uma recusa muda deixa a pessoa sem saber qual caixa derrubou o
+     * save. Um nome desconhecido do enum sai cru em vez de sumir: é permissão
+     * que existe no banco e alguém precisa enxergar.
+     *
+     * @param list<string> $names
+     */
+    public static function grantDenialMessage(array $names): string
+    {
+        return sprintf(
+            'Você não pode conceder um acesso que você mesmo não tem: %s.',
+            implode(', ', array_map(
+                static fn(string $name): string => self::tryFrom($name)?->label() ?? $name,
+                $names
+            ))
+        );
+    }
 }

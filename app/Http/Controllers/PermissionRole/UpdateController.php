@@ -101,12 +101,13 @@ final class UpdateController extends Controller
             abort(403, 'Você não pode alterar as permissões deste cargo.');
         }
 
-        // `getAllPermissions()` soma cargo + permissões individuais: é a
-        // superfície real do ator, e é ela que ele pode repassar.
-        $concedeAlemDoProprio = array_diff($permissions, $actor->getAllPermissions()->pluck('name')->all());
+        // A mesma função que o `UserPolicy` usa no caminho individual: cargo +
+        // avulsas do ator, e é isso que ele pode repassar. Duas cópias da regra
+        // é como o caminho de `sync-permissions` ficou sem teto nenhum.
+        $concedeAlemDoProprio = $actor->permissionsBeyondOwn($permissions);
 
         if ($concedeAlemDoProprio !== []) {
-            abort(403, 'Você não pode conceder um acesso que você mesmo não tem.');
+            abort(403, Permissions::grantDenialMessage($concedeAlemDoProprio));
         }
     }
 
