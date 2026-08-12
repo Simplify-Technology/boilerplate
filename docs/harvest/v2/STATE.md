@@ -56,14 +56,14 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | # | Projeto | Inv | 1 Seg | 2 Arq | 3 Perf-BE | 4 Front | 5 UX | 6 UI | 7 Copy | 8 Ops | Crítico | Projeto |
 | - | ------- | --- | ----- | ----- | --------- | ------- | ---- | ---- | ------ | ----- | ------- | ------- |
 | 1 | ctfinance | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 2 | spinmax | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 2 | spinmax | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 3 | sorteiopix | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 4 | ctjuris | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 5 | ctvitrine | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 8/70 células (11%) · BACKLOG: **16 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23)**, 1 realocado (A2), **~104 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 9/70 células (13%) · BACKLOG: **16 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23)**, 1 realocado (A2), **~104 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -426,7 +426,9 @@ Três notas:
 
 ~~**F42+F35**~~ ✅ aplicados juntos — PR [#76](https://github.com/Simplify-Technology/boilerplate/pull/76) aberto.
 
-**Célula: spinmax × dimensão 1 (Segurança).** O inventário deixou 12 ponteiros, 5 deles de segurança, e o spinmax é o projeto de criticidade MÁXIMA (e-commerce em produção com pagamento). É a célula com maior densidade de material pronto.
+~~**Célula: spinmax × dimensão 1 (Segurança)**~~ ✅ — 28 candidatos, 16 agentes. **Fatia S1 é a próxima unidade**: teto de PII no `UserResource`, a única escalada de leitura VIVA da célula, verificada por mim de primeira mão. As duas peças (`Roles::priority()`, `ImpersonationService::getOriginalUser()`) já existem no boilerplate; falta aplicá-las no resource, que hoje tem **zero** testes.
+
+~~**Célula: spinmax × dimensão 1 (Segurança).**~~ O inventário deixou 12 ponteiros, 5 deles de segurança, e o spinmax é o projeto de criticidade MÁXIMA (e-commerce em produção com pagamento). É a célula com maior densidade de material pronto.
 
 **Sobre o F3 — adiado com motivo, não esquecido.** Ele é fatia de aplicação pronta (prioridade 1 do protocolo), mas canonizar uma ARQUITETURA de tokens de estado é decisão fundacional, e a pergunta de abertura da dimensão 6 é literalmente "qual projeto tem o sistema mais maduro". Responder isso tendo lido só o ctfinance — sem cuidari e ctvitrine, os dois L13 + Inertia 3 em produção — é o tipo de escolha que se refaz. Ele destrava quando as células 6 desses dois estiverem varridas. A catraca do teste do F1 segura o `destructive` em 3.67:1 enquanto isso, então nada regride na espera.
 

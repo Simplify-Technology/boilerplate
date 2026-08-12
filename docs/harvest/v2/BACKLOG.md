@@ -583,3 +583,69 @@ Foi para isto que a dimensão 6 foi varrida antes de aplicar a fila da 5. Paream
 | Achado | Motivo |
 | ------ | ------ |
 | `hidden-text`/`hidden-value` como primitivos a absorver | O padrão (mascarar PII em tela) generaliza, mas os dois usam `role="text"`, que **não é role ARIA válido** (extensão só do Safari) — o `aria-label` irmão pode ser ignorado e o mascaramento vira só visual. Sem call-site no boilerplate. Sobrevive só como **regra de uma linha** em `.ai/rules`, junto da regra contra className por interpolação |
+
+
+## Aplicáveis agora — spinmax (dimensão 1 — Segurança)
+
+Fonte: spinmax @ `e4ec01e` × boilerplate `main` @ `8b0381b`. **28 candidatos, 3 lentes cada.** Escopo abaixo é o
+CORRIGIDO pelas lentes — fatia que reabrir o escopo original do caçador está errada. Material bruto e vereditos
+completos em `spinmax.md § Dimensão 1`.
+
+> **Nenhum candidato passou intacto**, quarta célula seguida. Dois foram **requalificados de escalada para
+> não-escalada**, cinco foram derrubados, e a lente de atualidade trocou a forma de seis deles pela API do L13.
+
+### S1 · `[absorver]` teto de PII no `UserResource` — **a única escalada de leitura VIVA** · P · risco médio · **primeiro da fila**
+
+- **Verificado por mim, de primeira mão, nos quatro pontos** (não só pelo agente): `app/Http/Resources/UserResource.php:27-31` devolve `cpf_cnpj`, `phone`, `mobile` e `user_notes` **sem condicional nenhuma**; `app/Policies/UserPolicy.php:23-31` (`viewAny`/`view`) é `hasPermissionTo('manage_users')` puro, **sem teto de prioridade** — o teto só começa em `update()`; `database/seeders/PermissionRoleSeeder.php:49-51` dá `MANAGE_USERS` ao `MANAGER`, que tem prioridade **70** contra **90** do `ADMIN` (`app/Enum/Roles.php:52-56`); e `grep -rln UserResource tests/` volta **vazio**.
+- **Consequência medida:** um `manager` abre `/users` e lê **CPF, telefone, celular e notas internas do `admin`** em claro. `User/IndexController.php:28` não filtra por prioridade (`User::query()->with(['role','permissions'])` + paginação). O resource é servido em **5 controllers**, todos atrás de `can:manage_users`.
+- **Origem:** `spinmax app/Http/Resources/UserResource.php:24-35` — resolve o viewer pelo usuário **original** (`ImpersonationService::getOriginalUser()`), aplica `viewerOutranksOrOwns()` (`:69-80`: a si mesmo, `SUPER_USER`, ou prioridade estritamente maior) e mascara em vez de omitir o CPF. Coberto lá por `UserResourceCpfCeilingTest` (2 casos, com o negativo).
+- **Custo baixo porque as duas peças já existem aqui:** `Roles::priority()` e `ImpersonationService::getOriginalUser()` (já é o padrão da casa em **8** call sites). Falta aplicá-las no resource. Usar o `CpfFormatter::mask()` **do boilerplate**, não o `Cpf::mask` do spinmax.
+- **Lente de atualidade:** `[absorver-modernizado]`.
+- **Correções de fato das lentes:** o `$viewer` do spinmax está em `:24` (não `:25`); os campos sensíveis do boilerplate são `:27-31` (não `:26-31`); o grupo `can:manage_users` vai até `routes/web.php:36`, e o caçador parou em `:30`, deixando de fora `users/{user}/permissions`, que **também** serve `UserResource`.
+
+### S2 · `[absorver]` o teto "não conceda um acesso que você mesmo não tem" vale em 1 dos 3 caminhos de concessão · M · risco baixo
+
+- **⚠️ REQUALIFICADO — não é escalada.** O caçador vendeu isto como escada viva (`admin` concede `impersonate_users` e assume conta). As três lentes convergiram em derrubar a exploração, e **eu confirmei no código**: `sync()` passa array de IDs cru, sem pivot, então `meta` fica null e `canImpersonateAny()` é `false`; o manager assim "promovido" só alcança prioridade < 70, que o `admin` **já** alcançava direto trocando a senha (< 90). Ganho líquido de capacidade: **zero**. O dano residual é lavagem de trilha de auditoria, não privilégio. E o caminho que escalaria de verdade já está fechado: `GrantPermissionRequest::authorize()` exige `SUPER_USER`, com teste.
+- **O que sobra, e é real:** `PermissionRole/UpdateController.php:106` **tem** o teto (`array_diff` contra `getAllPermissions()`); `SyncPermissionsController.php:20-25` **não tem** (autoriza por `mutatePermissions` e faz `sync()` sem olhar o conteúdo). O mesmo sistema responde duas coisas diferentes para a mesma pergunta.
+- **Forma a absorver — corrigida pela lente de atualidade, e é melhor que a do spinmax:** o L13 aceita argumentos extras em policy (`Gate::authorize('mutatePermissions', [$user, $names])` → `mutatePermissions(User $actor, User $target, array $names)`), e `Illuminate\Auth\Access\Response::deny($mensagem)` propaga a frase sem `abort()` espalhado. Absorver com essa assinatura, **não** com o `abort(403)` do spinmax.
+- **⚠️ Trap:** a segunda correção proposta (tirar `manage_permissions` do `ADMIN` no seeder) **deixa vermelho um teste verde existente** — `tests/Feature/Policies/UserPolicyCeilingTest.php:146`, `it('allows an admin to mutate the permissions of a manager')`, cujo payload é justamente `MANAGE_PERMISSIONS`. E o seeder é re-executável: derivado que rodasse `db:seed --class=PermissionRoleSeeder` perderia `manage_permissions` de todos os admins sem aviso. **Só a opção de código entra**; a do seeder é decisão de produto do dono.
+
+### S3 · `[guard-rail]` `PiiScrubber` casa chave por igualdade exata e não desce em objeto · M · risco médio
+
+- Sobrevive **parcialmente**: a lente mediu que a proposta como escrita é regressão. Escopo reduzido — casar por substring e somar ramo `Arrayable`, sem trocar a fiação (que é `[atual]`).
+
+### S4 · `[guard-rail]` o lockout do `POST login` não tem teste em nenhum dos dois repositórios · P · risco baixo
+
+- Único candidato da célula que sobreviveu **intacto** às três lentes. O limite mora num FormRequest e ninguém prova que morde.
+
+### S5 · `[guard-rail]` o teste do `EnsureUserIsActive` não atravessa arquivo de rota · P · risco baixo
+
+- O boilerplate é **superior** aqui (middleware no `web(append:)`, cobre os 3 arquivos de rota; o spinmax o pendura no grupo de `web.php` e deixa `settings/*` e `auth` descobertos). O guard-rail é contra a regressão: `EnsureUserIsActiveTest` só exercita `/dashboard`, então mover o middleware para o grupo — o jeito "natural" de escrever — mantém o teste verde e reabre o buraco do spinmax. Falta um caso em `route('profile.edit')`.
+
+### S6 · `[proposta-adr]` + multi-fonte · webhook inbox — **NÃO vira fatia ainda**
+
+- Tema **multi-fonte "webhooks"**: precisa das células equivalentes de ctfinance e ctvitrine antes da comparação. A lente derrubou a absorção **como código** (acoplado ao domínio) e o manteve **como ADR/regra**. A forma do spinmax está descrita em `spinmax.md § Dimensão 1 › Middlewares`: HMAC (`x-signature` + `x-request-id` + `dataId` + secret + tolerância 300s), `WebhookEvent` para idempotência, fila, tópicos fechados, 401 em assinatura inválida.
+
+### Demais sobreviventes (escopo já corrigido, prioridade abaixo dos acima)
+
+| # | Candidato | Classe | Nota decisiva da lente |
+| - | --------- | ------ | ---------------------- |
+| S7 | `logoutOtherDevices` na troca de senha | absorver P | atualidade: **"a maior vitória de atualidade da rodada"** · risco **ALTO** — em ambos os repos é o mesmo código Breeze e trocar isso derruba sessão de gente. Fatia própria, com decisão do dono |
+| S8 | Auto-cadastro público ligado por padrão (o spinmax apagou a rota e **trava a ausência** com teste de 404) | proposta-adr | risco **ALTO**: é decisão de produto do boilerplate, não achado técnico. Sobrevive só "como decisão a escrever" |
+| S9 | Censo mecânico de `throttle:` inline | guard-rail M | o regex proposto está **errado para o L13**; a regra vale, o detector precisa ser reescrito |
+| S10 | CSP configurável com allowlist + report-only | absorver M | "a narrativa não se sustenta"; encolher muito — **o alvo é outro** (ver veredito) |
+| S11 | `SetSensitiveCacheHeaders` só olha `$request->user()` | absorver P | alegação central derrubada; sobra o gatilho por rota `signed` |
+| S12 | `CpfFormatter::mask()` — só o fallback | absorver P | hasher do boilerplate **já é superior**; não absorver `Cpf::hash()` do spinmax (APP_KEY crua) |
+| S13 | Anonimização × hard delete em `profile.destroy` | doc P | "sobrevive muito reduzido" — metade do gap já é teste verde; retenção é `[rejeitado-obsoleto]` |
+
+### `[rejeitado]` da dimensão 1 do spinmax
+
+| Achado | Motivo (lente que derrubou) |
+| ------ | --------------------------- |
+| Matriz cargo × tela como teste cartesiano | REFUTAR: "o teste proposto não pegaria o C1, e a matriz do boilerplate é quase degenerada" |
+| Ziggy escopado por grupo | REFUTAR: **a forma proposta é bug verificado**; e esbarra no ADR 0002 |
+| Arch test ampliado de SQL cru | REFUTAR: derrubado — zero SQL cru dos dois lados |
+| Pré-voo da allowlist de e-mail | REFUTAR: derrubado na forma proposta; sobra uma linha de log |
+| Enumeração no reset de senha | REFUTAR: **"o candidato com mais fato errado da célula"**; 2 das 3 recomendações caem |
+| `validateCsrfTokens(except:)` como padrão | REFUTAR: derrubar por ora — sem superfície de integração no boilerplate |
+| Literal `user:{id}:permissions` escrito à mão | premissa "uma convenção só" é falsa neste repositório |

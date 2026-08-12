@@ -1916,3 +1916,1847 @@ Só o `require-dev` ganhou tabela. Faltou: `php ^8.4`, `inertiajs/inertia-larave
 | 12 | Frente de ops, §5 | "~180 screenshots" em `specs/ui-responsividade/shots/` | **175** arquivos rastreados sob `shots/` (de 203 arquivos em `specs/`) |
 
 Verificados e **corretos** (para não gerar retrabalho): as 52 rotas totais de `web.php`; 72 rotas na aplicação; 24 migrations; 15 models; 12 commands; 4 jobs; 10 events; 16 form requests; 3 policies; 2 rules; 6 middlewares; 5 enums; 12 factories; 5 seeders; 16 configs; 117 arquivos em `tests/` (93 Feature / 18 Unit); 54 stubs; 209 arquivos em `resources/js/`; 30 primitivos em `components/ui/`; 16 hooks; 8 utils; 10 types; 11 layouts; 4 libs; 10 views de mail + 2 partials; 16 blades + 1 CSS em `vendor/mail/`; `.env.example` com 195 linhas / 51 chaves ativas / 31 comentadas; `lang/pt_BR/validation.php` com 312 linhas; e todas as contagens de linha citadas para `ProcessMercadoPagoWebhookJob` (225), `HealthCommand` (304), `StagingCheckCommand` (438), `AppServiceProvider` (233), `LandingController` (428), `UpdateSettingsRequest` (373), `OrderFilters` (157), `StoreSettings` (326), `config/store.php` (537) e os 5 arquivos de `scripts/`.
+
+
+## Dimensão 1 — Segurança (2026-08-12)
+
+Workflow de **16 agentes**: 4 frentes de caça em pipeline, cada uma verificada por **3 lentes adversariais
+independentes** (refutar / risco de absorção / atualidade) assim que retornou. 0 erros, ~1,57M tokens de
+subagente, 496 chamadas de ferramenta, ~22 min. **28 candidatos levantados.**
+
+> Nenhum candidato passou intacto pelas 3 lentes — o padrão da rodada se repetiu pela quarta célula seguida.
+> O que está abaixo é o material bruto com os vereditos. A curadoria (o que vira fatia) está no BACKLOG.
+
+
+
+### Frente: Autenticação, autorização e IDOR
+
+#### Candidatos levantados
+
+### Autenticação, autorização e IDOR
+
+Comparei a matriz de gates, as policies, os caminhos de mutação de RBAC, a impersonation e toda superfície de binding por `{id}`/`{uuid}` dos dois lados. O achado mais pesado da frente **não veio do spinmax estar errado** — veio de o spinmax ter fechado, por matriz de permissão, uma escada que o boilerplate deixou aberta.
+
+---
+
+#### C1 · Escada viva no boilerplate: o `admin` concede `impersonate_users` — a permissão que o seeder lhe nega — a qualquer conta abaixo dele
+- **Pergunta**: (b) guard-rail contra erro daqui — mas o erro está **no boilerplate**, e o spinmax é a prova de que o desenho correto é outro
+- **Evidência (spinmax @ e4ec01e)**: `tests/Feature/User/PermissionMutationCeilingTest.php:44-57` — a matriz da spec 10 tirou `manage_permissions` do Administrador de propósito: *"dar um acesso avulso, fora do cargo, é ferramenta de suporte da Simplify. O Admin monta cargo (`manage_roles`) e escolhe quem fica em qual (`assign_roles`) — furar o próprio desenho, não."* O teste `it('does not let an admin sync permissions even onto a lower-priority user')` prova 403 mesmo **para alvo de prioridade menor**. Complementarmente, `app/Http/Controllers/PermissionRole/UpdateController.php:107-111` guarda a regra que falta do outro lado: `$concedeAlemDoProprio = array_diff($permissions, $this->permissionNamesOf($actor)); if (...) abort(403, 'Você não pode conceder um acesso que você mesmo não tem.');`
+- **Equivalente no boilerplate**: `database/seeders/PermissionRoleSeeder.php:46` — `Roles::ADMIN->value => array_filter($allPermissions, fn($perm) => $perm !== Permissions::IMPERSONATE_USERS->value)`, ou seja o admin **fica** com `manage_permissions` e `manage_roles`. `app/Policies/UserPolicy.php:108-115` (`mutatePermissions`) checa só `manage_permissions` + `outranks()` — nunca *quais* permissões. `app/Http/Controllers/PermissionRole/SyncPermissionsController.php:20-25` faz `Gate::authorize('mutatePermissions', $user)` e em seguida `$user->permissions()->sync($permissionIds)` sem nenhum filtro de conteúdo.
+- **O que absorver / travar**: cadeia completa e reprodutível hoje — admin (90) faz `POST /users/{manager}/sync-permissions` com `permissions: ['impersonate_users']`; passa no `can:manage_users` da rota (`routes/web.php:62`), no `SyncPermissionsRequest::authorize()` (`can(MANAGE_USERS)`) e no `mutatePermissions` (90 > 70). Com `manage_users` ele então troca a senha desse manager (`UpdateUserRequest.php:46` aceita `password`; `UpdateController.php:101-102` aplica) e assume a conta. Duas correções, ambas cabíveis: (1) portar o `array_diff` contra `getAllPermissions()` do `PermissionRole\UpdateController` para o `mutatePermissions`/`SyncPermissionsController` — o boilerplate já tem a regra escrita, só não a aplica nos dois caminhos; (2) seguir o spinmax e tirar `manage_permissions` do `ADMIN` no seeder. Somar teste espelhando `PermissionMutationCeilingTest`.
+- **Superfície no boilerplate hoje**: sim, integral — rota, request, policy, service e seeder todos existem e a cadeia é exercitável com os cargos padrão (`admin` × `manager`).
+
+---
+
+#### C2 · Duas portas de concessão com regras diferentes: o editor de cargos proíbe "conceder o que você não tem", o grant individual não
+- **Pergunta**: (a) absorver do spinmax
+- **Evidência (spinmax @ e4ec01e)**: `app/Http/Controllers/PermissionRole/UpdateController.php:62-79` — *"`can:manage_roles` responde 'pode mexer em cargo?', nunca 'pode mexer NESTE cargo, com ESTAS permissões?' — e essa diferença era uma escada. […] proteger só pela matriz é proteger com a chave dentro da fechadura."* E `tests/Feature/User/RoleEditorCeilingTest.php:112-135`, que exercita as duas metades: negar o que o ator não tem, **e** permitir delegar o que ele tem (*"a trava é sobre ampliar, não sobre delegar"*).
+- **Equivalente no boilerplate**: `app/Http/Controllers/PermissionRole/UpdateController.php:80-111` — a regra **já foi absorvida** para o editor de cargos (e até melhorada: usa `getAllPermissions()`, somando cargo + permissões avulsas, contra o `permissionNamesOf()` do spinmax que só lê o cargo). O que não existe é o análogo em `User\GrantPermissionController` / `PermissionRole\SyncPermissionsController`.
+- **O que absorver / travar**: extrair a checagem de "superfície do ator" para um ponto só (policy ou service) e chamá-la nos **três** caminhos de concessão (role editor, grant individual, sync). Hoje o mesmo sistema responde duas coisas diferentes para a mesma pergunta, e o caminho permissivo é justamente o que o `admin` alcança.
+- **Superfície no boilerplate hoje**: sim — `UpdateController` (com a regra), `GrantPermissionController` e `SyncPermissionsController` (sem), todos vivos.
+
+---
+
+#### C3 · Matriz cargo × tela como teste cartesiano, escrita à mão como segunda opinião do seeder
+- **Pergunta**: (a) absorver do spinmax
+- **Evidência (spinmax @ e4ec01e)**: `tests/Feature/Store/AdminPermissionMatrixTest.php:9-18` — *"A matriz da spec 10 §Matriz, **inteira**: todo cargo contra toda tela do painel — 6 × 7 = 42 combinações, `assertOk` ou `assertForbidden`. O allow-list abaixo é escrito à mão de propósito. Derivá-lo do `PermissionRoleSeeder` faria o teste concordar consigo mesmo […] Aqui a tabela é a segunda opinião — se ela e o seeder discordarem, fica vermelho."* O dataset gera o produto cartesiano (`:41-48`) e `:51-55` afirma cada célula. Fecha com `:66-68`, que trava `visitor` em zero permissões — *"o papel-piso existe para significar 'sem acesso'"*.
+- **Equivalente no boilerplate**: não existe teste cartesiano. O que existe é um par por controller: `tests/Feature/User/IndexControllerTest.php:37-41` (`it('forbids a user without manage_users')` com **um** cargo, `VIEWER`) e `:43-45` para guest. `grep 'Roles::cases()' tests/` só aparece em contagem de seletor e catálogo (`PermissionRole/RoleSelectorTest.php`, `PermissionCatalogTest.php`), nunca contra rota.
+- **O que absorver / travar**: um `tests/Feature/Permissions/PermissionMatrixTest.php` com dataset `Roles::cases() × {telas gateadas}` e allowlist literal, deliberadamente **não** derivada do `PermissionRoleSeeder`. É o teste que teria pegado o C1 sozinho: a célula "admin entra em `role-permissions`" obrigaria alguém a escrever à mão que o admin pode redesenhar cargos — e a decisão apareceria na revisão em vez de ficar implícita num `array_filter`.
+- **Superfície no boilerplate hoje**: sim — 5 cargos × 4 telas gateadas (`users.index`, `role-permissions`, `users.permissions.show`, e as rotas de escrita), suficiente para o teste não passar vacuamente.
+
+---
+
+#### C4 · `EnsureUserIsActive` global × por grupo — boilerplate superior, mas seu teste não prova a cobertura
+- **Pergunta**: (b) guard-rail contra erro daqui
+- **Evidência (spinmax @ e4ec01e)**: `routes/web.php:61` — `Route::middleware(['auth', 'verified', \App\Http\Middleware\EnsureUserIsActive::class])->group(...)`, inline no grupo, sem alias. `bootstrap/app.php:43-48` não o inclui no `web(append:)`. Consequência verificada: `routes/settings.php:11` (`Route::middleware('auth')`) e `routes/auth.php:35` ficam **fora** dele — conta desativada mid-sessão continua trocando e-mail e senha em `/settings/*`.
+- **Equivalente no boilerplate**: `bootstrap/app.php:43` — `EnsureUserIsActive::class` dentro do `$middleware->web(append:)`, cobrindo os três arquivos de rota. **Boilerplate é superior aqui.**
+- **O que absorver / travar**: nada a absorver; o guard-rail é contra a regressão. `tests/Feature/EnsureUserIsActiveTest.php:14-26` só exercita `/dashboard` — uma rota de `web.php`. Mover o middleware de volta para o grupo de `web.php` (o jeito "natural" de escrever) mantém esse teste verde e reabre exatamente o buraco do spinmax. Acrescentar um caso que atravesse arquivo de rota: usuário desativado mid-sessão levando redirect em `route('profile.edit')` (de `settings.php`).
+- **Superfície no boilerplate hoje**: sim — o middleware, os três arquivos de rota e o teste existem; é um caso a mais no arquivo que já está lá.
+
+---
+
+#### C5 · Auto-cadastro público ligado por padrão no boilerplate; o spinmax apagou a rota
+- **Pergunta**: (b) guard-rail contra a limitação daqui — o spinmax dá o argumento explícito
+- **Evidência (spinmax @ e4ec01e)**: `routes/auth.php:14-33` — o grupo `guest` tem **login, forgot-password e reset-password apenas**; não há `register`. O racional está gravado em `app/Http/Controllers/User/StoreController.php:89-92`: *"verificação de e-mail existe para provar que quem se cadastrou controla a caixa — e aqui NÃO EXISTE cadastro público: `routes/auth.php` não tem rota de registro, e a única forma de uma conta existir é um admin com `manage_users` digitar o endereço, ou o `store:super-user`."*
+- **Equivalente no boilerplate**: `routes/auth.php:16-20` — `GET register` + `POST register` públicos. `app/Http/Controllers/Auth/RegisteredUserController.php:31-41`: `User::create([...])` sem `role_id`, depois `event(new Registered($user))` e **`Auth::login($user)` imediato**, antes de qualquer verificação. `database/migrations/0001_01_01_000000_create_users_table.php:12` dá `is_active` default `true`.
+- **O que absorver / travar**: qualquer app derivado do boilerplate nasce aceitando conta de qualquer pessoa da internet — sessão autenticada, `is_active = true`, `role_id` null. Não há escalada (sem cargo, todos os gates negam), mas há sessão, cota de e-mail, poluição de `users.index` e uma porta que ninguém decidiu abrir. Como o boilerplate é o padrão de painéis internos da casa, o default deveria ser o do spinmax: rota fora, com um bloco documentado de como reativá-la. Se ficar, precisa de um teste que declare a decisão em voz alta (hoje `tests/Feature/Auth/RegistrationTest.php` só afirma que o cadastro **funciona**, o que é o oposto de uma decisão consciente).
+- **Superfície no boilerplate hoje**: sim — rota, controller, página React e teste todos presentes e verdes.
+
+---
+
+#### C6 · Literal `"user:{id}:permissions"` escrito à mão: o boilerplate já limpou, mas nada impede a volta
+- **Pergunta**: (b) guard-rail contra erro daqui
+- **Evidência (spinmax @ e4ec01e)**: o helper existe — `app/Traits/Models/HasRolesAndPermissions.php:48-51`, com docblock avisando que *"escrever a string à mão foi exatamente o que criou a chave morta `role:{id}:permissions` (T-906)"* — e **cinco call sites o ignoram assim mesmo**: `app/Http/Controllers/User/UpdateController.php:105`, `User/StoreController.php:113`, `PermissionRole/SyncPermissionsController.php:31`, `PermissionRole/RevokeRoleController.php:86`, `PermissionRole/AssignRoleController.php:131` — todos `Cache::forget("user:$user->id:permissions")`. Dois outros (`PermissionRole/UpdateController.php:149`, `RbacSyncCommand.php:126`) usam o helper. Sete pontos, duas convenções.
+- **Equivalente no boilerplate**: `app/Traits/Models/HasRolesAndPermissions.php:49` define `permissionCacheKey()` e **os 8 call sites usam o helper** (`User/UpdateController.php:111`, `User/StoreController.php:87`, `PermissionRole/{Sync,Update,AssignRole,RevokeRole}Controller`, `SyncPermissionsCommand.php:116`, `PermissionRoleSeeder.php:74`). **Boilerplate é superior.**
+- **O que absorver / travar**: um teste de arquitetura/regex que falhe diante de `user:` + `:permissions` como literal fora do trait. É invalidação de cache de **permissão** com `rememberForever`: o sintoma de uma chave divergente é permissão revogada que continua valendo para sempre — silenciosa, e nenhum teste funcional a pega, porque cada teste isolado usa o mesmo caminho que gravou.
+- **Superfície no boilerplate hoje**: sim — 8 call sites reais para o teste vigiar; não passa vacuamente.
+
+---
+
+#### C7 · Assinatura assimétrica no mesmo recurso: `shop.order.show` é `signed`, `shop.order.status` bind no mesmo `{order:uuid}` sem assinatura
+- **Pergunta**: (b) guard-rail contra erro daqui
+- **Evidência (spinmax @ e4ec01e)**: `routes/web.php:38-40` — `Route::get('pedido/{order:uuid}', Shop\OrderStatusController::class)->middleware('signed')`. Sete linhas abaixo, `routes/web.php:51-53` — `Route::get('pedido/{order:uuid}/status', Shop\OrderStatusPollController::class)->middleware('throttle:60,1')`, **sem `signed`**, deliberadamente fora do grupo `public.store`. O controller assinado (`app/Http/Controllers/Shop/OrderStatusController.php:30-73`) devolve nome do cliente, CPF mascarado, endereço de entrega e QR Pix; o não-assinado (`OrderStatusPollController.php:19-24`) devolve só `status`/`paid`/`settled`. O link é gerado sem expiração: `app/Http/Controllers/Shop/OrderLookupController.php:41` — `URL::signedRoute('shop.order.show', ['order' => $order->uuid])`, nunca `temporarySignedRoute`.
+- **Equivalente no boilerplate**: não existe rota `signed` de aplicação. A única é `routes/auth.php:39-41` (`verification.verify`, `['signed','throttle:verification']`), do Breeze, com expiração vinda do framework.
+- **O que absorver / travar**: o `uuid` v4 (`app/Models/Order.php:89`, `Str::uuid()`) segura a enumeração, então não é IDOR explorável — mas o desenho é frágil por outro motivo: o `signed` de uma rota declara que o `uuid` sozinho **não** é credencial suficiente, e a rota irmã trata o mesmo `uuid` como se fosse. Vira regra em `.ai/rules`, não teste: (i) modelo alcançado por rota `signed` não pode ter rota irmã sem assinatura que exponha mais que o mínimo; (ii) link assinado que vai por e-mail usa `temporarySignedRoute`, porque `signedRoute` é credencial permanente na caixa de entrada de alguém.
+- **Superfície no boilerplate hoje**: **quase nula, e isso é honesto dizer** — só `verification.verify`. Um teste varrendo rotas `signed` passaria por vacuidade. O valor está na regra escrita, para o primeiro projeto derivado que criar uma URL de acompanhamento público.
+
+---
+
+#### C8 · Onde o boilerplate já é superior — não regarvestar
+- **Pergunta**: (a), respondida com "nada a absorver"
+- **Evidência (spinmax @ e4ec01e) × boilerplate**, cinco pontos verificados um a um:
+  - **`UserPolicy` com teto de prioridade + ator real**: `app/Policies/UserPolicy.php:137-183` no spinmax e `:142-184` no boilerplate são funcionalmente idênticos — `outranks()`, `effectiveActor()` via `ImpersonationService::getOriginalUser()`, `isSelf()` valendo para persona **e** humano. Paridade completa.
+  - **Causer de auditoria durante impersonation**: spinmax `app/Resolvers/AuditUserResolver.php:28-38` (owen-it, plugado em `config/audit.php:33`); boilerplate `app/Resolvers/ActivityCauserResolver.php:14-20` (spatie, plugado em `AppServiceProvider.php:132-134`). Mesma decisão, pacote diferente. Paridade.
+  - **Cache de permissão**: boilerplate `HasRolesAndPermissions.php:84-85` faz `unsetRelation('role')` + `unsetRelation('permissions')` antes de recomputar — *"recomputar sem descartá-las gravaria no cache forever as permissões do papel antigo"*. O spinmax (`:71-78`) **não faz**, e é bug vivo lá. Boilerplate superior.
+  - **Pivô tipado**: boilerplate `app/Models/PermissionUser.php` + `->using(PermissionUser::class)` (`HasRolesAndPermissions.php:136`); spinmax faz `json_decode($permission->pivot->meta, true)` cru sem pivô dedicado (`:147`, `:199`). Boilerplate superior. Observação: **os dois** ainda fazem `json_decode` manual em `getPermissionMeta()`/`getCustomPermissionsList()` — o `PermissionUser` existe mas não declara `casts()` para `meta`, então o pivô tipado ainda não está pagando o que promete.
+  - **`role_id` validado contra o enum**: boilerplate `StoreUserRequest.php:43-46` usa `Rule::exists('roles','id')->whereIn('name', $allowedRoleNames)`; spinmax (`:34-37`) aceita qualquer id de `roles`. Boilerplate superior.
+  - **Contrato de autorização das rotas de escrita**: `tests/Feature/Routes/WriteRoutesAuthorizationTest.php` já existe (origem ctfinance @ b8c6d57). O spinmax **reproduz o mesmo defeito de forma independente** — `routes/web.php:87-88`, `users.impersonate` com `throttle:10,1` e nenhum `can:`, contra `routes/web.php:40` do boilerplate que tem `['throttle:impersonate','can:impersonate_users']`. Segunda ocorrência em projeto diferente: o guard-rail está certo e não é overfitting.
+- **O que absorver / travar**: nada. Uma ressalva de escopo, porém: o contrato acima governa só POST/PUT/PATCH/DELETE. O spinmax mostra a forma que ele não alcança — `GET store/orders/export` (`routes/web.php:116-117`, `can:export_store_data`), um **GET** que transmite CSV com nome, e-mail e telefone de toda a base de clientes (`app/Http/Controllers/Order/ExportController.php:94-115`). Exfiltração é rota de leitura. Se o boilerplate ganhar telas de relatório/export, o contrato precisa de um irmão do lado dos GETs — hoje, sem essa superfície, um teste desses seria vácuo e não vale escrever ainda.
+- **Superfície no boilerplate hoje**: `PermissionUser::casts()` é a única ação concreta que sobra deste bloco; o resto é registro para evitar retrabalho.
+
+---
+
+**Sem candidato por falta de evidência**: não encontrei IDOR real em `store.orders.*` nem `store.customers.*` — são single-tenant, o recurso não tem dono para escopar, e todo controller re-checa policy sobre a instância (`Order/ShowController.php:23`, `Customer/ShowController.php:18`) além do `can:` do grupo. Mass assignment também não rendeu: nenhum dos dois usa `unguarded()`, os dois rodam `Model::shouldBeStrict()` (spinmax `AppServiceProvider.php:134`, boilerplate `:64` com os três handlers de violação reportando em produção, `:70-91` — mais completo), e o único `create()` alimentado por entrada pública do spinmax monta o array à mão a partir de um DTO tipado, com preço recalculado no servidor (`app/Services/Store/CheckoutService.php:108-121`).
+
+
+
+#### Veredito — ### REFUTAR — Autenticação, autorização e IDOR
+
+Todos os arquivos abaixo foram lidos (boilerplate @ `e549737`, spinmax @ `e4ec01e`). Onde corrijo um número, o número correto está no texto.
+
+---
+
+#### C1 · **Requalificado — a "escada" não sobe.** O fato é verdadeiro, a exploração não
+
+Os três fatos estruturais conferem: `database/seeders/PermissionRoleSeeder.php:46` deixa o `admin` com `manage_permissions` e `manage_roles`; `app/Policies/UserPolicy.php:108` (`mutatePermissions`) checa só permissão + `outranks()`; `app/Http/Controllers/PermissionRole/SyncPermissionsController.php:20,25` autoriza e sincroniza sem olhar o conteúdo. Até aí, correto.
+
+O que não se sustenta é a cadeia:
+
+1. **`sync()` não escreve meta.** `Permission::getIdsFromNames()` devolve uma lista de ids e `$user->permissions()->sync($permissionIds)` anexa sem pivô. Logo `getPermissionMeta()` (`app/Traits/Models/HasRolesAndPermissions.php:174`) devolve `null` e `canImpersonateAny()` (`:177-186`) devolve `false`. O `impersonate_users` assim concedido cai na regra de prioridade de `canImpersonate()` (`:196-200`): o manager (70) só impersona quem tem prioridade **< 70**.
+2. **O admin já alcança tudo isso.** Com `manage_users` + `outranks()` ele já troca a senha de qualquer conta abaixo de 90 (`app/Http/Requests/User/UpdateUserRequest.php:46` — o path citado no candidato, sem o diretório `User/`, não resolve; `app/Http/Controllers/User/UpdateController.php:101-102`). "Abaixo de 70" é subconjunto estrito de "abaixo de 90". O ganho líquido é zero em capacidade — só muda o barulho do ataque (impersonation deixa rastro no activitylog e não quebra a senha da vítima; a troca de senha é destrutiva e visível). É um movimento lateral, não uma escalada.
+3. **O caminho que escalaria já está fechado.** O único que grava `can_impersonate_any = true` é `PermissionManagementService::grantPermissionToUser()`, alcançado só por `GrantPermissionController` — e `app/Http/Requests/GrantPermissionRequest.php:14-17` faz `authorize(): return Auth::user()?->hasRole(Roles::SUPER_USER)`. Há teste explícito: `tests/Feature/User/GrantPermissionControllerTest.php:36-47`, `it('forbids an admin (non super user) from granting direct permissions')`.
+4. **A direção de cima já está fechada** por `outranks()` estrito: auto-alvo, par `admin` e `super_user` todos negados, com testes em `tests/Feature/Policies/UserPolicyCeilingTest.php:118-144`.
+5. **O editor de cargos já está fechado** por `ensureActorMayEdit` (`app/Http/Controllers/PermissionRole/UpdateController.php:80-111`), com `it('forbids granting a permission the actor does not have')` em `tests/Feature/PermissionRole/UpdateControllerTest.php:93-104`.
+
+**E a correção (2) proposta colide com decisão vigente e testada.** `tests/Feature/Policies/UserPolicyCeilingTest.php:145-157` é `it('allows an admin to mutate the permissions of a manager')` — e o payload do teste é justamente `[Permissions::MANAGE_PERMISSIONS->value]`, afirmando que o admin **pode** distribuir `manage_permissions` para baixo. Tirar `manage_permissions` do `ADMIN` no seeder deixa esse teste vermelho. Isso é mudança de desenho do RBAC padrão da casa, não absorção de harvest — vai como decisão do dono, não como fatia.
+
+**O que sobra, e é o real achado:** uma inconsistência interna de três portas. O mesmo sistema diz "conceder avulso = só `super_user`" (`GrantPermissionRequest:14-17`) e "sincronizar/revogar avulso = `manage_permissions` + `outranks`" (`SyncPermissionsController.php:20`, `app/Http/Controllers/User/RevokePermissionController.php:24`). O próprio spinmax diz isso com todas as letras — `tests/Feature/User/PermissionMutationCeilingTest.php:44-45`: *"O `GrantPermissionRequest` já exigia `super_user` no grant; agora o sync e o revoke dizem a mesma coisa."* Alinhar as três portas é a lição. "Escada viva no boilerplate" não é.
+
+---
+
+#### C2 · **Derrubado — é o mesmo item do C1, e a metade "grant" é inalcançável**
+
+A premissa é "o grant individual não tem a regra". Verifiquei: **o admin nunca chega no grant individual.** `app/Http/Requests/GrantPermissionRequest.php:14-17` exige `SUPER_USER`. O único ator que executa `GrantPermissionController` é quem tem todas as permissões — o `array_diff($permissions, $actor->getAllPermissions())` ali seria tautologicamente vazio. Regra morta por construção.
+
+Sobram `SyncPermissionsController` e `RevokePermissionController`. No revoke, "conceder o que você não tem" não significa nada — revogar não amplia. **Resta uma linha, em um controller** (`SyncPermissionsController.php:25`), que é exatamente a correção (1) do C1. C2 não é candidato independente; é duplicata. Fundir com C1.
+
+Um detalhe de execução que o texto erra: *"extrair a checagem para um ponto só (policy ou service)"* — **policy não dá**. A assinatura é `mutatePermissions(User $user, User $model)`; o Gate recebe o modelo, não o payload da request. Não há por onde passar a lista de permissões sem inventar um `Gate::allows('x', [$model, $permissions])` fora do padrão dos outros call sites. O "ponto só" tem que ser um service/action — mais superfície nova do que o candidato sugere.
+
+---
+
+#### C3 · **Derrubado — o teste proposto não pegaria o C1, e a matriz do boilerplate é quase degenerada**
+
+Fatos do spinmax conferem (com dois off-by-one): docblock em `tests/Feature/Store/AdminPermissionMatrixTest.php:8-18`, dataset `:25-48` (o candidato disse `:41-48`, que é só o duplo `foreach`), asserção `:50-54` (candidato: `:51-55`), visitor em `:65-67` (candidato: `:66-68`). 7 rotas × 6 cargos = 42 ✓.
+
+Mas a afirmação central é falsa. **"É o teste que teria pegado o C1 sozinho"** — não teria. O C1 mora em `POST /users/{user}/sync-permissions`. A matriz do spinmax é GET-only: `:51` faz `->get(route($routeName))` e o `$allowed` só lista telas. Nenhuma célula toca um verbo de escrita.
+
+E a célula que o candidato diz que forçaria a decisão a aparecer **já existe escrita à mão**, em três testes: `tests/Feature/PermissionRole/UpdateControllerTest.php:64-80` (admin não edita o próprio cargo), `:82-91` (admin não edita `super_user`), `:106+` (admin edita cargo abaixo com o que ele tem) — e o lado leitura em `tests/Feature/Policies/UserPolicyCeilingTest.php:105-113`.
+
+**A contagem também está errada.** "5 cargos × 4 telas gateadas" — são **6** telas GET gateadas: `users.index`, `users.create`, `users.show`, `users.edit`, `users.permissions.show` (todas sob `can:manage_users`, `routes/web.php:22-36`) e `role-permissions` (`can:manage_roles`, `:45-56`). Só que elas colapsam em **2 gates de rota distintos** — a única variação real é `ShowUserPermissionsController.php:25`, que adiciona `Gate::authorize('managePermissions', $user)`. Uma matriz 5×6 = 30 células codificaria ~3 decisões. No spinmax a matriz vale porque há 6 permissões distintas espalhadas por 7 telas; aqui é cerimônia sobre uma tabela de duas colunas, redundante com `tests/Feature/User/IndexControllerTest.php:38-42`.
+
+**Sobrevive uma linha, não o teste.** Não achei nenhuma asserção de que `visitor` tem zero permissões — `tests/Pest.php:89-94` documenta `guestUser()` como "usuário sem nenhuma permissão (cargo VISITOR)" e dezenas de testes dependem disso, mas ninguém verifica. Se alguém marcar uma caixa para `visitor` no seeder, "Remover cargo" para de remover e uma pilha de testes muda de significado em silêncio. Vale um `expect(userWithRole(Roles::VISITOR)->getAllPermissions())->toBeEmpty()`. O resto do C3 não.
+
+---
+
+#### C4 · **Sobrevive, mas o candidato aponta o buraco menor**
+
+Fatos conferem: spinmax `routes/web.php:61` com o middleware inline no grupo; `routes/settings.php:10` só com `auth` (o candidato disse `:11`, que é o `Route::redirect`); boilerplate `bootstrap/app.php:43` dentro de `$middleware->web(append:)` ✓; `tests/Feature/EnsureUserIsActiveTest.php` toca só `/dashboard` e `/login` ✓. O boilerplate é superior ✓.
+
+Tentei derrubar por "risco irreal" e não consegui: mover um middleware para o grupo de `web.php` é exatamente o refactor natural quando alguém acha que "só o painel precisa disso", e o teste atual continua verde. O guard-rail é legítimo.
+
+Duas objeções ao formato, porém:
+
+1. Um caso funcional em `route('profile.edit')` prova pouco e por acaso. A forma que realmente trava a decisão é asserção estrutural: varrer `Route::getRoutes()` e exigir `EnsureUserIsActive` no `gatherMiddleware()` de toda rota sob `auth` — pega os três arquivos e qualquer arquivo futuro, sem depender de alguém lembrar de acrescentar uma rota ao teste.
+2. **O mesmo defeito de deriva por arquivo já está vivo no boilerplate, com outro middleware, e o candidato não viu:** `routes/settings.php:10` é `Route::middleware('auth')`, sem `verified`. `App\Models\User implements MustVerifyEmail` (`app/Models/User.php:18`) e `routes/web.php:12` usa `['auth','verified']` — ou seja, conta não verificada é barrada do painel e **passa** em `/settings/profile`, `/settings/password` e no `DELETE settings/profile`. Se o item vai existir, é esse o caso a cobrir junto, não uma hipótese.
+
+---
+
+#### C5 · **Sobrevive só como decisão a escrever; a leitura do risco está inflada e o custo subestimado**
+
+Fatos conferem: `routes/auth.php:16-20` ✓, `RegisteredUserController.php:31-41` com `Auth::login($user)` em `:39` ✓, migration `:12` com `is_active` default `true` ✓, spinmax sem rota de registro em `routes/auth.php:14-33` ✓.
+
+O que a evidência não conta:
+
+- **`App\Models\User implements MustVerifyEmail`** (`app/Models/User.php:18`) e todo o painel está sob `['auth','verified']` (`routes/web.php:12`). O auto-cadastrado não chega ao dashboard — cai em `verification.notice`. `tests/Feature/Auth/RegistrationTest.php:20` só afirma o *alvo* do redirect, nunca que ele renderiza; ler esse teste como "entra no painel" é erro.
+- A superfície realmente alcançável por essa conta é `routes/settings.php` (só `auth`, ver C4): perfil, senha, aparência e `profile.destroy`. Isso é concreto e o candidato não nomeou.
+- `role_id` null ⇒ `priority()` 0 e todo gate falso (`app/Providers/AppServiceProvider.php:138-146`) ⇒ "não há escalada" ✓, isso está certo.
+
+**Custo maior que o anunciado:** tirar a rota não é uma linha. `resources/js/pages/auth/login.tsx:111` chama `route('register')` via Ziggy — sem a rota nomeada, o Ziggy lança em runtime na tela de login. São rota + página `auth/register` + link do login + `RegistrationTest.php` inteiro + o `throttle:auth` em `:20`.
+
+E é decisão de postura padrão do boilerplate — cabe `[proposta-adr]` para o dono, não fatia de harvest. A parte defensável e barata é a que o próprio candidato coloca como plano B: um teste que **declare** a decisão (registro público é ligado de propósito; a conta nasce sem cargo, sem verificação e sem acesso ao painel), em vez de só afirmar que o cadastro funciona.
+
+---
+
+#### C6 · **Sobrevive, mas a premissa "uma convenção só" é falsa neste repositório**
+
+Fatos conferem com precisão incomum. Spinmax: helper em `app/Traits/Models/HasRolesAndPermissions.php:50` e os cinco literais exatamente onde o candidato diz — `User/UpdateController.php:105`, `User/StoreController.php:113`, `PermissionRole/SyncPermissionsController.php:31`, `PermissionRole/RevokeRoleController.php:86`, `PermissionRole/AssignRoleController.php:131` ✓. Boilerplate: os 8 call sites usam `User::permissionCacheKey()` — `User/UpdateController.php:111`, `User/StoreController.php:87`, `PermissionRole/SyncPermissionsController.php:27`, `PermissionRole/UpdateController.php:53`, `PermissionRole/RevokeRoleController.php:94`, `PermissionRole/AssignRoleController.php:126`, `Console/Commands/SyncPermissionsCommand.php:116`, `database/seeders/PermissionRoleSeeder.php:74` ✓.
+
+Onde ele erra:
+
+- **"o boilerplate já limpou" vale só para `app/`+`database/`.** `grep -rn "user:.*:permissions" tests/` devolve **16 literais escritos à mão**: `tests/Feature/PermissionRole/UpdateRolePermissionsInvalidatesUserCacheTest.php:54,57,67,68,73,83,84,89,132,135,146,147,161,162` e `tests/Feature/Console/SyncPermissionsCommandTest.php:93,97`. As duas convenções que o candidato quer impedir **já convivem** — mudaram de lado, não sumiram. Um regex ingênuo sobre o repositório fica vermelho no primeiro `composer ci:check`; a regra precisa de escopo explícito (`app/`, `database/`, `routes/`, exceto o trait).
+- **A proteção parcial já existe:** `tests/Feature/Permissions/PermissionCacheKeyTest.php:19-23` fixa o formato (`toBe("user:{$user->id}:permissions")`). O formato não muda em silêncio; quem mexer nele tem que editar esse teste. O que continua desprotegido é só a reintrodução do literal em `app/`.
+
+Com esse escopo e sem a narrativa de "chave morta esperando acontecer", o item se sustenta: é um grep barato guardando 8 pontos reais de invalidação de `rememberForever`. Venda como regra de lint com escopo, não como `arch()`.
+
+---
+
+#### C7 · **Derrubado — é exatamente o guard-rail vácuo que a rodada mandou evitar, só que num `.md`**
+
+Fatos do spinmax conferem: `routes/web.php:38-40` (`signed`) e `:51-53` (sem `signed`, `throttle:60,1`) ✓; o assinado devolve muito mais que o irmão ✓; `URL::signedRoute` sem expiração em `OrderLookupController.php:41` ✓.
+
+No boilerplate: `grep -rn "signed" routes/ app/` devolve **uma única ocorrência** — `routes/auth.php:47` — e **zero** `URL::signedRoute` / `temporarySignedRoute` em `app/`. O candidato admite "superfície quase nula" e então propõe mover o guard-rail de teste para `.ai/rules`. Isso não resolve o problema apontado no briefing — só troca um teste que passa vacuamente por uma regra que não governa nenhuma linha de código.
+
+Pior: a regra (ii) ("link assinado por e-mail usa `temporarySignedRoute`") já é o comportamento do único caso existente — a notificação `VerifyEmail` do framework gera URL temporária a partir de `config('auth.verification.expire')`. A regra nasceria descrevendo o que o framework já faz, para um projeto derivado que ainda não existe.
+
+Derrubar da rodada. Se o dono quiser, vive no checklist de projeto derivado, não no boilerplate.
+
+---
+
+#### C8 · **Confirmado no essencial; seis números a corrigir e a "única ação concreta" não é one-liner**
+
+Conferi cada ponto:
+
+| Alegação | Verificado |
+|---|---|
+| `UserPolicy` paridade — boilerplate `:142-184`, spinmax `:137-183` | ✓ exato nos dois (`outranks` em 142/137, `isSelf` em 181/176) |
+| `ActivityCauserResolver.php:14-20`, plugado em `AppServiceProvider.php:132-134` | ✓ (o método `configActivitylog()` abre em `:130`) |
+| spinmax `AuditUserResolver.php:28-38` + `config/audit.php:33` | ✓ (`resolve()` começa em `:29`; `'resolver' => \App\Resolvers\AuditUserResolver::class` em `:33`) |
+| `unsetRelation` antes de recomputar — "`:84-85`" | ✗ **`:81-82`**. `:84-85` são o `Cache::forget` + `rememberForever`. Spinmax não faz ✓ |
+| `PermissionUser` + `->using()` em `:136` | ✓ |
+| `StoreUserRequest.php` com `Rule::exists(...)->whereIn(...)` — "`:43-46`" | ✓ regra em `:43-45` |
+| `Model::shouldBeStrict()` boilerplate `:64` / spinmax `:134`, handlers "`:70-91`" | ✓ / ✓; handlers em **`:65-89`** |
+| `WriteRoutesAuthorizationTest` existe, origem ctfinance @ b8c6d57 | ✓, docblock `:14-18` |
+
+A observação sobre `PermissionUser` sem `casts()` está certa (`app/Models/PermissionUser.php` é uma subclasse vazia de `Pivot`). **Mas "única ação concreta que sobra" subestima o trabalho.** Declarar `casts(): ['meta' => 'array']` muda `$permission->pivot->meta` de `string` para `array` e quebra os dois consumidores: `HasRolesAndPermissions.php:174` (`json_decode($permissionModel->pivot->meta, true)` → `TypeError`) e `:229` (mesmo problema). E as escritas em `:116` e `:121` fazem `json_encode($meta)` à mão — teriam que parar de encodar. É um refactor de 4 pontos + testes que assertam a forma do meta (`tests/Feature/User/GrantPermissionControllerTest.php:23-34` compara com `['can_impersonate_any' => true]`, esse continua passando; mas `ImpersonateTest.php:47,103` alimentam via `givePermissionTo`). Escopar como fatia própria, não como remendo de fim de PR.
+
+A ressalva sobre GETs de exportação está correta e bem calibrada: sem superfície de relatório no boilerplate, um teste irmão do lado dos GETs passaria por vacuidade. Concordo em não escrever agora.
+
+---
+
+### Resumo do veredito
+
+| # | Veredito |
+|---|---|
+| **C1** | Requalificar. Fato ✓, exploração ✗ (sem meta, `impersonate_users` fica abaixo do que o admin já alcança; grant meta-bearing é super_user-only e testado). Sobra: alinhar as 3 portas de mutação avulsa. Proposta (2) do seeder colide com `UserPolicyCeilingTest.php:145-157` — vira decisão do dono |
+| **C2** | **Derrubado.** Duplicata do C1; a metade "grant" é inalcançável por `GrantPermissionRequest:14-17`; e a extração "para a policy" é impossível pela assinatura |
+| **C3** | **Derrubado.** Não pegaria o C1 (matriz é GET-only); as células já existem em `UpdateControllerTest`; "4 telas" são 6 e colapsam em 2 gates. Sobrevive **uma linha**: `visitor` com zero permissões, hoje sem asserção nenhuma |
+| **C4** | **Sobrevive**, com duas correções de forma: asserção estrutural sobre `gatherMiddleware()` em vez de um caso funcional; e o caso realmente vivo é `verified` ausente em `routes/settings.php:10` |
+| **C5** | **Sobrevive parcialmente.** Severidade inflada (`MustVerifyEmail` fecha o painel); superfície real é `settings.php`; remover a rota quebra Ziggy em `login.tsx:111`. Fica a decisão escrita, não a remoção |
+| **C6** | **Sobrevive**, com escopo explícito. "Boilerplate já limpou" vale só para `app/`+`database/` — há 16 literais em `tests/`; e `PermissionCacheKeyTest.php:19-23` já fixa o formato |
+| **C7** | **Derrubado.** Uma rota `signed` no repo inteiro, e a regra proposta descreve o que o framework já faz. Guard-rail vácuo mudado de lugar |
+| **C8** | **Confirmado.** 6 números corrigidos acima; `PermissionUser::casts()` é refactor de 4 call sites, não one-liner |
+
+
+
+#### Veredito — ### RISCO DE ABSORÇÃO — Autenticação, autorização e IDOR
+
+Verifiquei os dois lados arquivo a arquivo. Três candidatos mudam de tamanho depois da checagem (C1 encolhe, C2 corrige um fato, C3 perde a justificativa principal), um sobe de risco (C5), e o único item "concreto" do C8 esconde uma corrupção de dado persistido.
+
+---
+
+#### C1 · Escada do `admin` via `sync-permissions` — **RISCO: MÉDIO**
+
+**A cadeia é real, mas metade dela já está fechada.** O que confirmei:
+
+- `database/seeders/PermissionRoleSeeder.php:46` de fato deixa `manage_permissions` com o `admin` (só `IMPERSONATE_USERS` sai).
+- `app/Policies/UserPolicy.php:108` (`mutatePermissions`) checa `manage_permissions` + `outranks()` e nada sobre *quais* permissões.
+- `app/Http/Controllers/PermissionRole/SyncPermissionsController.php:20` autoriza e `:25` faz `$user->permissions()->sync($permissionIds)` sem filtro de conteúdo.
+
+**O que derruba a severidade do jeito como está escrito:**
+
+1. **O auto-grant — o buraco que o docblock do spinmax descreve — já não existe aqui.** `outranks()` nega prioridade igual, e `tests/Feature/Policies/UserPolicyCeilingTest.php:118` (`forbids an admin from granting themselves the permission the seeder denies`) e `:130` (alvo `super_user`) já são verdes. O que sobra é só o alvo de prioridade menor.
+2. **A escada não sobe.** Admin concede `impersonate_users` ao manager (70) e toma a conta pela senha (`UpdateUserRequest` aceita `password`; policy `update` = 90 > 70). Mas `HasRolesAndPermissions.php:189-207` limita esse manager a alvos de prioridade **< 70**, e o `can_impersonate_any` é inalcançável: `app/Http/Requests/GrantPermissionRequest.php:15` exige `hasRole(SUPER_USER)`, e o `sync()` passa array de IDs cru, sem pivot values, então `meta` fica null. Todas as contas assim alcançadas o admin já alcançava direto por troca de senha.
+3. O dano residual honesto é **lavagem de trilha de auditoria**, não ganho de privilégio: o `ActivityCauserResolver` resolve o causer para o usuário original da sessão — o manager —, não para o admin que armou a persona.
+
+**Risco da absorção, por eixo:**
+
+- **Dado persistido**: a opção (1) do candidato (portar o `array_diff` de `PermissionRole/UpdateController.php:106`) é código puro — zero schema, zero migração. A opção (2) (tirar `manage_permissions` do `ADMIN` no seeder) **é mudança de dado**: `PermissionRoleSeeder` é re-executável e faz `sync()` no pivô `permission_role`, e ele mesmo invalida o cache de todo mundo (`:73-75`). Todo derivado que rodar `db:seed --class=PermissionRoleSeeder` depois disso perde `manage_permissions` de todos os admins na hora, sem aviso. Essa é a trap de migração a anotar.
+- **Comportamento**: **as duas opções não são equivalentes contra o teste que já existe.** `tests/Feature/Policies/UserPolicyCeilingTest.php:146` — `it('allows an admin to mutate the permissions of a manager')` — sincroniza justamente `MANAGE_PERMISSIONS` e espera sucesso. A opção (1) o mantém verde (o admin **tem** `manage_permissions`, logo pode delegá-la — é a regra "a trava é sobre ampliar, não sobre delegar"). A opção (2) o deixa vermelho. O candidato apresenta as duas como intercambiáveis; não são, e essa é a diferença decisiva para fatiar.
+- **Modo de falha**: fail-closed (403). Errar na direção restritiva nega delegação legítima do `super_user`, que percebe na hora.
+- **Fraqueza importada**: nenhuma do spinmax. Mas atenção a um erro fácil ao "aplicar nos caminhos de mutação": **`RevokePermissionController` não pode entrar na trava**. Remover permissão não amplia nada; travá-la impediria um admin de arrancar `impersonate_users` de uma conta comprometida — regressão fail-open no sentido de resposta a incidente.
+- **Tamanho**: opção (1) = 1 ponto de regra + 1 call site (`SyncPermissionsController`) + 1 teste. Dá para fatiar em uma fatia só. Cabe junto a limpeza da incoerência de três abilities num endpoint: rota `can:manage_users` (`routes/web.php:61-63`), `SyncPermissionsRequest::authorize()` = `can(MANAGE_USERS)`, policy = `manage_permissions`.
+
+**Justificativa do médio**: fail-closed e sem schema, mas colide de frente com um teste verde e documentado, e uma das duas opções propostas é mudança de dado que se propaga aos 7 derivados.
+
+---
+
+#### C2 · Duas portas de concessão com regras diferentes — **RISCO: BAIXO** (com uma correção de fato)
+
+**Correção**: `GrantPermissionController` **não é alcançável pelo admin**. `app/Http/Requests/GrantPermissionRequest.php:15` exige `hasRole(SUPER_USER)`. A frase "o caminho permissivo é justamente o que o `admin` alcança" vale só para o `SyncPermissionsController`. São duas portas divergentes, não três, e só uma delas é a porta do admin.
+
+Em compensação, a assimetria mais afiada é outra e o candidato passa por ela: o `GrantPermissionController` gateia por **cargo** (`super_user`) na FormRequest e por **permissão** (`manage_permissions`, via `Gate::authorize('mutatePermissions')`) no controller. Consequência: `manage_permissions` concedida avulsa a um não-`super_user` é morta na rota de grant e viva na rota de sync. É o mesmo defeito "um sistema, duas respostas", numa forma que a proposta atual não descreve.
+
+- **Dado persistido**: nenhum. Refactor de autorização.
+- **Comportamento / modo de falha**: fail-closed.
+- **Fraqueza importada**: uma, se a extração for preguiçosa. `ensureActorMayEdit` (`PermissionRole/UpdateController.php:80-111`) mistura duas coisas: o `array_diff` de superfície (`:106`) e a guarda de auto-tranca do `super_user` sobre `MANAGE_ROLES` no próprio cargo (`:88-99`). A segunda é de formato *cargo* e não traduz para concessão por usuário. Extrair **só** o `array_diff`.
+- **Tamanho**: 2 arquivos + 1 teste; fatiável para 1 (só o sync) sem perder valor — e é exatamente a mesma fatia do C1 opção (1). **C1 e C2 são uma fatia, não duas.**
+
+---
+
+#### C3 · Matriz cargo × tela como teste cartesiano — **RISCO: BAIXO** (mas a justificativa principal não se sustenta)
+
+Confirmei a ausência: não existe teste cartesiano; `tests/Feature/User/IndexControllerTest.php:37-41` usa um cargo só (`VIEWER`), e `Roles::cases()` em `tests/` só aparece em seletor e catálogo.
+
+**Duas objeções que mudam o desenho da fatia:**
+
+1. **"É o teste que teria pegado o C1 sozinho" é falso.** O C1 não é defeito de acesso a tela. A célula "admin entra em `role-permissions`" é decisão **deliberada e defendida** aqui: o admin tem `manage_roles` de propósito, e o `ensureActorMayEdit` (`PermissionRole/UpdateController.php:80-111`) é a trava que o spinmax não tinha. O C1 corre por `POST /users/{user}/sync-permissions`, rota de escrita. O que pegaria o C1 é uma tabela **permissão × cargo** ("o admin detém `manage_permissions`?"), não **tela × cargo**.
+2. **A superfície é menor do que "5 × 4".** As telas gateadas do boilerplate escondem só **dois** gates distintos: `can:manage_users` (`users.index`, `users.create`, `users.show`, `users.edit`, `users.permissions.show`) e `can:manage_roles` (`role-permissions`). São 5 × 2 células de informação independente, infladas por repetição. O teste continua valendo — como detector de mudança com allowlist escrita à mão —, mas não como cobertura ampla.
+
+- **Dado persistido / comportamento**: nenhum. Só teste.
+- **Risco real**: imposto de manutenção. Os gates são auto-registrados por `Permissions::cases()` (`AppServiceProvider.php:139-140`) e o seeder dá `$allPermissions` ao admin: **todo case novo no enum amplia o `admin` sozinho**, e a allowlist manual passa a ser o único lugar onde alguém precisa escrever isso à mão. Esse é o valor — e é o motivo de o teste ser candidato a virar ruído e ser ignorado se o comentário não explicar por que ele não deriva do seeder.
+- **Sugestão de fatia**: em vez do cartesiano tela × cargo, o de maior retorno aqui é **permissão × cargo** com allowlist literal (25 células, cobre o C1 e o crescimento silencioso do enum), e o de tela como complemento barato.
+
+---
+
+#### C4 · `EnsureUserIsActive` global — **RISCO: BAIXO**
+
+Verificado dos dois lados: `bootstrap/app.php:43` põe `EnsureUserIsActive::class` no `web(append:)`, cobrindo `web.php`, `settings.php` e `auth.php`; o spinmax o tem inline no grupo de `routes/web.php:61`, deixando `settings.php` e `auth.php` de fora. Boilerplate superior, confirmado. `tests/Feature/EnsureUserIsActiveTest.php` de fato só exercita `/dashboard` e `/login`.
+
+- **Dado persistido**: nenhum.
+- **Comportamento**: nenhum — é caso de teste adicional, código de produção intocado.
+- **Modo de falha da regressão que o teste vigia**: fail-open e silencioso (conta desativada seguindo trocando senha em `/settings/password`), que é exatamente o perfil que justifica o teste.
+- **Nota de execução**: o middleware é o **último** do append, depois de `HandleInertiaRequests`, então o redirect com flash sai pelo canal Inertia — o caso novo deve usar `assertInertiaFlash('error')` como os existentes, senão passa a testar outra coisa.
+- **Tamanho**: 1 caso em arquivo existente. Não dá para fatiar menor.
+
+---
+
+#### C5 · Auto-cadastro público ligado por padrão — **RISCO: ALTO**
+
+Confirmei o fato (`routes/auth.php:16-20`; `RegisteredUserController::store` com `Auth::login` imediato; `is_active` default `true`). Duas correções de alcance, uma para baixo e uma para cima:
+
+**Para baixo (o buraco é menor do que lido)**: `app/Models/User.php:18` — `User implements MustVerifyEmail`, e `routes/web.php:12` embrulha todo o painel em `['auth','verified']`. O recém-cadastrado recebe sessão mas cai em `verify-email`; nenhuma tela do painel abre. "Sessão autenticada" e "poluição de `users.index`" continuam corretos; "cota de e-mail" também.
+
+**Para cima (a absorção é a mais cara da frente)**: apagar a rota quebra em três lugares que não falham em teste unitário nem em boot:
+
+- `resources/js/pages/auth/login.tsx:111` — `<TextLink href={route('register')}>`. Com Ziggy (ADR 0002) a lista de rotas vai para o cliente; `route('register')` sem a rota **lança em tempo de render**, na página pública mais visitada. Não é degradação, é 500 no login.
+- `resources/js/pages/auth/register.tsx:29` — a página inteira fica órfã.
+- `tests/Feature/Auth/AuthRouteThrottleTest.php:29` lista `['POST', 'register']` no contrato de throttle; `tests/Feature/Auth/RegistrationTest.php` (2 testes) vira vermelho por definição.
+
+Eixos:
+
+- **Dado persistido**: nenhum diretamente. Mas contas já criadas por auto-cadastro nos derivados ficam com `role_id` null e sem caminho de origem documentado — decisão de limpeza que precisa ser explicitada, não um efeito automático.
+- **Comportamento**: muda algo que funciona hoje, em direção fail-closed (rota some, ninguém entra). O risco não é de segurança, é de **quebra de superfície pública** num ponto que o `ci:check` só pega se o build de TS/Vite resolver `route()` — e ele não resolve, porque Ziggy resolve em runtime.
+- **Tamanho real**: rota + controller + página React + link no login + 2 testes + entrada no contrato de throttle = **6 arquivos**, e é a única fatia da frente que toca frontend. **Dá para fatiar menor e melhor**: fatia A = trocar `tests/Feature/Auth/RegistrationTest.php` por um teste que **declare a decisão** (hoje ele afirma que o cadastro funciona, que é o oposto de uma decisão consciente) e documentar o bloco de reativação; fatia B, separada, = remover a rota com o link e a página juntos. A fatia A sozinha já resolve a objeção real do candidato ("uma porta que ninguém decidiu abrir") sem nenhum risco.
+
+**Justificativa do alto**: é a única absorção da frente que quebra artefato público em runtime por caminho que os gates verdes não cobrem.
+
+---
+
+#### C6 · Literal `"user:{id}:permissions"` escrito à mão — **RISCO: BAIXO**
+
+Confirmei: `app/Traits/Models/HasRolesAndPermissions.php:49` é o **único** literal em `app/`, e os 8 pontos de invalidação usam `User::permissionCacheKey()`. O spinmax tem 5 de 7 escrevendo à mão. Boilerplate superior, confirmado.
+
+O candidato erra por omissão num ponto que muda a fatia: **já existe `tests/Feature/Permissions/PermissionCacheKeyTest.php`** — mas é comportamental (invalida via `assign-role`, via editor de cargo, via seeder), não um guard de literal. A proposta continua sendo nova.
+
+- **Dado persistido / comportamento**: nenhum. É lint.
+- **Fraqueza da própria absorção**: o regex precisa ser escopado a `app/` + `database/`. Em `tests/` há ~15 literais legítimos (`UpdateRolePermissionsInvalidatesUserCacheTest.php`, `SyncPermissionsCommandTest.php:93,97`, e o próprio `PermissionCacheKeyTest.php:22`, que compara o helper contra a string à mão de propósito). Um regex sobre o repo inteiro nasce vermelho.
+- **Modo de falha do próprio guard**: **fail-open silencioso** — regex errado nunca casa e o teste passa para sempre sem vigiar nada. Mitigação barata: o teste afirma que encontra exatamente **uma** ocorrência (a definição no trait, `:49`); zero ocorrências reprova.
+- **Tamanho**: 1 arquivo de teste.
+
+---
+
+#### C7 · Assinatura assimétrica no mesmo recurso — **RISCO: BAIXO**
+
+Confirmei a vacuidade que o próprio candidato admite: `grep -rn signed routes/` no boilerplate devolve **uma** linha, `routes/auth.php:47`. Teste varrendo rotas assinadas passaria vazio.
+
+- **Dado persistido / comportamento**: nenhum. É documento.
+- **Onde mora**: `.ai/rules/routes.md` já existe com frontmatter `paths: routes/**` e já carrega dois contratos exatamente desse formato (limiter nomeado; escrita autenticada declara autorização). A terceira regra encaixa sem estrutura nova.
+- **Fraqueza da absorção**: a regra "link assinado por e-mail usa `temporarySignedRoute`" **conflita no dia um** com a única rota assinada existente. `verification.verify` usa `signed` puro e a expiração vem do framework (`config/auth.php`, `verification.expire`), não de `temporarySignedRoute`. Sem a ressalva explícita, a regra nasce descrita como violada e perde autoridade.
+- **Tamanho**: 1 arquivo, ~2 parágrafos. Menor fatia da frente inteira.
+
+---
+
+#### C8 · Onde o boilerplate já é superior — **RISCO: BAIXO no registro, MÉDIO na única ação concreta**
+
+O registro de paridade/superioridade é conferência, sem risco. A **única ação concreta** (`PermissionUser::casts()`) tem armadilha de dado persistido que o candidato não menciona:
+
+`app/Models/PermissionUser.php:14` é `Pivot` vazio, com só `@property string|null $meta` (`:12`). Adicionar `casts(): ['meta' => 'array']` **isolado** produz gravação duplamente codificada: `HasRolesAndPermissions.php:116` e `:121` já fazem `json_encode($meta)` na escrita (`attach` / `updateExistingPivot`), e o cast encodaria de novo. Resultado: linhas antigas com JSON simples e linhas novas com `"{\"can_impersonate_any\":true}"` na mesma coluna. A leitura falha de forma benigna (`canImpersonateAny()` devolve `false` → impersonação negada, fail-closed), mas a coluna fica com dois formatos e só sai disso com backfill que inspeciona linha a linha.
+
+Portanto a fatia é indivisível: cast **+** remover `json_encode` das duas escritas **+** remover `json_decode` das duas leituras (`:174` em `getPermissionMeta`, `:229` em `getCustomPermissionsList`) **+** corrigir o `@property` para `array|null` (larastan reclama) **+** decidir sobre linhas existentes. **5 pontos em 2 arquivos, um deles com dado no banco.** Não dá para fatiar menor sem passar por um estado corrompido intermediário.
+
+Duas observações menores, sem candidato próprio: `getPermissionMeta()` dispara uma query nova a cada chamada e `canImpersonate()` (`:203`) a invoca por checagem; e a ressalva de escopo do candidato sobre GETs de export está correta — hoje seria teste vazio, não vale escrever.
+
+---
+
+### Ordem de absorção por risco, se for para fatiar
+
+| Fatia | Candidatos | Risco | Por quê |
+|---|---|---|---|
+| 1 | C7 (regra em `.ai/rules/routes.md`) | baixo | 1 arquivo, só documento, com a ressalva do `verification.verify` |
+| 2 | C4 (caso atravessando arquivo de rota) | baixo | 1 caso em teste existente, produção intocada |
+| 3 | C6 (guard de literal) | baixo | escopar a `app/`+`database/` e afirmar 1 ocorrência, não 0 |
+| 4 | **C1 opção (1) + C2 juntos** | médio | mesma extração de `array_diff`; mantém `UserPolicyCeilingTest:146` verde; **excluir o revoke** |
+| 5 | C3 na forma permissão × cargo | baixo | pega o C1 e o crescimento silencioso do enum; a forma tela × cargo tem só 2 gates reais |
+| 6 | C8 (`PermissionUser` meta) | médio | indivisível: cast + 2 escritas + 2 leituras + backfill |
+| 7 | C5 fatia A (teste que declara a decisão + doc) | baixo | resolve a objeção real sem tocar rota |
+| — | C5 fatia B (remover a rota) | **alto** | quebra `login.tsx:111` em runtime via Ziggy; decisão do dono, não fatia técnica |
+| — | C1 opção (2) (seeder) | **alto** | mudança de dado propagada aos 7 derivados; contradiz teste verde documentado |
+
+
+
+#### Veredito — ### ATUALIDADE — Autenticação, autorização e IDOR
+
+**Base verificada:** boilerplate em `laravel/framework v13.24.0`, `inertiajs/inertia-laravel v3.3.1`, `pestphp/pest v5.1.0`, PHP 8.4 (`composer.lock`). Docs consultadas via `search-docs` (version-aware, 13.x) e assinaturas conferidas no vendor real.
+
+---
+
+#### C1 · Escada do `admin` → `impersonate_users` — `[absorver-modernizado]`
+
+Não há nada nativo que supere isto: o Laravel 13 não tem RBAC, e o teto "não conceda o que você não tem" não existe em ponto nenhum do framework. A cadeia que você descreve continua de pé — confirmei `SyncPermissionsController.php:20-27` (`Gate::authorize('mutatePermissions', $user)` e `$user->permissions()->sync($permissionIds)` sem filtro de conteúdo), `UserPolicy.php:108-115` (só `manage_permissions` + `outranks()`), `SyncPermissionsRequest.php:14` (`can(MANAGE_USERS)`) e `PermissionRoleSeeder.php:46` (`array_filter` que só remove `IMPERSONATE_USERS`, deixando `manage_permissions` no admin).
+
+O que **muda com a API atual** é onde a regra mora. Hoje a proposta é copiar um `abort(403)` de dentro de um controller; o L13 já expressa isso nativamente em dois pontos que o boilerplate ainda não usa:
+
+- **Argumentos extras em policy** — documentado em *Authorization › Supplying Additional Context* (13.x) e confirmado no vendor: `Gate.php:824` `callPolicyMethod($policy, $method, $user, array $arguments)` repassa o array inteiro. Ou seja `Gate::authorize('mutatePermissions', [$user, $request->validated('permissions')])` chega em `mutatePermissions(User $actor, User $target, array $names)`. A policy passa a responder a pergunta certa ("pode mexer NESTE alvo com ESTAS permissões?") em vez de a pergunta pela metade.
+- **`Illuminate\Auth\Access\Response::deny($message)`** (vendor `Response.php:71`; também `denyWithStatus`/`denyAsNotFound` em `:84`/`:96`) — a mensagem propaga pelo `Gate::authorize`, então a frase do spinmax ("Você não pode conceder um acesso que você mesmo não tem.") sobrevive sem `abort()` espalhado.
+
+Recomendo absorver com essa assinatura, e não com o `abort()` do spinmax. Sobre a segunda correção (tirar `manage_permissions` do ADMIN no seeder): nada de nativo a dizer, é decisão de produto, sobrevive intacta.
+
+---
+
+#### C2 · Duas portas de concessão com regras diferentes — `[absorver-modernizado]`
+
+A regra sobrevive: verifiquei `PermissionRole/UpdateController.php:104-111` (o `array_diff` contra `getAllPermissions()` existe) e a **ausência** dela em `SyncPermissionsController.php` e `User/GrantPermissionController.php:24-30`. Nenhum recurso do L13 unifica isso por conta própria.
+
+Modernização, na mesma linha do C1: o "ponto só" que você propõe tem **duas** formas nativas disponíveis, e vale escolher conscientemente —
+
+- policy com argumento extra (verificado acima), que serve os três caminhos com um único método e devolve 403; ou
+- `Rule::in()` dinâmico no FormRequest (*Validation › `in`*, 13.x — com nota explícita de que combinado com `array` ele valida cada item de `permissions.*`), alimentado por `$this->user()->getAllPermissions()->pluck('name')`, devolvendo **422 com erro por campo** em vez de 403 seco. Para uma tela de checkboxes o 422 é a resposta melhor.
+
+**Correção de fato ao candidato, que muda a prioridade:** `GrantPermissionRequest.php:14-16` já faz `authorize()` = `hasRole(Roles::SUPER_USER)`. O grant individual, portanto, **não** está aberto ao admin — o caminho permissivo vivo é só `user.sync-permissions`. A assimetria que você aponta é real e continua valendo como dívida de desenho (três portas, três regras diferentes), mas a escada explorável é uma só.
+
+---
+
+#### C3 · Matriz cargo × tela como teste cartesiano — `[absorver-modernizado]`
+
+Confirmei que o boilerplate não tem o teste (`tests/Feature/User/IndexControllerTest.php:37-47` cobre um cargo e guest). Duas coisas mudaram desde o spinmax:
+
+1. **Pest 5 combina datasets por produto cartesiano nativamente** — docs *Datasets › Combining Datasets* (pestphp/pest@5.x): encadear `->with([...])->with('outro')` gera o produto e nomeia cada combinação na saída. O gerador `foreach` aninhado do spinmax (`AdminPermissionMatrixTest.php:41-48`) não é mais necessário **se** a expectativa por célula for calculada dentro do closure. Ressalva honesta: o gerador manual ainda se justifica quando você quer o veredito na *descrição* do teste (`"admin é barrado em role-permissions"`), que é justamente o efeito que faz o C1 aparecer na revisão. Recomendo o gerador, ciente de que a alternativa nativa existe.
+2. **A matriz precisa reconhecer `#[Authorize]`** — `Illuminate\Routing\Attributes\Controllers\Authorize` existe no L13 (vendor `Illuminate/Routing/Attributes/Controllers/Authorize.php`, docs *Controllers › Authorization Attributes*) e **não** vira `can:` na pilha. O boilerplate já aprendeu isso em `tests/Feature/Routes/WriteRoutesAuthorizationTest.php:20-23`; o teste novo tem que nascer com a mesma consciência, senão passa a mentir no dia em que alguém usar o atributo.
+
+---
+
+#### C4 · `EnsureUserIsActive` global × por grupo — `[atual]`
+
+Tentei derrubar e não caiu. O único mecanismo nativo próximo é `Illuminate\Session\Middleware\AuthenticateSession` + `Auth::logoutOtherDevices()` (docs *Authentication › Invalidating Sessions on Other Devices*, 13.x) — que resolve **outro** problema (invalidar sessões nas outras máquinas na troca de senha, exigindo a senha atual) e não tem nenhuma noção de conta desativada. Não há hook nativo de "usuário deixou de ser elegível mid-sessão".
+
+Confirmei também a premissa: `bootstrap/app.php:19-22` registra só `web: routes/web.php`, e `routes/web.php:68-70` faz `require settings.php` e `require auth.php` — os três arquivos caem no grupo `web`, logo o `append` de `bootstrap/app.php:43` cobre os três. Superioridade sobre o spinmax confirmada.
+
+Modernização só do guard-rail: `routes/settings.php:10` usa `Route::middleware('auth')` sem `verified`, então `route('profile.edit')` é exatamente o caso que atravessa arquivo de rota — é o teste a acrescentar em `tests/Feature/EnsureUserIsActiveTest.php` (hoje só `/dashboard`). E, se quiser a versão estrutural em vez da comportamental, a API nativa é `Route::getRoutes()->getRoutes()` + `$route->gatherMiddleware()` (vendor `Routing/Route.php:1060`) — que é literalmente a técnica que `WriteRoutesAuthorizationTest.php:62-66` já usa neste repositório. Não existe assertion nativa de middleware em rota no `Illuminate\Testing` (procurei; não há).
+
+---
+
+#### C5 · Auto-cadastro público ligado por padrão — `[atual]`
+
+Não há chave nativa. O único "feature flag" de registro do ecossistema é `Laravel\Fortify\Features::registration()`, e Fortify **não** está instalado (`composer.json` não o lista) — seria `[dep-nova]`, além de esbarrar no território do ADR-0005. Os starter kits do L13 continuam entregando `/register` cru, exatamente como está em `routes/auth.php:16-20`. O candidato sobrevive: a decisão é remover a rota (ou declará-la em teste), não configurar nada.
+
+Duas correções de calibragem, verificadas, que o guard-rail deve refletir:
+
+- `app/Models/User.php:18` — `class User extends Authenticatable implements MustVerifyEmail`. Como todo o painel vive sob `['auth','verified']` (`routes/web.php:12`), o auto-cadastrado **não** alcança `/dashboard` antes de verificar o e-mail. A superfície é menor do que "sessão autenticada solta no painel".
+- Mas `routes/settings.php:10` é só `auth`, sem `verified` — então o auto-cadastrado alcança `/settings/profile`, `/settings/password` e `/settings/appearance` imediatamente. A superfície existe; é essa.
+- `RegisteredUserController.php:23-27` valida inline, sem FormRequest — divergente da convenção do `CLAUDE.md`. Se a rota ficar, isso entra junto.
+
+---
+
+#### C6 · Literal `"user:{id}:permissions"` — `[atual]`
+
+Nada nativo. Confirmei o estado: 8 call sites de produção usando `User::permissionCacheKey()` (`User/UpdateController.php:111`, `User/StoreController.php:87`, `PermissionRole/{Sync:27,Update:53,RevokeRole:94,AssignRole:126}`, `SyncPermissionsCommand.php:116`, `PermissionRoleSeeder.php:74`), literal só em `HasRolesAndPermissions.php:51` e em comentários/testes. Nem `Cache::flexible()`, nem tags, nem qualquer novidade de cache do L13 substitui a invalidação manual aqui — e as expectativas arch do Pest 5 operam sobre *dependências entre classes*, não sobre conteúdo de string, então não existe formulação nativa de "proíba este literal".
+
+O que existe de nativo e é mais forte que a regex: `arch()->expect('App\Http\Controllers')->not->toUse('Illuminate\Support\Facades\Cache')`, exatamente o molde de `tests/Arch/ArchTest.php:40-42` (que já faz isso para `Facades\DB`). Diga-se com clareza: **isso não é drop-in** — os 6 controllers listados acima usam a facade hoje, então a regra só fica verde se a invalidação mudar para trás de um `User::forgetPermissionCache()` / `PermissionManagementService` (`app/Services/PermissionManagementService.php` hoje só delega `givePermissionTo`/`revokePermissionTo`). É uma refatoração pequena que troca uma regex frágil por uma barreira arquitetural nativa, e de quebra elimina a possibilidade de literal novo. Se não houver apetite para a refatoração, o teste de regex continua sendo a única forma — não verificada como nativa porque não é.
+
+---
+
+#### C7 · Assinatura assimétrica em `shop.order.*` — `[absorver-modernizado]`
+
+A regra sobrevive inteira (nada nativo diz "rota irmã sem assinatura não pode expor mais que o mínimo"). Confirmei que o boilerplate tem uma única rota assinada, `routes/auth.php:47`. A modernização é o vocabulário: a regra em `.ai/rules` deve nomear as APIs 13.x, todas verificadas em *Urls › Signed URLs*:
+
+- `URL::temporarySignedRoute('nome', now()->plus(minutes: 30), [...])` — note a sintaxe atual do Carbon nomeado (`now()->plus(minutes: 30)`), não `now()->addMinutes(30)`;
+- `URL::signedRoute(..., absolute: false)` combinado com o middleware `signed:relative` (`Illuminate\Routing\Middleware\ValidateSignature`) — relevante para link que atravessa domínio/CDN;
+- `hasValidSignatureWhileIgnoring(['page','order'])` — o jeito nativo de permitir paginação client-side sem afrouxar o resto, que é a desculpa mais comum para largar uma rota irmã sem assinatura;
+- `InvalidSignatureException` com render próprio no `bootstrap/app.php` — porque link expirado hoje cai no 403 genérico, e no boilerplate isso significa a página `errors/error-page` (`bootstrap/app.php:57-60`), que não explica nada ao cliente.
+
+Sua leitura de que o teste passaria por vacuidade está correta e continua correta.
+
+---
+
+#### C8 · Onde o boilerplate já é superior — `[absorver-modernizado]` (só a ação do `PermissionUser`)
+
+O registro de paridade não é matéria desta lente e não tenho nada que o derrube. A única ação concreta é, e aqui há nativo relevante e verificado:
+
+`app/Models/PermissionUser.php` é um `Pivot` sem corpo. Basta declarar
+
+```php
+protected function casts(): array { return ['meta' => 'array']; }
+```
+
+— `casts()` é o método do `HasAttributes` (vendor `Concerns/HasAttributes.php:1727`), herdado por `Pivot` normalmente. E o cast vale **nos dois sentidos**, o que é o ponto não óbvio: `InteractsWithPivotTable::castAttributes()` (vendor `Concerns/InteractsWithPivotTable.php:772-777`) faz `$this->using ? $this->newPivot()->fill($attributes)->getAttributes() : $attributes`, e é chamado tanto em `updateExistingPivot` (`:278`) quanto em `formatAttachRecord` (`:427`). Como `Pivot::$guarded = []` (vendor `Relations/Pivot.php:24`), o `fill()` não descarta nada. Consequência concreta: com o cast, somem os `json_encode` de `HasRolesAndPermissions.php:114` e `:119` **e** os `json_decode` de `:167` (`getPermissionMeta`) e `:210` (`getCustomPermissionsList`) — o pivô tipado passa a pagar o que promete, que é exatamente a ressalva que você levantou. Se quiser `meta` como objeto mutável, `AsArrayObject::class` / `AsCollection::class` / `AsFluent::class` estão todos disponíveis em `vendor/.../Eloquent/Casts/`.
+
+Sobre a ressalva de escopo do contrato de rotas de escrita (GETs de export): concordo que hoje seria vácuo, e não há nada em L13 que resolva — o `#[Authorize]` cobre a *forma* de declarar, nunca a *cobertura* de leitura.
+
+---
+
+**Não verificado:** nada ficou em aberto nesta frente. Não usei memória de treino para nenhuma das APIs citadas — cada uma tem doc 13.x ou linha de vendor acima.
+
+
+
+### Frente: Middlewares, defesas de borda e webhook
+
+#### Candidatos levantados
+
+### Middlewares, defesas de borda e webhook
+
+Comparação feita arquivo-a-arquivo entre `spinmax @ e4ec01e` (`/Users/cristianomorgante/workspace/laravel/clients/spinmax/app`) e o boilerplate (`/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate`). Middlewares: spinmax 6 (`EnsureStoreEnabled`, `EnsureUserIsActive`, `HandleAppearance`, `HandleInertiaRequests`, `PublicStore`, `SecurityHeaders`) × boilerplate 5 (os mesmos menos `EnsureStoreEnabled`/`PublicStore`, mais `SetSensitiveCacheHeaders`).
+
+---
+
+#### C1 · Webhook inbox como forma reusável: recepção magra → dedup por unique → fila → reprocesso → prune
+- **Pergunta**: (a) absorver do spinmax — **tema multi-fonte "webhooks"**
+- **Evidência (spinmax @ e4ec01e)**:
+  - `routes/web.php:56-58` — `Route::post('webhooks/mercadopago', Webhook\MercadoPagoController::class)->middleware('throttle:mp-webhook')`
+  - `app/Http/Controllers/Webhook/MercadoPagoController.php:102-119` — controller magro, 4 passos, nada de negócio:
+    ```php
+    $event = WebhookEvent::firstOrCreate(
+        ['provider' => 'mercadopago', 'external_id' => $notificationId],
+        ['type' => $type !== '' ? $type : 'unknown', 'payload' => $request->all(), 'status' => 'received'],
+    );
+    if (!$event->wasRecentlyCreated) { return response()->json(['status' => 'duplicate'], 200); }
+    if (in_array($type, self::PROCESSABLE_TOPICS, true) && $dataId !== '') {
+        ProcessMercadoPagoWebhookJob::dispatch($event->id);   // id, não model serializado
+    } else { $event->update(['status' => 'ignored']); }
+    ```
+  - `database/migrations/2026_07_22_120011_create_webhook_events_table.php:13-22` — `provider`, `external_id`, `type`, `payload` json, `status` D:`received`, `processed_at`, `error` text + **`$table->unique(['provider','external_id'])`** (a idempotência é do banco, não do código)
+  - `MercadoPagoController.php:29` — `PROCESSABLE_TOPICS = ['payment','order']` com o comentário "a lista oficial do MP é incompleta e não deve virar `switch` fechado" → tópico desconhecido vira `ignored`, nunca 4xx
+  - `app/Console/Commands/ReprocessWebhooksCommand.php:22-31` — reenfileira `['received','failed']` (5 min, `withoutOverlapping`)
+  - `app/Console/Commands/ReconcileOrdersCommand.php:68-87` — rede para webhook **perdido**: cria evento sintético `'reconcile-' . $order->uuid . '-' . now()->format('YmdHi')` via `firstOrCreate` e despacha **o mesmo job** (10 min)
+  - `PruneWebhookEventsCommand.php` — poda por idade (`store.webhooks.retention_days` = 90), 04:00
+  - `MercadoPagoController.php:21` — "NUNCA confia no corpo para confirmar pagamento — o job busca o payment na API"
+- **Equivalente no boilerplate**: **não existe**. Sem `app/Http/Controllers/Webhook/`, sem `WebhookEvent`, sem migration equivalente, sem `validateCsrfTokens(except:)`. O que existe no lugar é apenas a infra genérica: Horizon + `RateLimiter::for()` em `app/Providers/AppServiceProvider.php:94-109`.
+- **O que absorver / travar**: a **forma**, sem o Mercado Pago — tabela `webhook_events` com `unique(provider, external_id)`, model + factory, e um `AbstractWebhookController` (ou doc + skeleton) fixando os 4 passos: validar assinatura → `firstOrCreate` → despachar job **por id** → 200 sempre (duplicata = `200 {"status":"duplicate"}`, tópico desconhecido = `ignored`, nunca 4xx que faça o provedor reentregar para sempre). Mais os 3 comandos genéricos (`webhooks:reprocess`, `webhooks:prune`) — reconcile é de domínio e fica fora. **Lição transversal**: a chave de idempotência aqui degrada para per-entrega (`input('id') ?? header('x-request-id') ?? $dataId`, `MercadoPagoController.php:100`); só não vira dupla-aprovação porque o job também é idempotente (lock + guarda de status). O guard-rail é **as duas camadas**, nunca só a tabela.
+- **Superfície no boilerplate hoje**: **nenhuma** — namespace vazio. Teste sobre isso passaria vacuamente; o entregável tem de ser código (tabela + controller base + comandos) com teste sobre o próprio skeleton, não uma regra `.ai/rules` solta. Confirmar a forma contra ctfinance (Asaas) e ctvitrine antes de fixar o contrato.
+
+---
+
+#### C2 · A CSP do boilerplate é hardcoded, sem allowlist nem report-only — o primeiro projeto com gateway ficou simplesmente sem CSP
+- **Pergunta**: (b) guard-rail contra erro daqui
+- **Evidência (spinmax @ e4ec01e)**: `app/Http/Middleware/SecurityHeaders.php:26-30` — a constante tem **só 3 headers**, e `handle()` (l. 51-54) é `return self::stamp($next($request));`. Grep confirmando: `Content-Security-Policy`, `Strict-Transport-Security`, `Permissions-Policy` — **zero ocorrências** em `app/`, `bootstrap/`, `config/`, `resources/`, `tests/`. Não é remoção: `git log` mostra que este arquivo nasceu em `6dd1e81 [T-401]` independente do harvest do boilerplate (`e035e42`). E o motivo de nunca ter chegado lá está no front: `package.json` traz `"@mercadopago/sdk-react": "^1.0.7"`, usado em `resources/js/components/shop/payment-brick.tsx:1,33` (`initMercadoPago` injeta script e iframes de origem do MP em runtime), e `resources/views/shop.blade.php:28` inclui `partials/meta-pixel.blade.php:27,34` (script de `connect.facebook.net` + `img` de `facebook.com`).
+- **Equivalente no boilerplate**: `app/Http/Middleware/SecurityHeaders.php:61-77` — CSP literal, sem seam: `default-src 'self'`, `script-src 'self' 'unsafe-inline'`, `connect-src 'self'`, sem `frame-src` (cai no `default-src`). Ligada só em `app()->isProduction() && $request->isSecure()`.
+- **O que absorver / travar**: mover a CSP para `config/security.php` — diretiva → array de origens, com `array_merge` de uma allowlist por projeto — e suportar `Content-Security-Policy-Report-Only` por flag. Sem isso, um projeto com gateway/pixel tem duas saídas ruins: editar o middleware à mão (e perder o sync com o boilerplate) ou não ter CSP nenhuma — foi a segunda que aconteceu. Nota agravante: como a CSP só liga sob `isProduction() && isSecure()`, o teste `tests/Feature/SecurityHeadersTest.php:21-27` afirma justamente a **ausência** dela; a quebra do Payment Brick só apareceria em produção.
+- **Superfície no boilerplate hoje**: sim — o middleware e o teste existem. O `docs/migration/PLAYBOOK.md` já manda "CSP report-only com allowlist" para ctfinance/ctvitrine/cuidari, mas manda **sem mecanismo**: hoje isso é edição manual em cada projeto. Falta um teste do próprio boilerplate que force o CSP com `app()->detectEnvironment(fn() => 'production')` + `Request::setTrustedProxies`/`server HTTPS`, hoje inexistente.
+
+---
+
+#### C3 · Ziggy escopado por grupo — o boilerplate serializa 100% das rotas para todo browser
+- **Pergunta**: (a) absorver do spinmax
+- **Evidência (spinmax @ e4ec01e)**:
+  - `config/ziggy.php:14-22` — `'groups' => ['shop' => ['home','shop.*','legal.*','api.shipping.*']]`
+  - `app/Http/Middleware/PublicStore.php:30-37` — `Inertia::setRootView('shop')` + `'ziggy' => fn(): array => [...(new Ziggy('shop'))->toArray(), 'location' => $request->url()]`, com o comentário "Só o grupo `shop` — evita vazar a superfície admin via Ziggy"
+  - `resources/views/shop.blade.php:31` — `@routes('shop')` (o Blade e o share têm de concordar; são dois pontos)
+  - `tests/Feature/Store/ShopFrontendTest.php:51-59` — `it('does not leak admin routes to the shop browser')`: `assertSee('shop.buy')`, `assertDontSee('users.index')`, `assertDontSee('roles-permissions.update')`
+- **Equivalente no boilerplate**: `app/Http/Middleware/HandleInertiaRequests.php:68-69` — `...(new Ziggy())->toArray()`, **sem grupo**; `resources/views/app.blade.php:61` — `@routes` sem argumento; **não existe `config/ziggy.php`** (`ls config/` = 14 arquivos, nenhum `ziggy.php`).
+- **O que absorver / travar**: publicar `config/ziggy.php` com um grupo `public` vazio-por-padrão e documentar o par `@routes('grupo')` + `new Ziggy('grupo')` como o contrato de qualquer superfície não-autenticada. Compatível com ADR-0002 (Ziggy fica). Absorver junto o **teste**, que é o que segura o padrão: o escopo do spinmax depende de ordem de middleware (o `Inertia::share` do `PublicStore`, alias de rota, sobrescreve o do `HandleInertiaRequests`, global) — mover `public.store` para o grupo global antes do `HandleInertiaRequests` reverteria o escopo em silêncio, e só o `assertDontSee` pega.
+- **Superfície no boilerplate hoje**: sim, mas **fraca**: hoje toda rota do boilerplate está sob `auth` (`routes/web.php:12`), então o vazamento é de nomes de rota admin para usuário já logado — baixo impacto imediato. O valor é ser o gancho pronto no dia em que um derivado abre superfície pública, que foi exatamente o momento em que o spinmax teve de inventá-lo.
+
+---
+
+#### C4 · `EnsureUserIsActive` por rota (spinmax) deixa `settings` e `auth` descobertos — o boilerplate já acerta, falta o teste que trava a regressão
+- **Pergunta**: (b) guard-rail contra erro daqui
+- **Evidência (spinmax @ e4ec01e)**: `routes/web.php:61` — `Route::middleware(['auth','verified', \App\Http\Middleware\EnsureUserIsActive::class])->group(...)`, registro **inline no grupo do painel**, sem alias e **ausente** de `bootstrap/app.php:43-48` (o `web(append:)` tem só `SecurityHeaders`, `HandleAppearance`, `HandleInertiaRequests`, `AddLinkHeadersForPreloadedAssets`). Consequência verificada: `routes/settings.php:10` é `Route::middleware('auth')->group(...)` e `routes/auth.php:35` idem — logo `settings/profile` (GET/PATCH/DELETE), `settings/password` (PUT) e `confirm-password` continuam servindo um usuário **desativado no meio da sessão**. O middleware do spinmax também não avisa nada ao usuário (`EnsureUserIsActive.php:29` — `redirect()->route('login')` seco).
+- **Equivalente no boilerplate**: `bootstrap/app.php:37-44` — `EnsureUserIsActive::class` está no `web(append:)` **global**; `app/Http/Middleware/EnsureUserIsActive.php:30` acrescenta `Inertia::flash('error', ...)`. O boilerplate é **superior** nos dois pontos.
+- **O que absorver / travar**: nada a colher — travar. Acrescentar a `tests/Feature/EnsureUserIsActiveTest.php` (hoje 3 casos, todos sobre `/dashboard`) um caso que exercite **rota de `settings.php` e de `auth.php`** com usuário desativado, e uma regra em `.ai/rules/middleware.md` (que hoje só fala de shared props): defesa de sessão entra em `web(append:)`, nunca por grupo de rota — grupo esquece os `require` de `settings.php`/`auth.php`.
+- **Superfície no boilerplate hoje**: sim — middleware, registro global, `routes/settings.php` e `routes/auth.php` todos existem. O teste não passaria vacuamente.
+
+---
+
+#### C5 · `validateCsrfTokens(except:)` + `preventRequestsDuringMaintenance(except:)` para tráfego de integração assinada
+- **Pergunta**: (a) absorver do spinmax (a política, junto com C1)
+- **Evidência (spinmax @ e4ec01e)**: `bootstrap/app.php:31-41`
+  ```php
+  // Webhook do Mercado Pago: assinatura própria (HMAC), fora do CSRF.
+  $middleware->validateCsrfTokens(except: ['webhooks/*']);
+  // ...e fora do modo manutenção, pelo mesmo motivo: o webhook não é
+  // tráfego de navegador, é integração assinada. O deploy roda
+  // `artisan down` antes do `git pull`, e nessa janela um pagamento
+  // aprovado levaria 503 — ficaria em PendingPayment até o
+  // `store:reconcile-orders` passar (10 min) [...]
+  $middleware->preventRequestsDuringMaintenance(except: ['webhooks/*']);
+  ```
+  O par é deliberado e o segundo é o menos óbvio: sem ele, `artisan down` transforma uma janela de deploy em pedidos presos. Note que **os dois usam o mesmo prefixo `webhooks/*`** — é o prefixo, não a rota, que carrega a política.
+- **Equivalente no boilerplate**: **não existe nenhuma das duas chamadas** em `bootstrap/app.php` (só `trustProxies` condicional, `encryptCookies(except: ['appearance'])`, `web(append:)`). Não é lacuna hoje: sem superfície de webhook, o default correto é justamente não abrir exceção. `/up` já é isentado da manutenção pelo próprio framework (`vendor/.../ApplicationBuilder.php:168-169` chama `PreventRequestsDuringMaintenance::except($health)` quando `health:` é passado — e o boilerplate passa, `bootstrap/app.php:22`).
+- **O que absorver / travar**: quando C1 entrar, o prefixo `webhooks/*` entra **junto** nos dois `except:` — e com o comentário do porquê do segundo, que é o que ninguém deduz sozinho. Antes de C1, absorver só como regra escrita em `.ai/rules/middleware.md`: rota isenta de CSRF **tem de** ter autenticação própria (HMAC/assinatura) declarada no controller; isenção sem substituto é rota aberta.
+- **Superfície no boilerplate hoje**: `bootstrap/app.php` existe e é o ponto exato; a superfície de webhook, não. Regra sem código a alcançar até C1 aterrissar.
+
+---
+
+#### C6 · `SetSensitiveCacheHeaders` só olha `$request->user()` — superfície pública com PII sai cacheável
+- **Pergunta**: (b) guard-rail contra erro daqui
+- **Evidência (spinmax @ e4ec01e)**: `routes/web.php:38-40` — `Route::get('pedido/{order:uuid}', Shop\OrderStatusController::class)->middleware('signed')`, rota **sem auth**. O payload dessa página (`app/Http/Controllers/Shop/OrderStatusController.php:30-72`) inclui `'customer_name' => $order->customer->name`, `'masked_cpf' => $order->customer->maskedCpf()`, `'address' => $order->shipping_address` (endereço de entrega completo) e `'pix' => $this->pixData(...)` (QR + copia-e-cola) — todos redigidos aqui como `***`. Grep em todo o spinmax: `Cache-Control` = **zero ocorrências** em `app/`, `bootstrap/`, `config/`, `resources/`. Ou seja: resposta HTML com nome + CPF mascarado + endereço + código Pix, servida a requisição anônima, sem nenhum header de cache.
+- **Equivalente no boilerplate**: `app/Http/Middleware/SetSensitiveCacheHeaders.php:21-23` — `if (!$request->user()) { return $response; }`. O middleware existe (o spinmax não tem equivalente algum, aqui o boilerplate é superior), mas a **chave é a sessão, não a sensibilidade do dado**. Uma rota `signed` anônima com PII passa direto. O teste `tests/Feature/SecurityHeadersTest.php:50-56` chega a **fixar** esse comportamento (`it('leaves guest responses cacheable...')`).
+- **O que absorver / travar**: acrescentar um segundo gatilho ao middleware — resposta de rota com o middleware `signed` (ou marcada por um atributo/`defaults('sensitive', true)`) também recebe `private, no-store, must-revalidate`, independente de `$request->user()`. E ajustar o teste de "guest é cacheável" para valer só na superfície pública sem PII, senão ele vira o argumento contra a correção.
+- **Superfície no boilerplate hoje**: o middleware, o registro (`bootstrap/app.php:39`) e o teste existem; rota `signed` com PII, **não** — o boilerplate hoje só usa `signed` em `verify-email` (`routes/auth.php:47`). Então o novo caso de teste precisa de uma rota de fixture, ou fica vacuamente verde.
+
+---
+
+#### C7 · O boilerplate já é superior em headers baseline, exception handler e proxies — não colher nada do spinmax aqui
+- **Pergunta**: (b) evitar retrabalho na direção errada
+- **Evidência (spinmax @ e4ec01e)**:
+  - `app/Http/Middleware/SecurityHeaders.php:26-30` — 3 headers, **sem `Permissions-Policy`**, sem HSTS, sem CSP (ver C2)
+  - `bootstrap/app.php:56-61` — o `withExceptions` inteiro é **uma linha**: `$exceptions->respond(fn(Response $response): Response => SecurityHeaders::stamp($response))`
+  - Grep `TrustProxies|trustProxies` em todo o repo (fora `vendor/`): **zero**. Combinado com `AppServiceProvider::configRateLimiters()` — `RateLimiter::for('mp-webhook', fn($request) => Limit::perMinute(120)->by($request->ip()))` — atrás de LB/ploi o `ip()` é o do proxy: os 120/min viram um teto **global**, não por origem. Mesmo efeito em `throttle:10,1` (`routes/web.php:28,35,87`) e `throttle:60,1` (l. 52), que também violam a regra "throttle sempre via limiter nomeado" já escrita em `.ai/rules/routes.md`.
+- **Equivalente no boilerplate**: `app/Http/Middleware/SecurityHeaders.php:27` (`Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()`) + l. 53-78 (HSTS + CSP sob produção/HTTPS); `bootstrap/app.php:25-33` (`trustProxies` a partir de `TRUSTED_PROXIES`, com o comentário certo: "sem isso `isSecure()` fica false e o `SecurityHeaders` nunca emite HSTS/CSP"); `bootstrap/app.php:50-73` (handler que renderiza `errors/error-page` para 403/404/500/503 fora de local/testing, faz fallback em Blade estático quando o próprio Vite quebrou, converte 419 em flash + `back()`, e **só então** carimba). O `stamp()` estático e o padrão "só preenche o que a resposta ainda não declarou" são idênticos nos dois lados — origem comum.
+- **O que absorver / travar**: **nada a absorver**. Registrar no harvest que a frente "headers/handler/proxy" é caminho de mão única boilerplate → spinmax, para não gastar rodada olhando de novo. O único subproduto útil é a confirmação de que `TRUSTED_PROXIES` continua **comentado** no `.env.example` do boilerplate (`.env.example:9`, `# TRUSTED_PROXIES=`): a defesa mais dependente de infra é a que sai desligada por padrão, e o spinmax é a prova de que ninguém liga sozinho — cabe um check no `staging:check`/deploy do boilerplate que falhe quando `APP_URL` é `https://` e `TRUSTED_PROXIES` está vazio.
+- **Superfície no boilerplate hoje**: sim para tudo — `SecurityHeaders`, `bootstrap/app.php`, `.env.example`, `tests/Feature/SecurityHeadersTest.php` e `tests/Feature/ErrorPagesTest.php` existem; o check de `TRUSTED_PROXIES` seria código novo sobre superfície viva.
+
+
+
+#### Veredito — ### REFUTAR — Middlewares, defesas de borda e webhook
+
+Verifiquei todos os path:linha citados nos dois lados. Resumo: **C7 sobrevive** (com uma correção de fato), **C4 sobrevive quase intacto** (dois erros verificáveis), **C1/C2/C3/C5/C6 caem ou encolhem muito**. Achei erro de fato em 6 dos 7 candidatos.
+
+---
+
+#### C1 · Webhook inbox — **derrubar como código; sobrevive só como ADR/regra**
+
+**Fatos que conferem:** `routes/web.php:56-58`, `MercadoPagoController.php:29/100/102-119`, migration `:13-22` incl. `unique(['provider','external_id'])` em `:22`, `ReconcileOrdersCommand.php:68-87` (o `firstOrCreate` começa exatamente em 68 e o bloco fecha em 87), `PruneWebhookEventsCommand` às 04:00 (`routes/console.php:29`). Boilerplate: `grep -rin webhook app/ config/ routes/ database/ tests/ .ai/` retorna **uma** linha, `config/logging.php:82` (`LOG_SLACK_WEBHOOK_URL`). Ausência confirmada.
+
+**O que derruba:**
+
+1. **A própria ADR-0005 é o argumento contra.** Ela não proíbe webhook — o texto até antecipa: *"Consumo third-party de webhooks/rotas pontuais pode usar rotas assinadas ou middleware de token simples antes de justificar Sanctum completo"*. Mas o **raciocínio** registrado é: *"Instalar Sanctum e rotas `api.php` 'por via das dúvidas' cria superfície de manutenção e segurança sem consumidor real."* Tabela + model + factory + controller base + 2 comandos agendados, com **zero** provedores no boilerplate, é exatamente a mesma forma de superfície especulativa, pelo raciocínio escrito da casa. Não viola a ADR na letra; viola no espírito, e o candidato não enfrenta isso.
+
+2. **O `AbstractWebhookController` conflita com regra escrita.** `.ai/rules/controllers.md` (front-matter `paths: app/Http/Controllers/**`): *"Controllers de domínio são single-action: `final class {Ação}Controller` com `__invoke()` … não existe camada de Actions, Jobs de request, repositories nem query objects"*. Uma base abstrata com template-method seria a **primeira hierarquia de herança** em `app/Http/Controllers/`. Isso é mudança de convenção disfarçada de feature — precisa entrar como decisão explícita, não como subproduto.
+
+3. **O artefato concreto é pior do que o candidato descreve.** A migration tem **só** o unique — nenhum índice em `status`, nenhum em `created_at`. Os dois comandos "genéricos" varrem justamente essas colunas: `PruneWebhookEventsCommand.php:35` (`where('created_at','<',$cutoff)->delete()`) e `ReprocessWebhooksCommand.php:24-27` (`where provider` + `whereIn status` + **`->get()` sem `chunkById`**, carregando tudo em memória a cada 5 min). No volume do spinmax é invisível; como **default de boilerplate** é forma que se conserta no primeiro uso. Ou seja: o que se absorveria não é o código do spinmax, é uma reescrita — e reescrita sem consumidor não tem como ser validada.
+
+4. **O reprocesso é double-dispatch por desenho, e a metade que protege fica de fora.** `store:reprocess-webhooks` reenfileira **todo** `received` a cada 5 min, inclusive os que já estão na fila. Só não vira dupla-aprovação porque `ProcessMercadoPagoWebhookJob` tem early-return em `status === 'processed'` + `Cache::lock("order:{uuid}")`. O candidato reconhece isso ("o guard-rail é as duas camadas") e mesmo assim propõe entregar genérico **o inbox** e deixar o job por conta de cada projeto — entrega a arma e deixa a trava com o próximo. Um skeleton com tabela + reprocessor e sem contrato mandatório de job idempotente é pior do que nada.
+
+5. **Erros de fato:** "os **3** comandos genéricos (`webhooks:reprocess`, `webhooks:prune`)" — lista dois, e nenhum dos dois nomes existe: as assinaturas reais são `store:reprocess-webhooks` e `store:prune-webhook-events`. E `withoutOverlapping` **não está** em `ReprocessWebhooksCommand.php:22-31` como a citação implica — está em `routes/console.php:52` (o comando, `:14-36`, não tem overlap control nenhum).
+
+**Sobrevive:** o *contrato* (validar assinatura → `firstOrCreate` → despachar por id → 200 sempre) como ADR + `.ai/rules`. Recomendo esperar o segundo provedor real (ctfinance/Asaas) e colher com dois provedores concordando, em vez de fixar o contrato num n=1 acoplado ao MP.
+
+---
+
+#### C2 · CSP hardcoded — **encolher muito; a narrativa não se sustenta**
+
+**Fatos que conferem:** `SecurityHeaders.php:26-30` do spinmax tem 3 headers e `handle()` é `return self::stamp($next($request));` em `:53`. Grep de `Content-Security-Policy|Strict-Transport-Security|Permissions-Policy` em `app/ bootstrap/ config/ resources/ tests/` do spinmax: **zero**, confirmado. Boilerplate `SecurityHeaders.php:61-77` confere linha a linha. Teste `SecurityHeadersTest.php:21-27` confere exatamente.
+
+**O que derruba:**
+
+1. **Metade da evidência do "por que nunca chegou lá" está errada.** O boilerplate tem `img-src 'self' data: https:` em `SecurityHeaders.php:68`. O `<img src="https://www.facebook.com/tr?...">` de `partials/meta-pixel.blade.php:34` **não seria bloqueado**. Só o `<script>` para `connect.facebook.net` (`:27`) e o SDK do MP (`script-src`/`frame-src` via `default-src`/`connect-src`) quebram. O candidato conta dois vetores de pixel; um deles já passa.
+
+2. **A causalidade do título é reconstrução post-hoc.** `git log`: `app/Http/Middleware/SecurityHeaders.php` do spinmax nasceu em `6dd1e81` em **2026-07-25**. A CSP do boilerplate nasceu em `e035e42` em **2026-08-10** — 16 dias depois, no mesmo commit que criou `SetSensitiveCacheHeaders.php`. Quando o spinmax escreveu o middleware dele, **a CSP do boilerplate não existia em lugar nenhum**. Logo o spinmax não é "o primeiro projeto com gateway que ficou sem CSP por causa do hardcode"; é o **ancestral** do arquivo, que o boilerplate depois estendeu. A evidência prova que derivado não faz back-port sozinho — não prova que CSP literal forçou escolha ruim.
+
+3. **"Sem seam" é falso como escrito.** `SecurityHeaders.php:61` é `if (!$response->headers->has('Content-Security-Policy'))`, e o docblock `:16-18` diz explicitamente: *"Só preenche o que a resposta ainda não declarou, para uma rota poder abrir exceção explicitamente sem precisar sair do middleware."* Existe seam — por resposta, não por config. Que config seria melhor é argumento defensável; "não tem seam" não é fato.
+
+4. **Erro de fato na motivação de rollout.** "O `docs/migration/PLAYBOOK.md` já manda 'CSP report-only com allowlist' para **ctfinance/ctvitrine/cuidari**". `PLAYBOOK.md:126` nomeia **ctfinance/sorteiopix/spinmax**. As instruções por projeto existem em `ctfinance.md:37,57`, `sorteiopix.md:42,55`, `ctjuris.md:39,53`, `cuidari.md:50` — e `grep -rn "CSP|report-only" docs/` retorna **zero hits em `ctvitrine.md`**. Dos três nomes citados, um não está na lista e dois dos mais relevantes ficaram de fora.
+
+**Sobrevive:** exatamente o item que o candidato deixou por último — **não existe teste do boilerplate que exercite o ramo `isProduction() && isSecure()`**. `SecurityHeadersTest.php:21-27` só afirma a ausência. Esse é um buraco real sobre superfície viva, não vacuidade. A parte de `config/security.php` + `Content-Security-Policy-Report-Only` é proposta legítima, mas deve ser julgada pelo custo dela, não pelo caso spinmax, que não a sustenta.
+
+---
+
+#### C3 · Ziggy escopado — **derrubar: a forma proposta é bug verificado**
+
+**Fatos que conferem:** `config/ziggy.php:14-22`, `PublicStore.php:30-37`, `shop.blade.php:31`. Boilerplate: `HandleInertiaRequests.php:68-69` (`'ziggy' => fn(): array => [` / `...(new Ziggy())->toArray(),`), `app.blade.php:61` (`@routes`), `ls config/` = 14 arquivos, nenhum `ziggy.php`. Tudo confere.
+
+**O que derruba:**
+
+1. **"Grupo `public` vazio-por-padrão" faz o oposto do que se quer — verificado no vendor.** `vendor/tightenco/ziggy/src/Ziggy.php:86`:
+   ```php
+   $reject = collect($filters)->every(fn (string $pattern) => str_starts_with($pattern, '!'));
+   ```
+   Com `$filters === []`, `every()` é **vacuosamente `true`** → cai no ramo `reject()` (`:89-95`), cujo `foreach` sobre array vazio não retorna nada (`null`, falsy) → **nada é rejeitado e todas as rotas ficam**. `Ziggy::group()` (`:72-73`) chega lá porque `config()->has('ziggy.groups.public')` é true mesmo com valor `[]`. Ou seja: `'groups' => ['public' => []]` + `@routes('public')` serializa **exatamente a superfície inteira** que a proposta quer impedir, e o `assertDontSee('users.index')` que viria junto nasceria **vermelho**. A proposta está errada como escrita.
+
+2. **Guardrail #4 em cheio.** `routes/web.php:12` põe tudo sob `auth`; as rotas `guest` de `routes/auth.php` são o scaffold de login, que precisa de `route()` para funcionar. Não há superfície pública Inertia no boilerplate. Um `assertDontSee` sobre um grupo que não exclui nada é o falso conforto que o guardrail descreve.
+
+3. **O contrato é de duas pontas e a segunda não tem onde morar.** `@routes('grupo')` no Blade **e** `new Ziggy('grupo')` no share. O boilerplate tem uma root view (`app.blade.php`) e um share. Absorver isso implica absorver também uma segunda root view + um segundo middleware — muita andaime para superfície inexistente.
+
+4. **O padrão do spinmax tem um furo que se copiaria junto.** `config/ziggy.php:17` lista `'home'` no grupo `shop`, mas `routes/web.php:17` (`GET /`) está **fora** do grupo `public.store` e `LandingController::__invoke(): View` devolve Blade puro (`landing.blade.php`, cujo grep de `@routes` retorna zero — só `@vite` em `:81`). A entrada `'home'` no grupo é config morta, e a página de maior tráfego do site está protegida por "não é Inertia", não pelo grupo.
+
+5. **Citação errada:** o teste é `tests/Feature/Store/ShopFrontendTest.php:52-61` (o `it(...)` está em **52**, asserts em **58-60**), não `:51-59`.
+
+**Sobrevive:** no máximo uma nota em ADR/`.ai/rules`: qualquer futura root view pública tem de parear `@routes('grupo')` com `new Ziggy('grupo')`, e o grupo **nunca** pode ser vazio (motivo em `Ziggy.php:86`). Código, não.
+
+---
+
+#### C4 · `EnsureUserIsActive` — **sobrevive**, com dois defeitos na proposta
+
+**Fatos que conferem, todos:** spinmax `routes/web.php:61` (registro inline FQCN no grupo do painel), `bootstrap/app.php:43-48` (`web(append:)` com 4 itens, sem `EnsureUserIsActive`), `routes/settings.php:10` = `Route::middleware('auth')->group(...)`, `routes/auth.php:35` = idem, `EnsureUserIsActive.php:29` = `redirect()->route('login')` seco. Boilerplate `bootstrap/app.php:43` (dentro do `web(append:)` de `:37-44`) e `EnsureUserIsActive.php:30` com `Inertia::flash('error', ...)`. A superioridade do boilerplate nos dois pontos é real.
+
+Tentei derrubar por redundância — um teste em `/settings/profile` exercita a mesma linha global que `/dashboard`. Não colou: a regressão que ele guarda é justamente "alguém move o middleware do `web(append:)` para o grupo `['auth','verified']`", e nesse cenário o teste de `/dashboard` **continua verde** (dashboard está dentro daquele grupo). Só um teste em rota de `settings.php`/`auth.php` pega. Sinal real, não vacuidade.
+
+**Dois defeitos a corrigir antes de aplicar:**
+
+1. **Erro de fato:** "`tests/Feature/EnsureUserIsActiveTest.php` (hoje 3 casos, **todos sobre `/dashboard`**)". São 2 sobre `/dashboard` (`:7-12`, `:14-26`); o terceiro (`:28-38`, *"blocks a deactivated user from logging in at all"*) faz `POST /login` e **não exercita o middleware** — testa o `LoginRequest`. A frase superestima a cobertura existente do middleware.
+2. **A regra proposta iria para o arquivo errado.** `.ai/rules/middleware.md` tem front-matter `paths: ['app/Http/Middleware/**']`. Uma regra que diz "defesa de sessão entra em `web(append:)`, nunca por grupo de rota" governa `bootstrap/app.php` e `routes/**` — nenhum dos dois casa com esse escopo, então a regra **nunca apareceria** para quem estivesse editando `routes/web.php`, que é exatamente onde o erro do spinmax foi cometido. Tem de ir para `.ai/rules/routes.md` (`paths: routes/**`) ou uma regra nova cobrindo `bootstrap/`.
+
+---
+
+#### C5 · `validateCsrfTokens`/`preventRequestsDuringMaintenance` — **derrubar por ora**
+
+**Fatos que conferem:** `bootstrap/app.php:31-41` do spinmax, incl. o comentário de 8 linhas. Boilerplate não tem nenhuma das duas chamadas (confirmado no arquivo inteiro). `/up` isento pelo framework: `vendor/laravel/framework/src/Illuminate/Foundation/Configuration/ApplicationBuilder.php:169` — `PreventRequestsDuringMaintenance::except($health)` sob o `if (is_string($health))` de `:168`, e o boilerplate passa `health: '/up'` em `bootstrap/app.php:22`. Confere.
+
+**O que derruba:**
+
+1. **Zero superfície e zero código — o candidato admite** ("regra sem código a alcançar até C1 aterrissar"). Se C1 não entra agora (ver acima), C5 fica sendo texto sobre nada.
+2. **Mesmo defeito de escopo do C4:** a regra proposta vai para `.ai/rules/middleware.md` (`paths: app/Http/Middleware/**`), mas `validateCsrfTokens(except:)` mora em `bootstrap/app.php`. Nunca dispararia.
+3. **O prefixo é o problema, não a política.** `except: ['webhooks/*']` é wildcard de prefixo: isenta **qualquer** rota futura sob `webhooks/`, inclusive uma que alguém acrescente sem HMAC. A regra que o candidato quer escrever ("isenção sem substituto é rota aberta") é inaplicável pelo mecanismo que ele endossa — a isenção é concedida por forma de URI e nada verifica que o controller valida assinatura. Se algo daqui sobrevive, é o **inverso**: `except:` no path exato (`'webhooks/mercadopago'`) ou um teste de contrato que percorra a lista de exceções e exija validação de assinatura no controller resolvido.
+4. **Efeito colateral não citado do segundo `except:`.** Isentar do modo manutenção significa que o webhook bate num app **meio-deployado** (código novo, migration talvez não). No spinmax isso é tolerável porque o controller só grava uma linha e enfileira — mitigação que é propriedade do desenho magro do C1, não da linha do `except:`. Copiar a linha sem o controller magro é pior do que não copiar.
+
+---
+
+#### C6 · `SetSensitiveCacheHeaders` — **derrubar a alegação central; sobra pouco**
+
+**Fatos que conferem:** `routes/web.php:38-40` (`signed`, sem auth, dentro do grupo `public.store`), payload em `OrderStatusController` com `customer_name`/`masked_cpf`/`address`/`pix` (linhas 53, 54, 55, 62 do arquivo). Grep `Cache-Control` no spinmax: **zero**, confirmado. Boilerplate `SetSensitiveCacheHeaders.php:21-23` e `SecurityHeadersTest.php:50-56` conferem exatamente. `signed` no boilerplate só em `routes/auth.php:47` — confere.
+
+**O que derruba:**
+
+1. **A alegação central é falsa no fio.** "Servida a requisição anônima, **sem nenhum header de cache**" confunde "o app não seta" com "a resposta não tem". O Symfony seta: `vendor/symfony/http-foundation/ResponseHeaderBag.php:239-248` — `computeCacheControlValue()` devolve **`'no-cache, private'`** quando não há Cache-Control e não há `Last-Modified`/`Expires`. A página `pedido/{uuid}` sai com `Cache-Control: no-cache, private`. E `private` já fecha exatamente a ameaça que o middleware do boilerplate existe para fechar — o docblock dele (`:12-13`) diz *"Impede que caches compartilhados (proxies, CDNs) armazenem respostas"*. Essa ameaça está fechada pelo default do framework. O delta residual é `no-store` × `no-cache`: cache de disco do browser e restauração de back-button, não armazenamento em CDN. Real, mas uma ordem de grandeza abaixo do descrito.
+2. **Isso também desmonta a leitura do teste.** `SecurityHeadersTest.php:55` é `expect($cacheControl)->not->toContain('no-store')` — **não** afirma que a resposta é cacheável; afirma que guest não recebe a diretiva mais forte. Chamá-lo de "o argumento contra a correção" é leitura errada: ele continuaria verde para qualquer página guest que não seja a nova fixture sensível.
+3. **`signed` é proxy ruim para "sensível", e a única rota `signed` do boilerplate prova isso.** `routes/auth.php:47` (`verify-email/{id}/{hash}`) é assinada e não tem PII nenhuma; sob a regra proposta passaria a emitir `no-store` à toa. E o caso inverso — rota pública com PII **não** assinada (consulta de pedido por token, link de compartilhamento) — não seria pego. Só a metade `defaults('sensitive', true)` da proposta se sustenta; a metade `signed` deve cair.
+4. **O gatilho proposto fura justo onde mais importa.** Assinatura inválida/expirada lança `InvalidSignatureException` → 403 renderizado pelo handler, **fora da pilha de middleware** — que é a razão de existir `SecurityHeaders::stamp()`, chamado em `bootstrap/app.php:72`. `SetSensitiveCacheHeaders` não tem `stamp()` equivalente nem é chamado do handler, então o novo ramo silenciosamente não se aplicaria ali. Se isso entrar, precisa do mesmo tratamento estático — e o candidato não menciona.
+5. **Guardrail #4, concedido pelo candidato:** precisaria de rota de fixture. Teste que só passa por causa de uma rota que só existe para o teste é evidência fraca.
+
+**Sobrevive:** um marcador opt-in `defaults('sensitive', true)` (não `signed`) + um caminho de `stamp()` a partir do handler. A moldura "PII pública sem header de cache" **não deve entrar no harvest como escrita**.
+
+---
+
+#### C7 · Nada a colher em headers/handler/proxies — **sobrevive**, com uma correção
+
+**Verifiquei tudo e o núcleo está certo.** spinmax: 3 headers em `SecurityHeaders.php:26-30`, `withExceptions` de uma linha (`bootstrap/app.php:60`), grep `TrustProxies|trustProxies|TRUSTED_PROXIES` em todo o repo fora de `vendor/`: **zero**. `AppServiceProvider.php:124` = `RateLimiter::for('mp-webhook', fn($request) => Limit::perMinute(120)->by($request->ip()))`. `throttle:10,1` em `routes/web.php:28,35,87` e `throttle:60,1` em `:52` — confere. Boilerplate: `Permissions-Policy` em `SecurityHeaders.php:27`, HSTS+CSP em `:53-78`, `trustProxies` em `bootstrap/app.php:25-33` com o comentário citado, handler em `:50-73`, `.env.example:9` = `# TRUSTED_PROXIES=` — **confere exatamente, inclusive o número da linha**. `/up` isento pelo framework, confirmado.
+
+**Três reparos:**
+
+1. **O único item acionável não tem onde morar.** "cabe um check no `staging:check`/deploy do boilerplate" — **o boilerplate não tem `staging:check`**. `ls app/Console/Commands/` = `CreateSuperUserCommand.php` e `SyncPermissionsCommand.php`, só. `StagingCheckCommand.php` é arquivo do **spinmax**. Isso contradiz o próprio "Superfície no boilerplate hoje: sim para tudo": o check exigiria importar antes um comando que não existe aqui — o que é outro candidato (harvest de `store:health`/`staging:check`), não rodapé deste.
+2. **A violação de `.ai/rules/routes.md` está do lado errado da seta.** Que o spinmax use `throttle:N,M` inline é achado **sobre o spinmax** — item de `docs/migration/projects/spinmax.md`, não candidato de harvest projeto→boilerplate. E está subcontado: além de `web.php:28,35,52,87` há `routes/auth.php:31,41,44` (`throttle:6,1`), total **7** ocorrências, não 4.
+3. **"Origem comum" está impreciso, e o correto reforça a conclusão.** `git log`: `SecurityHeaders.php` do spinmax nasceu em `6dd1e81` (**2026-07-25**); o do boilerplate em `e035e42` (**2026-08-10**), o mesmo commit que criou `SetSensitiveCacheHeaders.php`. Não é ancestral comum — o arquivo do boilerplate é **descendente** do spinmax, colhido 16 dias depois e estendido. "Mão única boilerplate → spinmax" é a conclusão certa hoje, mas a razão é "já foi colhido uma vez", não "origem independente".
+
+
+
+#### Veredito — ### RISCO DE ABSORÇÃO — Middlewares, defesas de borda e webhook
+
+---
+
+#### C1 · Webhook inbox como forma reusável — risco **médio**
+
+**Dados persistidos.** Tabela nova, aditiva: não invalida nada existente. Duas traps concretas:
+
+- **`payload` é um sink de PII cru.** O spinmax escruta só a coluna `error` (o job chama `PiiScrubber::scrubString`) e grava `'payload' => $request->all()` sem filtro nenhum (`/Users/cristianomorgante/workspace/laravel/clients/spinmax/app/app/Http/Controllers/Webhook/MercadoPagoController.php:102-105`). O boilerplate já tem o scrubber e já decidiu essa questão no log: `/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate/app/Support/Logging/PiiScrubber.php:86` (`scrub(mixed)`, aceita array) com `tests/Feature/LogScrubbingTest.php` travando o canal. Absorver a forma crua abre um **segundo canal de PII fora do scrubber** — exatamente a incoerência que o log-scrubbing existe para evitar. E a tabela é lida por painel/log-viewer, sem o filtro do canal de log.
+- **Retenção.** O prune é por idade e depende de `store.webhooks.retention_days`; sem chave equivalente no boilerplate, a tabela cresce sem teto. Se o inbox entra, a config de retenção entra no mesmo commit, não depois.
+- **Índice.** `unique(['provider','external_id'])` com dois `string` default = `varchar(255)` utf8mb4 = 2040 bytes de chave. Passa no InnoDB DYNAMIC (3072) do MySQL 8 — e `.env.example:29` fixa `DB_CONNECTION=mysql`, `config/database.php:54` fixa `utf8mb4` — mas quebra em `COMPACT/REDUNDANT` e é desperdício em qualquer caso. `string('provider', 40)` + `string('external_id', 191)` elimina a categoria inteira.
+
+**Idempotência do banco: verificada, o candidato sobrevive aqui.** `firstOrCreate` → `createOrFirst`, que captura `UniqueConstraintViolationException` e refaz o `first()` no write PDO, dentro de savepoint — `vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:710-735`. Na corrida real de duas entregas simultâneas o segundo request cai em `wasRecentlyCreated === false` → `duplicate`, não 500. Vale em sqlite (a suíte) e em mysql. A afirmação "a idempotência é do banco" se sustenta no Laravel 13.
+
+**Muda comportamento / modo de falha.** Nada existente muda (namespace vazio). Mas a forma é **fail-open por desenho**: "200 sempre" significa que uma ingestão que falha *depois* da assinatura (Redis fora no dispatch, DB caindo entre insert e enqueue) devolve 200 e o provedor **nunca reentrega**. O que segura isso não é o controller — é o `store:reprocess-webhooks` a cada 5 min. Controller-200 + inbox + reprocess são **uma peça só**; absorver o controller sem o cron entrega ao derivado perda silenciosa de pagamento. Isso tem de estar amarrado no entregável (teste que prove o laço fechado), não num docblock.
+
+**Segurança da própria absorção — três importações indesejadas:**
+
+1. **`ReprocessWebhooksCommand` é um amplificador de fan-out.** `->get()` sem limite, sem janela, redisparando *todo* `received`/`failed` a cada 5 min. Fila parada 1h ≈ 12 dispatches por evento; um `failed` permanente é retentado para sempre. O único freio é a idempotência do job (`ProcessMercadoPagoWebhookJob::handle` retorna cedo em `status === 'processed'`) — que um skeleton genérico **não pode garantir**. Absorvendo, o comando genérico precisa de `chunkById`, janela (`created_at > now()->subDays(N)`) e teto de tentativas em coluna.
+2. **Limiter por IP.** `throttle:mp-webhook` por `$request->ip()`; com `TRUSTED_PROXIES` comentado (`.env.example:9`) isso vira teto **global**, não por origem. E `.ai/rules/routes.md` já proíbe `throttle:N,M` inline: entra como `RateLimiter::for('webhook', …)` no `AppServiceProvider::configRateLimiting()` (hoje 3 limiters) + linha no `tests/Feature/…Throttle…`.
+3. **Buraco de contrato — o mais sério.** A rota de webhook seria o **primeiro POST não autenticado do boilerplate**, e `tests/Feature/Routes/WriteRoutesAuthorizationTest.php` só examina rota sob `auth`: `middlewareRequiresAuthentication()` (l. 102-114) retorna false e o loop faz `continue` (l. 66-71). A rota mais perigosa que o repo passaria a ter é justamente a que o contrato de escrita **estruturalmente não enxerga**. Absorver C1 obriga a estender esse teste: rota de escrita *sem* `auth` tem de declarar middleware de assinatura. (É o mesmo guard-rail do C5 — os dois entram juntos ou nenhum.)
+
+**Tamanho.** Migration + model + factory + controller base + 2 comandos + agendamento + config de retenção + testes ≈ **9-10 arquivos**, e traz o **primeiro `app/Jobs/` do repo** (o diretório não existe). Com `QUEUE_CONNECTION=sync` na suíte (`phpunit.xml:32`), o teste do skeleton precisa de `Queue::fake()` ou executa o job de verdade. Fatiável em 3: (1) tabela + model + factory + `webhooks:prune` + retenção + scrub do payload; (2) controller base + extensão do contrato de rota não autenticada + limiter nomeado; (3) `webhooks:reprocess` + agendamento — que só faz sentido com um job real e pode ficar por último.
+
+---
+
+#### C2 · CSP configurável com allowlist e report-only — risco **médio**
+
+**Dados persistidos.** Nenhum.
+
+**Muda comportamento.** Só sob `app()->isProduction() && $request->isSecure()` (`app/Http/Middleware/SecurityHeaders.php:53`), e a suíte hoje afirma justamente a **ausência** (`tests/Feature/SecurityHeadersTest.php:21-27`). Ou seja: a mudança acontece exatamente onde ninguém olha. Modo de falha do merge errado nos dois sentidos — allowlist não aplicada = **fail-open silencioso** (nenhum erro, só ausência de proteção); allowlist frouxa demais no outro sentido = fail-closed em produção, o caso caro que `docs/migration/PLAYBOOK.md:126` já registra.
+
+Cobrir é barato, o padrão já existe no repo: `tests/Feature/ErrorPagesTest.php:15` usa `$this->app['env'] = 'production'`. Falta só o lado HTTPS — `$this->get('https://localhost/login')` já faz `isSecure()` retornar true.
+
+**Segurança da própria absorção.** O seam converte "editar middleware" (que aparece como conflito no diff do boilerplate-sync, portanto é revisado) em "valor de config" que ninguém revisa. É por aí que entra `*` ou `'unsafe-eval'` em `script-src`. A mecânica precisa travar isso: merge permitido **só** em diretivas nomeadas (`script-src`, `connect-src`, `frame-src`, `img-src`) e um teste que rejeita `*` / `unsafe-eval` / `data:` em `script-src`.
+
+E vale calibrar a expectativa: a política base já traz `'unsafe-inline'` em `script-src` (`SecurityHeaders.php:65`), o que a torna quase decorativa contra injeção de script. Tornar a lista configurável não muda isso. O caminho que muda é nonce, e ele existe meio pronto: `vendor/tightenco/ziggy/src/BladeRouteGenerator.php:12` aceita `$nonce`, e o `@routes` do boilerplate (`resources/views/app.blade.php:61`) não passa nenhum — mas nonce exige Vite inline + `@inertiaHead` + `@routes` coerentes, é outra fatia, maior.
+
+O flag report-only é **fail-open por desenho**: sem mecanismo de expiração, o derivado fica em report-only para sempre. O playbook já pede "observar 1-2 semanas" e não nomeia quem fecha o ciclo.
+
+**Tamanho.** 1 middleware + `config/security.php` (que não existe: `ls config/` = 14 arquivos) + teste + chaves de env ≈ **4 arquivos**. Fatiável em 2: (1) extrair para config **sem mudar o header resultante**, com teste provando igualdade byte-a-byte antes/depois; (2) flag report-only + allowlist.
+
+---
+
+#### C3 · Ziggy escopado por grupo — risco **baixo na forma corrigida, médio-alto na forma proposta**
+
+Este é o candidato onde a proposta escrita se autodestrói, e dá para provar no vendor.
+
+**Fail-open #1 — grupo inexistente vaza tudo.** `vendor/tightenco/ziggy/src/Ziggy.php:71-77`: `group()` só filtra se `config()->has("ziggy.groups.{$group}")`; senão, `return $this->routes` — a tabela **inteira**. Um typo no nome, um `config:cache` gerado num container montado antes de o arquivo existir, ou um derivado que não publicou o config, e o browser público recebe toda a superfície admin. Silencioso, sem erro.
+
+**Fail-open #2 — grupo vazio também vaza tudo.** `filter([])` (`Ziggy.php:82-106`) faz `$reject = collect([])->every(…)`, que é `true` para coleção vazia; o `reject` então roda com **zero padrões** e não rejeita nada → todas as rotas. Portanto `'groups' => ['public' => []]`, o "grupo `public` vazio-por-padrão" da proposta, faz **exatamente o oposto** do pretendido. A forma fail-closed é `'public' => ['!*']`: todo padrão começa com `!` → `$reject = true` → `Str::is('*', $name)` casa com tudo → coleção vazia.
+
+**Muda comportamento hoje.** Não, desde que o config seja publicado **só com `groups`**. Nenhum ponto do boilerplate passa grupo (`app/Http/Middleware/HandleInertiaRequests.php:68`, `resources/views/app.blade.php:61`), e `applyFilters()` só entra no caminho de grupo quando `$group` é truthy (`Ziggy.php:40-44`). Mas atenção: `ziggy.only` / `ziggy.except` valem para o caminho **sem** grupo (l. 46-52) — publicar o config com essas chaves preenchidas mudaria o payload de todo mundo, inclusive do painel. Publicar `groups` sozinho é inerte.
+
+**Dois pontos que têm de concordar.** `@routes('g')` no Blade e `new Ziggy('g')` no share. Escapar um deixa o vazamento no HTML mesmo com a prop Inertia escopada. É por isso que o `assertDontSee` é a parte que carrega o padrão — e ele é barato.
+
+**Tamanho.** 1 config + 1 parágrafo em `.ai/rules/middleware.md` + 1 teste. A menor fatia da lista.
+
+---
+
+#### C4 · `EnsureUserIsActive` global + teste de regressão — risco **baixo**
+
+**Dados / comportamento.** Nenhum dos dois: o entregável é teste + regra escrita. Confirmado que a cobertura já existe de fato: `bootstrap/app.php:37-44` registra `EnsureUserIsActive` no `web(append:)`, e `routes/settings.php:10` e `routes/auth.php:43` estão dentro do grupo `web` via os `require` de `routes/web.php:66-68`. O teste novo é **pino de regressão, não correção** — e não passa vacuamente, porque exercita rota real com usuário desativado.
+
+**Ganho extra que verifiquei e que reforça a regra:** `config/horizon.php:86` traz `'middleware' => ['web']`, então as rotas do Horizon herdam o `web(append:)`. A regra "defesa de sessão vai no append global, nunca por grupo de rota" cobre até superfície de pacote — o registro por grupo do spinmax não cobriria.
+
+**Único detalhe de ordem que vale anotar:** `SetSensitiveCacheHeaders` está **antes** de `EnsureUserIsActive` na lista (`bootstrap/app.php:38-43`), então na volta o usuário já foi deslogado e o redirect de conta desativada sai **sem** `no-store`. É redirect para o login, sem PII no corpo — irrelevante para segurança, mas é o que muda se alguém reordenar a lista.
+
+**Tamanho.** 1 arquivo de teste (+2 casos) + parágrafo em `.ai/rules/middleware.md` (hoje 396 bytes, só fala de shared props). Sem modo de falha.
+
+---
+
+#### C5 · `validateCsrfTokens(except:)` + `preventRequestsDuringMaintenance(except:)` — risco **baixo isolado, médio se o glob entrar como está**
+
+**Dados / comportamento.** Nada muda hoje: nenhuma das duas chamadas existe em `bootstrap/app.php`, e sem superfície de webhook o default correto é não abrir exceção.
+
+**O risco é a forma do padrão, não o conteúdo.** `except: ['webhooks/*']` é **prefixo, não rota**. Qualquer coisa futura sob o mesmo prefixo perde CSRF em silêncio — e o inbox do C1 convida diretamente a construir essa coisa (uma tela de painel para inspecionar/reprocessar eventos moraria naturalmente em `webhooks/…`). Fail-open, sem sinal. A forma defensável é isentar a URI exata da rota de ingestão (`webhooks/{provider}`) e proibir por regra que superfície de browser more sob esse prefixo.
+
+**O segundo `except:` tem um custo que o comentário do spinmax não menciona.** Durante `artisan down` num deploy in-place, o webhook isento roda contra código/schema no meio da atualização: `composer install` a meio caminho ou migration não aplicada faz o insert do inbox estourar 500 — e aí o provedor reentrega, que é o comportamento certo, mas destrói o argumento de "evitar a janela". Em deploy de release atômica (symlink) o `artisan down` nem é usado e a isenção é dispensável. A regra tem de ser condicionada ao estilo de deploy, não copiada como dogma.
+
+Antes do C1, é literalmente uma regra escrita — e é a **mesma** regra do buraco que apontei no C1 (o `WriteRoutesAuthorizationTest` não vê rota fora de `auth`): isenção de CSRF sem substituto declarado é rota aberta. As duas coisas são um guard-rail só.
+
+**Tamanho.** 2 linhas em `bootstrap/app.php` + regra. Não fatiável, e não deve entrar antes do C1.
+
+---
+
+#### C6 · `SetSensitiveCacheHeaders` com gatilho por rota `signed` — risco **baixo**, com ressalva de falsa cobertura
+
+**Dados.** Nenhum. **Direção do modo de falha:** segura — o gatilho novo só **adiciona** `no-store`, nunca remove.
+
+**Mas no boilerplate de hoje a mudança é literalmente no-op.** A única rota `signed` é `verify-email/{id}/{hash}` (`routes/auth.php:46-48`) e ela está **dentro** do grupo `auth` (l. 43), portanto já cai no `$request->user()` de `app/Http/Middleware/SetSensitiveCacheHeaders.php:21`. O caso de teste novo exercita uma rota de fixture, não a aplicação: fixa o mecanismo, não um comportamento vivo. Isso é aceitável, mas tem de ser dito no PR — senão vira teste que dá sensação de cobertura sem cobrir nada.
+
+**O gatilho `signed` é heurística para "tem PII", e erra para o lado aberto no caso geral.** Página pública com PII que **não** é assinada — status por token em query string, boleto/nota acessível por link, página de acompanhamento por número de pedido — continua cacheável. Fecha a instância do spinmax, não a classe.
+
+**A inversão fail-closed** (`no-store` por padrão em toda resposta HTML/JSON, opt-out explícito para página pública cacheável) é a forma que fecha a classe, mas quebra exatamente o caso de uso dos derivados: vitrine/marketing atrás de CDN, que é o que o spinmax e o ctvitrine querem. E derruba o teste `tests/Feature/SecurityHeadersTest.php:50-56`, que hoje afirma o contrário. Se for por esse caminho, é decisão consciente com ADR, não ajuste de middleware.
+
+**Tamanho.** 1 middleware + rota de fixture no teste + ajuste do teste existente ≈ **2 arquivos**.
+
+---
+
+#### C7 · Nada a colher em headers/handler/proxy — risco **baixo**, mas o check proposto tem backfire concreto
+
+**A conclusão principal sobrevive intacta.** Confirmei os dois lados: `app/Http/Middleware/SecurityHeaders.php:27` tem `Permissions-Policy`; l. 53-78 emitem HSTS + CSP sob produção/HTTPS; `bootstrap/app.php:25-33` faz `trustProxies` a partir de `TRUSTED_PROXIES`; l. 50-73 têm o handler completo (Inertia `errors/error-page` para 403/404/500/503 fora de local/testing, fallback Blade quando o próprio render falha, 419 → flash + `back()`, e só então `stamp()`). Mão única boilerplate → spinmax, sem exceção.
+
+**O único código novo proposto é onde mora o risco.** Um check que reprova quando `APP_URL` começa com `https://` e `TRUSTED_PROXIES` está vazio é **falso-positivo em toda instalação onde o TLS termina no próprio host** (Herd/Valet local com https, nginx + php-fpm na mesma máquina): ali `isSecure()` já funciona por `$_SERVER['HTTPS']` e proxy confiável não é necessário. Note que `.env.example:5` já traz `APP_URL=https://simplify-technology-boilerplate.test` — o check reprovaria o boilerplate recém-clonado.
+
+O desfecho previsível de um check que grita sem motivo é alguém escrever `TRUSTED_PROXIES=*` para calá-lo — e `bootstrap/app.php:31` aceita `'*'` literalmente, o que torna `X-Forwarded-For` e `X-Forwarded-Proto` forjáveis. Aí os três limiters por `$request->ip()` (`auth`, `impersonate`, `verification`, em `AppServiceProvider::configRateLimiting()`) passam a ser contornáveis por header. **O guard-rail viraria a vulnerabilidade.**
+
+Forma melhor: checar o fato de runtime, não o env — em staging, exigir que a resposta HTTP real traga `Strict-Transport-Security` (prova direta de que `isSecure()` é verdadeiro na produção de verdade); ou avisar (não reprovar) exigindo opt-out explícito (`TRUSTED_PROXIES=none`) para silenciar. Nenhuma das duas aceita `*` sem registro.
+
+**Tamanho.** `app/Console/Commands/` tem hoje só `CreateSuperUserCommand.php` e `SyncPermissionsCommand.php` — não existe `staging:check` no boilerplate, então isso é **comando novo**, não edição. 1 comando + 1 teste + linha de doc. Zero impacto em dado ou comportamento existente.
+
+
+
+#### Veredito — ### ATUALIDADE — Middlewares, defesas de borda e webhook
+
+Verificado contra o vendor real do boilerplate (Laravel 13 / Inertia 3 / Ziggy 2.4 instalados) e contra `search-docs` version-aware. Onde não consegui verificar, digo explicitamente.
+
+---
+
+#### C1 · Webhook inbox reusável — `[absorver-modernizado]`
+
+**Não há nativo que faça o inbox.** Busquei docs de webhook/idempotência em `laravel/framework@13.x` e não existe nada equivalente (nem controller base, nem tabela, nem contrato). `app/Http/Controllers/` do boilerplate tem só `Auth`, `PermissionRole`, `Settings`, `User`; `app/Jobs` não existe. A forma sobrevive — mas **três das cinco peças propostas mudam de API**:
+
+1. **`webhooks:prune` não deve ser absorvido como comando.** `Illuminate\Database\Eloquent\MassPrunable` + `Schedule::command('model:prune')->daily()` é o nativo (docs Eloquent → "Pruning Models", 13.x; `model:prune` autodetecta prunables em `app/Models`). O `WebhookEvent` ganha `prunable(): Builder` lendo o retention da config, e `routes/console.php` (hoje só linha 7, `horizon:snapshot`) ganha uma linha. Um `PruneWebhookEventsCommand` próprio seria reimplementar `model:prune`.
+
+2. **A idempotência de banco já é entregue pelo framework, mas via outro método.** Verifiquei `vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:710-717`: `firstOrCreate()` hoje faz um `SELECT` e **delega para `createOrFirst()`** (l. 728-735), que faz `create()` dentro de savepoint, captura `UniqueConstraintViolationException` e relê com `useWritePdo()`. Ou seja: a corrida que o candidato atribui ao `unique(provider, external_id)` é resolvida pelo framework *dado* o índice — o índice continua obrigatório. No skeleton, use `createOrFirst()` direto (pula o SELECT extra do caminho quente do webhook); `wasRecentlyCreated` continua `false` no ramo do catch, então o `200 {"status":"duplicate"}` segue funcionando.
+
+3. **A "segunda camada" (lock + guarda de status no job) virou contrato de framework.** `ShouldBeUniqueUntilProcessing` + `#[UniqueFor(3600)]` (docs Queues 13.x — o `UniqueFor` como **atributo PHP** é a forma atual, não a propriedade `$uniqueFor`) com `uniqueId()` = id do `WebhookEvent` faz exatamente o lock que o spinmax escreveu à mão. Isso importa para o guard-rail que o candidato enuncia: as duas camadas continuam necessárias, mas a segunda deixa de ser código de domínio.
+
+4. **`webhooks:reprocess` sobrevive parcialmente.** `queue:retry` / `queue:prune-failed` cobrem o evento cujo job chegou a `failed_jobs`; **não** cobrem o evento parado em `received` (dispatch aconteceu, job sumiu) — que é justamente o caso do comando do spinmax. Absorver, mas com o escopo reduzido a `received` e o comentário do porquê.
+
+Contra-argumento honesto: `withoutOverlapping()` no schedule continua sendo o nativo certo, sem mudança.
+
+---
+
+#### C2 · CSP hardcoded — `[absorver-modernizado]`, e o alvo é outro
+
+O seam de config **não** é nativo (não há CSP builder no Laravel 13 — verifiquei). Até aí o candidato está de pé. Mas a premissa "`'unsafe-inline'` enquanto o `app.blade.php` tiver script inline" (comentário em `app/Http/Middleware/SecurityHeaders.php:12-19`) **está desatualizada**: toda a stack instalada suporta nonce hoje.
+
+Verificado no vendor instalado:
+- `vendor/laravel/framework/src/Illuminate/Foundation/Vite.php:150,161` — `cspNonce()` / `useCspNonce()`; o nonce é aplicado a todas as tags geradas (`nonceAttribute()` l. 1053; `'nonce' => $this->nonce` l. 706, 712, 786, 804). Docs 13.x mostram o padrão exato: chamar `Vite::useCspNonce()` **num middleware** e emitir o header no mesmo lugar — ou seja, no próprio `SecurityHeaders::handle()`.
+- `vendor/tightenco/ziggy/src/BladeRouteGenerator.php:13` — assinatura `generate(array|string|null $group = null, ?string $nonce = null, ?bool $json = false)`, e a diretiva repassa os argumentos crus (`ZiggyServiceProvider.php:31`). Logo `@routes(nonce: Vite::cspNonce())` funciona — e o mesmo `@routes` aceita grupo, o que junta C2 e C3 numa edição só em `resources/views/app.blade.php:61`.
+- Inertia 3: `createInertiaApp({ nonce })` para os estilos inline da progress bar / error modal (docs `inertiajs/inertia-laravel@3.x`, Client-side setup). Hoje `resources/js/app.tsx:15` não passa nonce.
+- **Horizon é a pegadinha:** o boilerplate serve o dashboard (`config/horizon.php:44`, path `horizon`) e as views dele não passam pelo Vite. Docs Horizon: `Horizon::cspNonce()` via middleware registrado em `config/horizon.php` `middleware`. Uma CSP com nonce sem isso derruba o Horizon em produção — e, como a CSP só liga sob `isProduction() && isSecure()`, derruba **só lá**, repetindo exatamente o modo de falha que o candidato descreve.
+
+Dois limites do nonce (escopo honesto, para não vender fácil demais):
+- Os dois blocos inline escritos à mão em `resources/views/app.blade.php:11-23` (script de tema) e `:34-44` (style de fundo) precisam do `nonce="..."` manualmente — o Vite não os toca.
+- `style-src` com nonce **não** cobre atributo `style="..."` inline, e o boilerplate usa Radix pesado (`package.json:63-76`, 13 pacotes `@radix-ui/*` + `@radix-ui/themes`), que posiciona popover/dialog por style inline. Isso exigiria manter `style-src-attr 'unsafe-inline'`. **Não verificado empiricamente** neste repo (é leitura da spec CSP + presença do Radix), mas precisa entrar como risco antes de alguém prometer "CSP sem unsafe-inline".
+
+Subproduto verificado que corrige o candidato: `resources/views/app.blade.php:59` tem `preconnect` para `https://fonts.bunny.net`, mas `grep` em `resources/css/` e `resources/views/` não encontra nenhum fetch real de bunny/googleapis/CDN. Ou seja, **a CSP atual do boilerplate é honesta hoje** — a allowlist é 100% para os derivados, não para o boilerplate. Isso muda o desenho: a config deve nascer com allowlist **vazia** e um toggle de `report_only` + um toggle de `nonce`, não com origens de exemplo.
+
+---
+
+#### C3 · Ziggy escopado por grupo — `[atual]` (com uma correção de fato e um aviso de ADR)
+
+Grupos continuam vivos na versão instalada: `vendor/tightenco/ziggy/src/Ziggy.php:26-33` (`__construct(array|string|null $group, ?string $url)`), `applyFilters()` l. 41-54 e `group()` l. 60-75 lendo `config("ziggy.groups.{$group}")`; `@routes('grupo')` funciona pela assinatura de `BladeRouteGenerator::generate()`. Nada no Laravel 13 nem no Inertia 3 substitui isso dentro do ADR-0002.
+
+**Correção de fato ao candidato:** "publicar `config/ziggy.php`" não é `vendor:publish` — `ls vendor/tightenco/ziggy/` não tem diretório `config/`, e `ZiggyServiceProvider` (32 linhas, lidas na íntegra) não registra `publishes()`. O arquivo tem que ser escrito à mão. Também vale registrar que `Ziggy` cacheia as rotas num estático (`protected static $cache`, l. 21/32) e o provider só reseta isso no evento do Octane — irrelevante hoje, mas é o tipo de coisa que morde se alguém instanciar `new Ziggy('grupo')` duas vezes no mesmo request com grupos diferentes esperando isolamento (o `filter()` reatribui `$this->routes`, então está ok; verifiquei l. 77-90).
+
+**Aviso que o candidato não faz:** o que obsoleta C3 por inteiro é **Wayfinder**. Docs `inertiajs/inertia-laravel@3.x` o tratam como caminho de primeira classe (`<Link href={show(1)}>`, `form.submit(store())`, `router.visit(show(1))`, `config/wayfinder.php`) e afirmam que "se você usa um starter kit do Laravel, Wayfinder já vem configurado". Com Wayfinder não existe tabela de rotas serializada para o browser — o vazamento que C3 descreve é estruturalmente impossível, e o teste `assertDontSee('users.index')` perde o objeto. **Não está instalado** (`composer.json` tem `tightenco/ziggy: ^2.4`, sem `laravel/wayfinder`), é `[dep-nova]`, e o ADR-0002 manda manter Ziggy. Então C3 sobrevive — mas sobrevive *por causa do ADR*, e isso merece ir para o dono: o ADR-0002 hoje é a única coisa entre o boilerplate e o padrão que o próprio starter kit oficial adotou. Se o ADR for revisitado, C3 morre junto.
+
+---
+
+#### C4 · `EnsureUserIsActive` global + teste de regressão — `[atual]`
+
+Tentei derrubar e não consegui. O alias nativo mais próximo é `auth.session` → `Illuminate\Session\Middleware\AuthenticateSession` (verifiquei a tabela `Middleware::defaultAliases()`, `vendor/laravel/framework/src/Illuminate/Foundation/Configuration/Middleware.php:805-820`): ele invalida sessões após troca de senha entre dispositivos, **não** lê flag de domínio. Nada no Laravel 13 encerra sessão por atributo do model. `verified` cobre e-mail, não `is_active`.
+
+Confirmei o lado do boilerplate: `bootstrap/app.php:43` (registro global no `web(append:)`) e `app/Http/Middleware/EnsureUserIsActive.php:30` (`Inertia::flash('error', ...)`, canal nativo do Inertia 3). Confirmei também as duas superfícies descobertas do lado do spinmax: `routes/settings.php:10` e `routes/auth.php:42` são ambos `Route::middleware('auth')->group(...)` no boilerplate — logo o caso de teste novo tem alvo real e não passaria vacuamente.
+
+**Um ajuste de mecanismo no entregável:** a regra proposta não cabe em `.ai/rules/middleware.md` como está — o front-matter dele é `paths: ['app/Http/Middleware/**']` (l. 1-4, arquivo tem 9 linhas), e a regra fala de `bootstrap/app.php`, que esse glob não alcança. Ou amplia o glob, ou a regra vai para `.ai/rules/app.md`. E o teste novo deve usar `assertInertiaFlash()`, já em uso em `tests/Feature/EnsureUserIsActiveTest.php:23`, não `assertSessionHas`.
+
+---
+
+#### C5 · `validateCsrfTokens(except:)` + `preventRequestsDuringMaintenance(except:)` — `[absorver-modernizado]`
+
+Aqui a lente pega o achado mais direto: **`validateCsrfTokens()` está deprecada no Laravel 13.** Verifiquei `vendor/laravel/framework/src/Illuminate/Foundation/Configuration/Middleware.php:617-628`:
+
+```php
+/**
+ * Configure the CSRF token validation middleware.
+ *
+ * @deprecated Use preventRequestForgery() instead.
+ */
+public function validateCsrfTokens(array $except = [])
+{
+    return $this->preventRequestForgery($except);
+}
+```
+
+A API atual é `preventRequestForgery(array $except = [], bool $originOnly = false, bool $allowSameSite = false)` (l. 605-615), e a classe é `Illuminate\Foundation\Http\Middleware\PreventRequestForgery` — não `VerifyCsrfToken`. Copiar a linha do spinmax verbatim entra deprecada no boilerplate.
+
+Mais importante que o rename: **o default mudou**. `PreventRequestForgery::handle()` (l. 95-112) passa quando `hasValidOrigin($request)` — header `Sec-Fetch-Site` — **antes** de cair no `tokensMatch()`. Duas consequências verificáveis para a regra que o candidato quer escrever:
+- Webhook não é browser, não manda `Sec-Fetch-Site`, então cai no fallback de token e **continua tomando 419** — o `except:` segue obrigatório. A justificativa do spinmax se mantém, com um passo a mais na cadeia.
+- Se alguém for tentado por `originOnly: true` (docs CSRF 13.x: "requests que falham verificação de origem recebem **403** em vez de 419"), isso **quebra o ramo 419 do próprio boilerplate** em `bootstrap/app.php:67-70`, que converte 419 em flash + `back()`. Também nota da doc: `Sec-Fetch-Site` só chega sob HTTPS. Isso merece uma linha na regra, porque é o tipo de flag que parece endurecimento gratuito e apaga uma UX existente.
+
+`preventRequestsDuringMaintenance(except:)` continua atual e **não** deprecada (l. 713-722) — absorver como está, com o comentário do porquê. E, ao lado dele, registro que `validateSignatures(except:)` (l. 634-641) também existe e é a contraparte para C6.
+
+---
+
+#### C6 · `SetSensitiveCacheHeaders` só olha `$request->user()` — `[absorver-modernizado]`
+
+O **header** tem produtor nativo, o **gatilho** não. Verifiquei os dois lados:
+
+Nativo que existe: alias `cache.headers` → `Illuminate\Http\Middleware\SetCacheHeaders` (tabela de aliases l. 808) que faz `$response->setCache($options)`; e `vendor/symfony/http-foundation/Response.php:91-106` lista `must_revalidate`, `no_store`, `private` entre as diretivas aceitas. Logo `->middleware(SetCacheHeaders::using(['private' => true, 'no_store' => true, 'must_revalidate' => true]))` emite exatamente a string hardcoded em `app/Http/Middleware/SetSensitiveCacheHeaders.php:31`.
+
+Por que isso **não** obsoleta o candidato (li o `handle()` inteiro, l. 50-82):
+- l. 54 — sai cedo se `! $request->isMethodCacheable()`: só GET/HEAD. Um POST/PATCH Inertia devolvendo 302 com dados sensíveis em sessão não seria carimbado.
+- l. 62 — sai cedo se `! $response->isSuccessful()`: um 422 de validação (resposta Inertia carregando os campos submetidos) sai sem `no-store`. O middleware do boilerplate carimba independente de status.
+- É opt-in por rota, que é literalmente o esquecimento que C6 quer travar.
+
+Então: absorver o segundo gatilho, mas **detectá-lo com API nativa, não com `in_array('signed', ...)`**. Verifiquei que a inspeção por nome é frágil: `Illuminate\Routing\Route::middleware()` (l. 1079) e `gatherMiddleware()` (l. 1060) existem, mas `signed` pode aparecer como alias `'signed'`, como `ValidateSignature::class`, ou como `ValidateSignature::relative()` — que retorna a string `"...\ValidateSignature:relative"` (`vendor/laravel/framework/src/Illuminate/Routing/Middleware/ValidateSignature.php:33-38`). O probe agnóstico de forma é `$request->hasValidSignature()` (por trás, `UrlGenerator::hasValidSignature()`, `vendor/laravel/framework/src/Illuminate/Routing/UrlGenerator.php:434`) — ou o `defaults('sensitive', true)` explícito que o candidato já sugere, que eu preferiria como fonte primária por ser declarativo, com o `hasValidSignature()` como rede.
+
+Confirmei a ressalva do candidato sobre o teste: a **única** rota `signed` do boilerplate é `verify-email/{id}/{hash}` (`routes/auth.php:46-47`), e ela está dentro de `Route::middleware('auth')` (l. 42) — ou seja, já cai no ramo `$request->user()` e não exercita o gatilho novo. **Fixture de rota é mesmo necessária**, e o teste `it('leaves guest responses cacheable...')` (`tests/Feature/SecurityHeadersTest.php:50-56`) precisa ser reescrito junto, senão vira o argumento contra a correção — o candidato acertou nos dois pontos.
+
+---
+
+#### C7 · Headers baseline / handler / proxies — `[atual]` (nada a colher, e nada obsoleto)
+
+Verifiquei que as três APIs que o boilerplate usa continuam correntes no Laravel 13: `trustProxies(array|string|null $at, ?int $headers)` (`Middleware.php:696-710`, com `headers:` disponível se um dia precisarem estreitar), `$exceptions->respond(fn (Response, Throwable, Request))` — assinatura idêntica à documentada pelo Inertia 3 para o handler de erro e para o 419 → `back()` — e o carimbo por `SecurityHeaders::stamp()`. Nada deprecado, nada superado.
+
+Uma emenda de atualidade sobre o próprio C7: ele declara a frente "headers/handler/proxy" encerrada, mas a parte **CSP** do `SecurityHeaders` é justamente o que C2 reabre com nonce. Fechar C7 como "mão única, não olhar de novo" e depois modernizar a CSP com nonce mexe no mesmo arquivo e no mesmo teste. Vale registrar como "encerrado exceto CSP", senão as duas fatias colidem.
+
+Sobre o check de `TRUSTED_PROXIES` (`.env.example:9` comentado): **não há nativo**. `php artisan about` reporta, não afirma; não achei nenhum health/environment check no framework que falhe quando `APP_URL` é `https://` e o proxy não está configurado. Continua sendo código novo — `[atual]`.
+
+
+
+### Frente: Rate limiting e superfície de abuso
+
+#### Candidatos levantados
+
+### Rate limiting e superfície de abuso
+
+**Correção ao inventário antes dos candidatos.** `POST login` **não** está sem limitação: `routes/auth.php:18` realmente não tem `throttle:`, mas `app/Http/Requests/Auth/LoginRequest.php:48-64` implementa `ensureIsNotRateLimited()` (5 tentativas, chave `lower(email)|ip`). O fato correto é "sem throttle **de rota**, com limite próprio no FormRequest". `POST logout` (`routes/auth.php:52`) está mesmo sem nada — e o boilerplate também (`routes/auth.php:59`), então não é diferencial. Os outros números batem: **9** throttles inline literais (web.php:28,35,52,87 · auth.php:24,31,40,44 · api.php:10) e **1** limiter nomeado (`AppServiceProvider.php:124`).
+
+---
+
+#### C1 · O boilerplate já venceu no eixo "limiter nomeado" — o que falta é o censo mecânico
+- **Pergunta**: (b) guard-rail contra erro daqui
+- **Evidência (spinmax @ e4ec01e)**: `app/Providers/AppServiceProvider.php:122-125` tem um único limiter — `RateLimiter::for('mp-webhook', fn(Request $request) => Limit::perMinute(120)->by($request->ip()));` — e 9 literais espalhados, com quatro números diferentes (`10,1` · `60,1` · `6,1` · `30,1`) e nenhuma justificativa de valor em lugar nenhum. Dois deles convivem no mesmo arquivo a 20 linhas de distância (`routes/web.php:35` e `:52`).
+- **Equivalente no boilerplate**: `app/Providers/AppServiceProvider.php:93-109` (`auth` 10/min por IP, `impersonate` e `verification` por `user()->id ?? ip`), `.ai/rules/routes.md:8-9`, `.ai/rules/providers.md:8-9`, `tests/Feature/Auth/AuthRouteThrottleTest.php`.
+- **O que absorver / travar**: **Nada a absorver — o boilerplate é estritamente superior aqui, e o spinmax é a prova de campo do custo.** O buraco é de *enforcement*: `AuthRouteThrottleTest.php:37-47` só proíbe as strings `throttle:10,1` / `throttle:6,1` em **três URIs nomeadas**. Uma rota nova com `throttle:20,1` passa em tudo — teste, Pint, Rector, larastan. Guard-rail: um teste que varre `Route::getRoutes()` inteiro e falha se `gatherMiddleware()` de qualquer rota da aplicação casar `/^throttle:\d+(,\d+)?$/`, com a mensagem apontando para `configRateLimiting()`.
+- **Superfície no boilerplate hoje**: sim, real — 6 rotas com throttle nomeado hoje (auth.php:20,31,38,47,51 + web.php:40). O teste não passa vacuamente: ele varre a tabela de rotas real e trava a próxima rota adicionada.
+
+---
+
+#### C2 · O limite do `POST login` mora num FormRequest e não tem teste em nenhum dos dois repositórios
+- **Pergunta**: (b) guard-rail contra erro daqui
+- **Evidência (spinmax @ e4ec01e)**: `routes/auth.php:18` — `Route::post('login', [AuthenticatedSessionController::class, 'store']);` sem middleware. O limite existe só em `app/Http/Requests/Auth/LoginRequest.php:50` (`RateLimiter::tooManyAttempts($this->throttleKey(), 5)`). Varredura de `tests/`: zero ocorrências de `Lockout`, `RateLimiter`, `assertStatus(429)` fora de `tests/Feature/Store/ShippingQuoteEndpointTest.php:171`. `tests/Feature/Auth/AuthenticationTest.php` cobre render, sucesso, senha inválida e logout — nenhum caso de bloqueio.
+- **Equivalente no boilerplate**: `app/Http/Requests/Auth/LoginRequest.php:49-70` — código idêntico (mesmas 5 tentativas, mesma `throttleKey()`). `tests/Feature/Auth/AuthenticationTest.php` tem os mesmos 4 testes, sem lockout. E `AuthRouteThrottleTest.php:20-21` **exclui o login por escrito**: *"O login não entra aqui porque já tem limitação própria via LoginRequest"* — declara a dependência e não a testa.
+- **O que absorver / travar**: adicionar em `AuthenticationTest.php` um teste de lockout: 5 POSTs com senha errada para o mesmo e-mail, o 6º devolve erro de validação em `email` com a mensagem `auth.throttle` (e opcionalmente `Event::assertDispatched(Lockout::class)`). É o único ponto de rate limit do endpoint de maior valor da aplicação (credential stuffing) e hoje qualquer refactor do `LoginRequest` que remova a chamada a `ensureIsNotRateLimited()` passa verde.
+- **Superfície no boilerplate hoje**: sim — `POST login` existe e é a rota mais exposta do painel. Teste não-vácuo.
+
+---
+
+#### C3 · Rota pública de escrita sem teste de que o limite morde
+- **Pergunta**: (b) guard-rail contra erro daqui
+- **Evidência (spinmax @ e4ec01e)**: três superfícies públicas de escrita — `POST checkout` (`routes/web.php:27-29`, `throttle:10,1`), `POST pedido/consulta` (`routes/web.php:34-36`, `throttle:10,1`), `POST api/shipping/quote` (`routes/api.php:9-11`, `throttle:30,1`). Só a terceira tem teste do limite: `tests/Feature/Store/ShippingQuoteEndpointTest.php:161-172` — `for ($i = 0; $i < 30; $i++) { ...->assertOk(); } ...->assertStatus(429);`. O checkout, que é a rota que **cria linhas no banco e chama a API do gateway de pagamento a cada request**, não tem nenhum.
+- **Equivalente no boilerplate**: `tests/Feature/Auth/AuthRouteThrottleTest.php:49-63` — o teste "forgot-password blocks the 11th request within a minute" é exatamente a forma certa, e é o único do gênero.
+- **O que absorver / travar**: absorver a **forma** do teste do spinmax (loop até o limite + 1 request que dá 429) como padrão obrigatório, e registrar em `.ai/rules/tests.md` a regra: *rota alcançável sem `auth` que usa POST/PUT/PATCH/DELETE precisa de limiter nomeado **e** de um teste que o 429 realmente acontece*. A generalização para censo automático (varrer rotas guest de escrita) exige allowlist para o `POST login` — use o mecanismo de duas vias de `WriteRoutesAuthorizationTest.php:39-50` / `:150-162`, que já provou funcionar.
+- **Superfície no boilerplate hoje**: **parcial, e é preciso dizer**. Hoje as únicas rotas guest de escrita são `register`, `forgot-password`, `reset-password` e `login` — todas em `routes/auth.php`, e três já cobertas. Um censo automático seria quase vácuo *agora*; o valor é para o projeto derivado que ganha o primeiro endpoint público (foi exatamente o caminho do spinmax). Escreva a regra `.ai/rules` mesmo assim, mas não gaste um teste de censo com 4 rotas conhecidas.
+
+---
+
+#### C4 · `throttle:` ocupando o lugar de `can:` — segunda ocorrência de campo da mesma falha
+- **Pergunta**: (b) guard-rail — **já travado, sem ação de código**
+- **Evidência (spinmax @ e4ec01e)**: `routes/web.php:86-88` — `Route::post('users/{user}/impersonate', User\StartImpersonateController::class)->middleware('throttle:10,1')->name('users.impersonate');`. Dentro do grupo `['auth','verified',EnsureUserIsActive]` (`:61`), mas **fora** do `can:manage_users` que fecha em `:83`. Qualquer usuário autenticado alcança a rota; a autorização real depende inteiramente do controller/policy.
+- **Equivalente no boilerplate**: `routes/web.php:39-41` — `->middleware(['throttle:impersonate', 'can:impersonate_users'])`. O caso está travado por três camadas: `.ai/rules/routes.md:11-12` ("Throttle não é autorização"), o censo genérico `tests/Feature/Routes/WriteRoutesAuthorizationTest.php` (allowlist de self-service verificada nos dois sentidos) e a regressão nomeada em `:167-174`.
+- **O que absorver / travar**: nada de código. O achado é que a falha **recorre**: o cabeçalho do teste (`:15-17`) credita a origem ao ctfinance @ b8c6d57; o spinmax é a segunda instância independente, com a mesma rota e a mesma forma. Vale atualizar só o comentário de origem para citar as duas — evidência de classe, não de acidente, e justifica manter o censo genérico em vez de degradá-lo a teste pontual.
+- **Superfície no boilerplate hoje**: sim — o censo varre 20+ rotas de escrita sob `auth` em `routes/web.php` e `routes/settings.php`. Não passa vacuamente.
+
+---
+
+#### C5 · Webhook limitado por IP: a forma está certa, e o perigo é o desenho oposto
+- **Pergunta**: (a) absorver do spinmax — como receita documentada
+- **Evidência (spinmax @ e4ec01e)**: `app/Providers/AppServiceProvider.php:124` — `Limit::perMinute(120)->by($request->ip())`, aplicado em `routes/web.php:56-58` (`->middleware('throttle:mp-webhook')`). Acompanhado, em `bootstrap/app.php`, de `validateCsrfTokens(except: ['webhooks/*'])` e `preventRequestsDuringMaintenance(except: ['webhooks/*'])`, e no controller de validação HMAC (`x-signature` + `x-request-id`, secret `***`) que responde 401 antes de qualquer escrita.
+- **Equivalente no boilerplate**: **não existe.** Não há `routes/api.php`, não há `app/Http/Controllers/Webhook/`, `bootstrap/app.php:19-23` registra só `web`, `commands` e `health: '/up'`. Nenhum limiter nomeado do gênero.
+- **O que absorver / travar**: respondendo à pergunta direta — **um webhook limitado por IP não é limitável pelo atacante**: o tráfego dele preenche o balde do próprio IP e deixa o balde do provedor intacto. O desenho perigoso é o oposto (limite global/sem `by()`), que transforma qualquer script num DoS de notificação de pagamento. O que o boilerplate deve absorver é a **regra**, não o código: em `.ai/rules/routes.md`, "throttle de webhook é sempre `->by($request->ip())`, nunca global; e só é aceitável um limite finito porque existe caminho de replay/reconcile" — no spinmax esse caminho é `store:reconcile-orders` (10 min) + `store:reprocess-webhooks` (5 min). Sem a rede de reconcile, 120/min por IP significa perder silenciosamente a notificação nº 121.
+- **Superfície no boilerplate hoje**: **nenhuma.** Um teste sobre isso passaria vazio — por isso o entregável é regra `.ai/rules` + doc, e o código só quando um derivado ganhar o primeiro webhook.
+
+---
+
+#### C6 · Enumeração: a resposta já é genérica nos dois; o vazamento residual é por tempo e por chave de limiter
+- **Pergunta**: (b) guard-rail contra erro daqui
+- **Evidência (spinmax @ e4ec01e)**: `app/Http/Controllers/Auth/PasswordResetLinkController.php:27-31` chama `Password::sendResetLink()` e devolve **sempre** `back()->with('status', 'Se existir uma conta com esse e-mail, o link de redefinição será enviado.')` — resposta idêntica para conta existente e inexistente. `app/Http/Controllers/Shop/OrderLookupController.php:35-39` idem: um único `'Dados não conferem. Confira o número do pedido e o CPF usado na compra.'` para CPF errado e número errado (documentado em `:15-19`). Duas fugas restam: (1) não existe `app/Notifications/` no repo e o `User` não sobrescreve `sendPasswordResetNotification`, então o `ResetPassword` padrão do framework é enviado **de forma síncrona dentro do request** — conta existente custa um round-trip SMTP a mais, conta inexistente responde na hora; (2) `throttle:6,1` (`routes/auth.php:24`) é chaveado só pelo IP, então 6 e-mails de reset por minuto para um endereço-alvo escolhido pelo atacante.
+- **Equivalente no boilerplate**: `app/Http/Controllers/Auth/PasswordResetLinkController.php:27-34` — mesma resposta genérica (em pt-BR, com comentário explicando por que não passa por `__()`). Também sem `app/Notifications/`, também síncrono. E `throttle:auth` é `Limit::perMinute(10)->by($request->ip())` (`AppServiceProvider.php:95-98`) — mesmo padrão de chave, teto **mais alto** (10 vs 6), embora o balde seja compartilhado entre `register`/`forgot-password`/`reset-password` (a chave do limiter nomeado é `md5('auth'.$ip)`, não por rota).
+- **O que absorver / travar**: no eixo "resposta genérica", os dois estão corretos e o boilerplate não tem o que absorver — registre isso para não gastar PR. O que travar: (1) endpoint que dispara e-mail para endereço fornecido pelo request precisa de chave composta — `Limit::perMinute(6)->by($request->ip() . '|' . Str::lower((string) $request->input('email')))` — senão o teto por IP é um bombardeio de caixa postal alheia; (2) a notificação de reset deve implementar `ShouldQueue` (via `User::sendPasswordResetNotification()` com notification própria), o que fecha o canal de tempo **e** tira o SMTP do caminho do request.
+- **Superfície no boilerplate hoje**: sim, real e imediata — `POST forgot-password` existe, é guest, dispara e-mail e está sob `throttle:auth`. O teste do bombardeio (mesmo e-mail, 7ª tentativa → 429) e o de fila (`Notification::assertSentTo` + `ShouldQueue`) rodam contra código existente. Atenção: `AuthRouteThrottleTest.php:49-63` hoje varia o e-mail a cada iteração (`ghost{$attempt}@example.com`) — ele valida o teto por IP e continuaria verde; o caso novo é o inverso, e-mail fixo.
+
+
+
+#### Veredito — ### REFUTAR — Rate limiting e superfície de abuso
+
+Baselines conferidos: spinmax `e4ec01eb0dbc7425d1839033c913f047d8c70985` (o `e4ec01e` pedido); boilerplate `e5497379dbd0b70db7543845ac91d562b3d7d1e3` — **note que o boilerplate avançou** desde os números citados (dois commits de a11y depois), mas todos os `path:linha` citados ainda batem.
+
+**Correção ao inventário — confirmada, com um ajuste de linha.** `grep -rn "throttle:" routes/` no spinmax dá 10 ocorrências, das quais 1 é `throttle:mp-webhook` (`routes/web.php:57`) ⇒ **9 literais**, exatamente nos paths citados. `ensureIsNotRateLimited()` está em `LoginRequest.php:48-65` (não `:48-64`; `:64` é o `]);` e `:65` fecha o método) e `tooManyAttempts($this->throttleKey(), 5)` em `:50`. Boilerplate `routes/auth.php:59` — `POST logout` sem throttle ✓.
+
+---
+
+#### C1 · Censo mecânico de throttle inline — **sobrevive**, com dois furos no regex proposto
+
+Tentei derrubar por três vias e não consegui:
+
+- **Já existe?** Não. `grep -rn "throttle" tests/` no boilerplate retorna **apenas** `AuthRouteThrottleTest.php` e uma menção em comentário (`tests/Feature/Routes/WriteRoutesAuthorizationTest.php:16`). `tests/Arch/ArchTest.php` (41 linhas, li inteiro) não toca em rotas. Pint/Rector são formatadores. A afirmação "uma rota nova com `throttle:20,1` passa em tudo" é verdadeira.
+- **Escopo do teste atual.** `AuthRouteThrottleTest.php:37-47` tem exatamente 3 datasets (`impersonate start`, `verification verify`, `verification send`) e proíbe só as strings `throttle:10,1` / `throttle:6,1` nessas 3 URIs ✓.
+- **Vacuidade.** Contei os throttles nomeados: `routes/auth.php:20,31,38,47,51` + `routes/web.php:40` = **6** ✓. E `grep -rn "throttle" vendor/laravel/horizon/routes/ vendor/opcodesio/log-viewer/routes/` retorna **zero** — nenhuma rota de pacote carrega throttle inline, então o censo passa verde hoje sem allowlist. Não-vacuo.
+
+**Duas correções ao entregável, não ao candidato:** o regex proposto `/^throttle:\d+(,\d+)?$/` deixa passar duas formas que o Laravel aceita e que produzem exatamente o mal que se quer travar — (1) `throttle` **sem argumento** (`ThrottleRequests` cai em 60,1 por padrão) e (2) a forma de 3 argumentos `throttle:60,1,prefixo`. Use algo como `/^throttle(:\d+.*)?$/` — ou o inverso, mais robusto: falhe quando o entry começa com `throttle:` **e** o que vem depois dos dois-pontos não é nome de limiter registrado (`RateLimiter::limiter($nome) !== null`), que também pega `throttle:auth` digitado errado.
+
+---
+
+#### C2 · Lockout do `POST login` sem teste — **sobrevive intacto**
+
+Cada fato foi conferido nos dois repositórios:
+
+- spinmax `routes/auth.php:18` sem middleware ✓; `LoginRequest.php:50` com `tooManyAttempts(..., 5)` ✓.
+- `grep -rn "Lockout\|RateLimiter\|429" tests/` no spinmax → **exatamente uma linha**: `tests/Feature/Store/ShippingQuoteEndpointTest.php:171` ✓. A varredura está certa.
+- boilerplate `routes/auth.php:25` — `POST login` também sem middleware ✓. `LoginRequest.php:49-70` é byte-a-byte o mesmo `ensureIsNotRateLimited()` + `throttleKey()` ✓ (o `authenticate()` diverge — o boilerplate injeta `'is_active' => true` nas credenciais — mas o trecho citado é idêntico).
+- `tests/Feature/Auth/AuthenticationTest.php` do boilerplate tem **4** testes (render, sucesso, senha errada, logout), nenhum de lockout ✓. O spinmax tem 6 (ganhou dois de `is_active`), também nenhum de lockout ✓.
+- `AuthRouteThrottleTest.php:20-21` contém literalmente *"O login não entra aqui porque já tem limitação própria via LoginRequest (por email+ip)"* ✓ — declara a dependência sem testá-la.
+
+**Viabilidade do teste proposto, checada:** `phpunit.xml:27` fixa `CACHE_STORE=array`, então o balde do `RateLimiter` é por teste e não vaza. `tooManyAttempts(key, 5)` é `attempts >= 5`, logo após 5 POSTs errados o **6º** é o bloqueado — o número no candidato está certo. E `throttleKey()` inclui o e-mail, que vem de factory única, então não colide com os testes vizinhos.
+
+Nada a derrubar. É o candidato mais forte da célula.
+
+---
+
+#### C3 · Teste de 429 em rota pública de escrita — **metade morre por já existir**
+
+Os fatos do spinmax batem (`web.php:27-29`, `:34-36`, `api.php:9-11`, e o teste em `ShippingQuoteEndpointTest.php:161-172` com o loop de 30 + `assertStatus(429)`). O que não se sustenta é o **entregável**:
+
+1. **"Absorver a *forma* do teste do spinmax" é redundante — a forma já está no boilerplate.** `tests/Feature/Auth/AuthRouteThrottleTest.php:49-63` é o mesmo padrão (loop até o teto, requisição seguinte espera 429), e o próprio candidato o cita como "exatamente a forma certa". Não há nada a importar do spinmax: o boilerplate não aprendeu a forma com ele, já a tinha. Isso não é "absorção", é uma segunda observação da mesma forma.
+2. **`.ai/rules/routes.md:9` já cobre metade da regra proposta** — "Toda rota com rate limit usa limiter nomeado […] nunca `throttle:N,M` inline". O que é genuinamente novo é só o predicado *"rota guest de escrita **precisa** de limiter"* e *"precisa de um teste que o 429 acontece"*.
+3. **O censo automático o próprio candidato já retira**, e com razão: `routes/auth.php:19,25,30,37` são as 4 únicas rotas guest de escrita, três já cobertas.
+
+**Sobra:** uma frase em `.ai/rules/tests.md` (que hoje tem 4 regras, nenhuma sobre rate limit). Entregável legítimo, mas é uma frase de doc — não um PR, e não uma absorção. Reclassifique de "(a) absorver" para "(b) regra", e corte a parte de "absorver a forma".
+
+---
+
+#### C4 · `throttle:` no lugar de `can:` — **sobrevive**, com um número errado
+
+Tudo conferido e correto: spinmax `routes/web.php:86-88` com só `throttle:10,1` ✓, grupo `['auth','verified',EnsureUserIsActive]` abre em `:61` ✓, `can:manage_users` fecha em `:83` ✓ — a rota de impersonate está mesmo fora dele. Boilerplate `routes/web.php:39-41` com `['throttle:impersonate', 'can:impersonate_users']` ✓. `.ai/rules/routes.md:11-12` diz literalmente "Throttle não é autorização" ✓. `WriteRoutesAuthorizationTest.php:15-17` credita ctfinance @ b8c6d57 ✓, allowlist nos dois sentidos em `:134-162` ✓, regressão nomeada em `:167-174` ✓.
+
+**Fato errado:** *"o censo varre 20+ rotas de escrita sob `auth`"*. Contei uma a uma na tabela de rotas do boilerplate: **18**, não 20+ — `routes/web.php` 12 (`DELETE users/impersonate`, `POST users`, `PUT users/{user}`, `DELETE users/{user}`, `PATCH users/{user}/toggle-active`, `POST …/permissions/grant`, `DELETE …/permissions/{permission}`, `POST …/impersonate`, `PUT /permissions/roles/{role}`, `POST …/assign-role`, `DELETE …/revoke-role`, `POST …/sync-permissions`), `routes/settings.php` 3 (`:14`, `:15`, `:18`), `routes/auth.php` 3 sob `auth` (`:50`, `:57`, `:59`). Não muda a conclusão — 18 continua sendo não-vacuo, e a `selfServiceWriteRoutes()` de 7 entradas prova que o censo está mordendo código real. Mas em rodada cujo mandato é conferir contagem, o número tinha que estar certo.
+
+Conclusão mantida: **nada de código**, só o comentário de origem.
+
+---
+
+#### C5 · Webhook limitado por IP — **sobrevive como regra**, mas o conselho está incompleto e omite a peça que o boilerplate tem e o spinmax não
+
+Fatos conferidos: `AppServiceProvider.php:124` com `Limit::perMinute(120)->by($request->ip())` ✓; `routes/web.php:56-58` ✓; `bootstrap/app.php:32` `validateCsrfTokens(except: ['webhooks/*'])` e `:41` `preventRequestsDuringMaintenance(except: ['webhooks/*'])` ✓; `MercadoPagoController.php:36-52` valida HMAC (`x-signature`, `x-request-id`, secret via `config('services.mercadopago.webhook_secret')`) e devolve **401 antes de qualquer escrita** em `:80` ✓; a rede de reconcile é `routes/console.php:41` (`store:reconcile-orders`, `everyTenMinutes()`) e `:52` (`store:reprocess-webhooks`, `everyFiveMinutes()`) ✓. Boilerplate sem `routes/api.php` (`ls routes/` → `auth.php console.php settings.php web.php`) e `bootstrap/app.php:19-23` com só `web`/`commands`/`health` ✓.
+
+**Duas objeções:**
+
+1. **O raciocínio "IP não é limitável pelo atacante" tem um pressuposto não declarado, e o spinmax não o satisfaz.** `->by($request->ip())` só isola o provedor se `$request->ip()` for o IP real. Atrás de LB/CDN sem `trustProxies`, todo tráfego colapsa no IP do proxy e o balde de 120/min vira **global** — que é exatamente o "desenho perigoso" que o candidato diz evitar. O boilerplate já resolve isso em `bootstrap/app.php:28-33` (`TRUSTED_PROXIES` → `$middleware->trustProxies()`); o `bootstrap/app.php` do spinmax **não tem nenhuma chamada a `trustProxies`**. Ou seja: a receita "sempre `->by(ip())`" é meio-conselho. A regra tem que ser *"`->by($request->ip())` **e** `trustProxies` configurado — sem o segundo, o `by(ip)` é decorativo"*.
+2. **Custo do entregável.** `.ai/rules/routes.md` tem frontmatter `paths: ['routes/**']`, então a prosa sobre webhook é carregada em **toda** edição de rota, num boilerplate com zero webhooks e zero `routes/api.php`. Duas frases sobre uma superfície inexistente é o mesmo tipo de falso conforto que o guardrail 4 manda apontar, só que em doc em vez de teste. Se entrar, entra como **uma** frase, com o ponto do `trustProxies` embutido — não como seção.
+
+Sobrevive, encolhido.
+
+---
+
+#### C6 · Enumeração no reset de senha — **cai, e é o candidato com mais fato errado da célula**
+
+Quatro erros verificáveis, sendo dois que invertem a conclusão.
+
+**(a) Evidência do spinmax é do boilerplate.** O candidato cita, como prova do spinmax, `back()->with('status', 'Se existir uma conta com esse e-mail, o link de redefinição será enviado.')`. Essa string **não existe no spinmax**. `clients/spinmax/app/app/Http/Controllers/Auth/PasswordResetLinkController.php:31` é:
+
+```php
+return back()->with('status', __('A reset link will be sent if the account exists.'));
+```
+
+— inglês, via `__()`. A frase em pt-BR (e o comentário de 3 linhas explicando por que não passa por `__()`) é do **boilerplate**, em `PasswordResetLinkController.php:31-34`. O ponto semântico ("resposta genérica idêntica nos dois") continua verdadeiro; a evidência citada foi copiada do repositório errado.
+
+**(b) "Conta inexistente responde na hora" é falso — o framework já fecha o canal de tempo.** `vendor/laravel/framework/src/Illuminate/Auth/Passwords/PasswordBroker.php:88` embrulha o corpo inteiro de `sendResetLink()` em `$this->timebox->call(function () { … }, $this->timeboxDuration)`. O `timeboxDuration` vem de `PasswordBrokerManager.php:75` (`config('auth.timebox_duration', 200000)`) e o default do construtor é `200000` µs (`PasswordBroker.php:66`) = **200 ms de piso, igual para conta existente e inexistente**. O `INVALID_USER` não "responde na hora": é acolchoado. O canal residual só reabre se o SMTP síncrono estourar os 200 ms — muito mais estreito do que o candidato descreve, e não é um buraco do boilerplate, é comportamento do L13.
+
+**(c) O "bombardeio de caixa postal alheia" é impossível — a premissa inteira é falsa.** `config/auth.php:98` do boilerplate: `'throttle' => 60`. E `PasswordBroker.php:94-95`:
+
+```php
+if ($this->tokens->recentlyCreatedToken($user)) {
+    return static::RESET_THROTTLED;
+}
+```
+
+Um endereço recebe **no máximo 1 e-mail de reset por 60 segundos**, independentemente de IP, de limiter e de quantas requisições cheguem. "6 e-mails de reset por minuto para um endereço-alvo escolhido pelo atacante" (spinmax) e o equivalente de 10 no boilerplate não acontecem: são 1. O problema que a chave composta resolveria não existe.
+
+**(d) O fix proposto é uma regressão, e a afirmação sobre o teste existente está invertida.** Trocar a chave do limiter `auth` para `$request->ip() . '|' . Str::lower($request->input('email'))` **quebra `AuthRouteThrottleTest.php:49-63`**: aquele teste varia o e-mail a cada iteração (`ghost{$attempt}@example.com`), então sob a chave composta cada requisição cai num balde distinto com 1 hit, nunca chega a 429, e `expect($blocked->status())->toBe(429)` falha. O candidato escreve *"ele valida o teto por IP e continuaria verde"* — o oposto: o mecanismo inteiro daquele teste é o balde de IP compartilhado que a proposta remove. Pior, no eixo de segurança a mudança **afrouxa**: hoje um IP tem 10 requisições/min no total da família `auth` (`ThrottleRequests.php:134` — a chave é `md5($limiterName.$limit->key)`, então `register`/`forgot-password`/`reset-password` dividem o mesmo balde, como o candidato corretamente observa); com a chave composta o mesmo IP ganha 10 por endereço distinto, isto é, **spray ilimitado** — exatamente a enumeração que a seção abre dizendo querer conter. Se algo fosse desejável, seria um limite **adicional** (`RateLimiter::for()` aceita array de `Limit`), nunca substituto — e pelo item (c) não há o que proteger. Nota de lambuja: `->by(...$request->input('email'))` põe string arbitrária controlada pelo atacante no espaço de chaves do cache (Redis em produção, `.env.example:45`), uma chave nova por endereço por minuto.
+
+**(e) `ShouldQueue` — custo > ganho.** Em teste, `phpunit.xml:32` fixa `QUEUE_CONNECTION=sync`, então o "teste de fila" proposto se reduz a `instanceof ShouldQueue` sobre classe nossa — asserção de reflexão, não de comportamento. Em produção (`QUEUE_CONNECTION=redis` + Horizon, `config/horizon.php` presente) enfileirar a notificação de reset significa que **a recuperação de acesso para de funcionar em silêncio quando o worker cai** — num fluxo cuja razão de existir é recuperar acesso. E o preço é um `App\Notifications\ResetPassword` próprio + override de `User::sendPasswordResetNotification()` + template de e-mail para manter, para fechar um canal que o timebox de 200 ms de (b) já cobre. Confirmei que nenhum dos dois repositórios tem `app/Notifications/` nem override — mas isso é o default do L13, não uma omissão.
+
+**Nota adicional:** o teste sugerido ("mesmo e-mail, 7ª tentativa → 429") usa o teto do spinmax (6/min); no boilerplate `throttle:auth` é 10/min (`AppServiceProvider.php:95-98` ✓), logo seria a 11ª. E, sob o código atual, e-mail fixo e e-mail variável dão **resultado idêntico** (a chave é só o IP) — o teste "novo" seria uma cópia de `AuthRouteThrottleTest.php:49-63`. Ele só passa a ser distinto depois da mudança de (d), que quebra o original.
+
+**O que sobra do C6:** só a metade defensiva — *"resposta genérica está correta nos dois; não gaste PR"* — mais um registro de que `config/auth.php:98` (`'throttle' => 60`) e o `Timebox` do broker são as peças que já sustentam isso, para o próximo caçador não redescobrir o mesmo falso buraco. **Derrubar as duas ações propostas.**
+
+
+
+#### Veredito — ### RISCO DE ABSORÇÃO — Rate limiting e superfície de abuso
+
+**Nota transversal (afeta C1, C5 e C6).** Todos os limiters do boilerplate chaveiam por `$request->ip()` (`/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate/app/Providers/AppServiceProvider.php:95-108`), e `ip()` só é confiável se o TrustProxies estiver certo. Verifiquei `bootstrap/app.php:28-33`: o boilerplate só chama `trustProxies()` quando `TRUSTED_PROXIES` está setado, e `.env.example:9` traz a chave **comentada** (`# TRUSTED_PROXIES=`). Consequências reais dos dois extremos: sem a env atrás de LB, todo tráfego colapsa no IP do balanceador e todo limiter `by(ip)` vira limiter **global** — exatamente o desenho que o C5 chama de perigoso; com `TRUSTED_PROXIES=*` sem LB na frente, o atacante escolhe o `X-Forwarded-For` e ganha um balde novo por request, evadindo o limite por completo. Qualquer regra de `.ai/rules` que diga "throttle de webhook é sempre `by(ip)`" precisa carregar essa condição no mesmo parágrafo, senão a regra promete uma garantia que a configuração pode não estar entregando.
+
+**Axis 1 respondido de uma vez:** nenhum dos seis candidatos toca schema, migration ou formato de dado persistido. Não há trap de migração de dados em lote nenhum. O único que mexe em algo com estado é o C6b (fila), e mesmo lá `password_reset_tokens` fica idêntico. Abaixo só trato o axis 1 onde há nuance.
+
+---
+
+#### C1 · Censo mecânico de `throttle:` inline — **risco: médio**
+
+*Justificativa: o guard-rail proposto tem duas evasões verificadas e uma dependência de carregamento que dá fatal; um censo que passa verde numa rota não-limitada é pior que nenhum censo, porque vira licença.*
+
+**Muda comportamento?** Não — é teste puro, nada em runtime. Modo de falha da absorção: **fail-open silencioso**, e é o pior tipo, porque o teste verde documenta uma garantia inexistente.
+
+**Risco da própria absorção — duas evasões que confirmei no vendor:**
+
+1. O regex proposto `/^throttle:\d+(,\d+)?$/` não cobre a forma fluente. `vendor/laravel/framework/src/Illuminate/Routing/Middleware/ThrottleRequests.php:67-70`:
+   ```php
+   public static function with($maxAttempts = 60, $decayMinutes = 1, $prefix = '')
+   {
+       return static::class.':'.implode(',', func_get_args());
+   }
+   ```
+   `->middleware(ThrottleRequests::with(20))` produz a string `Illuminate\Routing\Middleware\ThrottleRequests:20` — passa pelo regex. Existe também `ThrottleRequestsWithRedis` no mesmo diretório, com a mesma herança. É literalmente a lição que o `WriteRoutesAuthorizationTest.php:117-132` já aprendeu com `can:` vs. `#[Authorize]` e resolveu aceitando as duas formas; o censo de throttle precisa da mesma dobra.
+2. O regex exige `\d+`, então o alias nu `->middleware('throttle')` (que o framework resolve para 60,1) também escapa.
+
+**Terceira armadilha, de mecânica de teste:** o candidato sugere reusar `routeIsOwnedByTheApplication()`, e essa função está declarada em escopo global dentro de `tests/Feature/Routes/WriteRoutesAuthorizationTest.php:88-97`. Chamá-la de `AuthRouteThrottleTest.php` cria dependência de ordem de inclusão dos arquivos de teste — se o arquivo de throttle rodar primeiro, é `Call to undefined function`. O lugar certo é `tests/Pest.php`, que já é o domicílio dos helpers globais do projeto (`userWithRole()`, `selectableRoles()`, `guestUser()`).
+
+**Sobre o filtro de vendor:** verifiquei que hoje ele não é estritamente necessário — `find vendor -path '*/routes/*.php' | xargs grep -l throttle` volta **vazio**, e `config/horizon.php:86` (`'middleware' => ['web']`) e `config/log-viewer.php:74-93` não injetam throttle. Mas os dois pacotes estão no `composer.json` com constraint aberta (`^5.45`, `^3.24`); sem o filtro, um `composer update` que adicione throttle inline num pacote quebra o CI num arquivo que ninguém pode editar.
+
+**Tamanho da fatia:** 2 arquivos (`tests/Feature/Auth/AuthRouteThrottleTest.php` + `tests/Pest.php` para mover o helper). Dá para fatiar menor ainda: mover o helper primeiro, num commit isolado que não muda comportamento de teste nenhum, e o censo depois.
+
+---
+
+#### C2 · Teste de lockout do `POST login` — **risco: baixo**
+
+*Justificativa: acréscimo de teste sobre código que já existe e já funciona, com isolamento de estado verificado.*
+
+**Muda comportamento?** Não. Nenhuma linha de produção. `LoginRequest.php:49-65` fica intacto.
+
+**A pergunta que eu esperava derrubar o candidato — estado de rate limiter vazando entre testes — não derruba:** `phpunit.xml` define `<env name="CACHE_STORE" value="array"/>`, então o balde do `RateLimiter` morre junto com a instância da aplicação a cada teste. O novo teste não contamina os outros nem depende de ordem. (Se algum derivado sobrescrever `CACHE_STORE` para `file`/`redis` no `phpunit.xml`, aí sim o teste vira flaky — vale uma linha no comentário do teste avisando disso, porque é a única forma de ele quebrar.)
+
+**Detalhe de forma:** a mensagem esperada vem de `lang/pt_BR/auth.php:8` (`'throttle' => 'Tentativas de login em excesso. Tente novamente em :seconds segundos.'`). Asserte pela **presença do erro em `email`** e por `Event::assertDispatched(Lockout::class)`, não pela string traduzida — senão o teste vira teste de copy e quebra na próxima revisão de texto.
+
+**Tamanho da fatia:** 1 arquivo, ~15 linhas. Não dá para fatiar menor.
+
+**Nota de higiene que a fatia vai encostar:** `tests/Feature/Auth/AuthenticationTest.php:5` declara `uses(\Illuminate\Foundation\Testing\RefreshDatabase::class)` e usa `test()`, ambos contra `.ai/rules/tests.md:9,12` (que mandam `it()` e proíbem o `uses` por arquivo, porque `tests/Pest.php:23-25` já aplica em `Feature`). Não corrija isso na mesma fatia — é ruído de diff sobre um arquivo herdado do starter kit; ou é fatia própria, ou fica.
+
+---
+
+#### C3 · Regra "rota guest de escrita precisa de limiter + teste do 429" — **risco: baixo**
+
+*Justificativa: entrega só texto de regra, e o próprio candidato já reconhece que o censo automático seria quase vácuo hoje.*
+
+**Muda comportamento?** Não. Modo de falha: regra que não morde em nada hoje envelhece e vira decoração.
+
+**Risco real da absorção, e é de escopo:** a regra como enunciada ("rota alcançável sem `auth` com POST/PUT/PATCH/DELETE") pega `POST login` (`routes/auth.php:24`), que **deliberadamente** não tem throttle de rota — a limitação mora no `LoginRequest`. Se a regra entrar sem essa exceção escrita, a primeira coisa que um agente vai fazer é somar `throttle:auth` ao login. Isso não é neutro: o limiter `auth` é chaveado por `md5('auth'.$ip)` — confirmei em `ThrottleRequests.php:119-140`, `'key' => self::$shouldHashKeys ? md5($limiterName.$limit->key) : ...` — ou seja, um **balde único por IP compartilhado** entre `register`, `forgot-password` e `reset-password`. Somar o login a esse balde faz com que 10 tentativas de login queimem a cota de recuperação de senha do mesmo IP (e vice-versa), que é justamente o cenário de escritório/NAT. A exceção do login precisa estar no texto da regra, não só no comentário do teste.
+
+**Tamanho da fatia:** 1 arquivo (`.ai/rules/tests.md`), talvez 2 com `.ai/rules/routes.md`. Mínimo possível.
+
+**Processo:** o repo tem a skill `infer-conventions`, que registra regra via `record-rule` do Boost. Editar `.ai/rules/*.md` na mão funciona (o formato é só front-matter `paths:` + markdown, ver `.ai/rules/routes.md:1-4`), mas se a regra for adicionada à mão é preciso lembrar de conferir `.ai/rules/index.md` — `tests/**` já está mapeado na linha 25, então não há entrada nova a criar.
+
+---
+
+#### C4 · Atualizar o comentário de origem no censo de autorização — **risco: baixo**
+
+*Justificativa: alteração de comentário, zero superfície executável; o único risco é o de não fazer nada.*
+
+Confirmei o alvo: `tests/Feature/Routes/WriteRoutesAuthorizationTest.php:15-17` credita a origem só ao ctfinance @ b8c6d57, e a regressão nomeada em `:164-174` repete o crédito. Confirmei também a segunda instância no spinmax: `routes/web.php:85-88` tem `->middleware('throttle:10,1')` e nada mais, dentro do grupo `auth` que abre em `:61`, com o `can:manage_users` fechando em `:83` — a rota de impersonate cai fora dele. O boilerplate está travado em `routes/web.php:39-41` (`['throttle:impersonate', 'can:impersonate_users']`).
+
+**Único risco:** nenhum de código. Vale dizer o que **não** fazer junto: não transformar isso em oportunidade de mexer no censo. Ele já cobre o caso, e mexer num teste de segurança verde para melhorar um comentário é como o guard-rail se degrada.
+
+**Tamanho da fatia:** 1 arquivo, 2 linhas de comentário. Candidato natural para viajar de carona com o C1, já que é o mesmo diretório de testes e o mesmo tema.
+
+---
+
+#### C5 · Receita documentada de webhook limitado por IP — **risco: baixo (mas a regra está incompleta como escrita)**
+
+*Justificativa: não entra código nenhum, e a superfície no boilerplate é zero — confirmei que não há `routes/api.php` (só `auth.php`, `console.php`, `settings.php`, `web.php`) e que `bootstrap/app.php:19-23` registra apenas `web`, `commands` e `health`.*
+
+**A resposta à pergunta direta do candidato está certa e eu não consegui derrubá-la:** com `by($request->ip())`, o tráfego do atacante enche o balde do IP dele; o balde do provedor fica intacto. O desenho perigoso é o oposto. Mas a regra precisa de duas cláusulas que hoje não estão no texto proposto:
+
+1. **A cláusula do TrustProxies** (ver nota transversal). Sem `TRUSTED_PROXIES` correto atrás de LB, `by(ip)` degenera **exatamente** no limiter global que a regra proíbe. A regra que afirma "por IP é seguro" sem essa condição é falsa em metade das implantações.
+2. **A cláusula do `api:` routing.** Se um derivado adicionar `api: __DIR__.'/../routes/api.php'` ao `withRouting()`, o framework anexa `throttle:api` automaticamente (`vendor/laravel/framework/src/Illuminate/Foundation/Configuration/Middleware.php:497`), e o limiter `api` **não existe** em `configRateLimiting()`. O modo de falha aqui é bom e vale registrar como tal: `ThrottleRequests::resolveMaxAttempts()` lança `MissingRateLimiterException` — 500 alto e imediato em toda request, **fail-closed e barulhento**, não 429 silencioso nem passagem livre. Isso é um argumento a favor de limiter nomeado que o `.ai/rules/providers.md:8-9` ainda não usa: errar o nome do limiter é impossível de não notar.
+
+**Risco de importar a forma do spinmax junto:** o pacote do spinmax inclui `validateCsrfTokens(except: ['webhooks/*'])` e `preventRequestsDuringMaintenance(except: ['webhooks/*'])` (`bootstrap/app.php:32,41`). São exceções por **wildcard de prefixo** — qualquer rota futura sob `webhooks/*` herda "sem CSRF" sem que ninguém decida isso. Se a receita for documentada, documente a exceção como caminho literal por rota, não glob. E a dependência de reconcile é real e verificável: `routes/console.php:41,52` (`store:reconcile-orders` a cada 10 min, `store:reprocess-webhooks` a cada 5 min, ambos `withoutOverlapping()`). Sem essa rede, "120/min por IP" é uma decisão de perder a notificação 121.
+
+**Tamanho da fatia:** 1-2 arquivos de texto. Zero código, zero teste — e é importante que fique assim: um teste sobre webhook aqui passaria vazio, e teste vazio no repositório é o mesmo fail-open do C1.
+
+---
+
+#### C6 · Chave composta no reset + notificação em fila — **risco: alto na forma proposta, baixo na forma corrigida. Precisa virar duas fatias.**
+
+Este é o único candidato onde tentei derrubar e **encontrei um fail-open concreto na proposta como escrita**.
+
+##### C6a — chave composta (ip + email)
+
+A proposta é `Limit::perMinute(6)->by($request->ip() . '|' . Str::lower((string) $request->input('email')))`. Aplicada como **substituição** da chave do limiter `auth`, ela abre um buraco, e o buraco é maior do que o furo que fecha:
+
+- O limiter `auth` é compartilhado por **três** rotas: `routes/auth.php:20` (`register`), `:31` (`forgot-password`) e `:38` (`reset-password`) — e o balde é único por IP (`md5('auth'.$ip)`, confirmado em `ThrottleRequests.php:135`).
+- Trocar a chave para incluir o e-mail dá ao atacante um balde novo **por e-mail escolhido por ele**. Em `POST register`, isso significa cadastro em massa sem teto nenhum a partir de um único IP: hoje `Limit::perMinute(10)->by($request->ip())` (`AppServiceProvider.php:95-98`) limita a 10/min; depois da troca, ilimitado. Fail-open silencioso, e numa rota que **grava no banco**.
+
+**Forma correta, e ela é menor que a proposta:** manter a chave por IP e **acrescentar um segundo `Limit`**, em vez de trocar. Confirmei que o framework suporta: `ThrottleRequests.php:130` faz `Collection::wrap($limiterResponse)->map(...)`, ou seja, o closure do limiter nomeado pode devolver um array de `Limit` e todos são avaliados.
+
+```php
+RateLimiter::for('auth', static fn(Request $request): array => [
+    Limit::perMinute(10)->by($request->ip()),                       // teto por IP, preservado
+    Limit::perMinute(6)->by($request->ip().'|'.Str::lower((string) $request->input('email'))),
+]);
+```
+
+Isso tem três propriedades boas: (1) o teto por IP não se mexe, então nada que hoje funciona muda; (2) `register` e `reset-password` também ganham a dimensão de e-mail sem prejuízo — um e-mail só se registra uma vez, um usuário legítimo só reseta uma vez; (3) **não muda o nome do middleware**, o que evita a trap de migração abaixo.
+
+**Trap de migração se alguém preferir um limiter novo (ex.: `throttle:password-email`):** `tests/Feature/Auth/AuthRouteThrottleTest.php:28-32` tem `['POST', 'forgot-password']` num dataset que asserta `toContain('throttle:auth')`. Renomear o middleware quebra esse teste — o que é o comportamento desejado do contrato, mas precisa entrar no mesmo commit, não na revisão seguinte.
+
+**O teste existente sobrevive à mudança, e verifiquei por quê:** `AuthRouteThrottleTest.php:49-63` varia o e-mail a cada iteração (`ghost{$attempt}@example.com`), então cada request gasta 1 de 6 no balde por e-mail e 1 de 10 no balde por IP — o 11º ainda estoura pelo IP. O caso novo (e-mail fixo, 7ª tentativa → 429) é ortogonal e não conflita.
+
+**Sobre `(string) $request->input('email')`:** o limiter roda no middleware, **antes** da validação, então o input é arbitrário. Testei o raciocínio contra o vendor: `email[]=a&email[]=b` faz o cast de array para string emitir warning e render `"Array"` — não é fatal, e o balde resultante é mais restritivo, não menos. A chave também não cresce sem limite porque vira `md5()` (`ThrottleRequests.php:135`). Ainda assim, prefira um guard explícito (`is_string(...) ? ... : 'invalid'`) a depender de um warning silencioso de conversão.
+
+**Risco C6a na forma corrigida: baixo.** 2 arquivos (`app/Providers/AppServiceProvider.php` + teste). Modo de falha se a absorção estiver errada: mais restritivo (usuário legítimo tomando 429 cedo demais), não mais permissivo — desde que o `Limit` por IP permaneça.
+
+##### C6b — `ShouldQueue` na notificação de reset
+
+**Risco: médio.** É a fatia mais cara das seis e a única com modo de falha silencioso em produção.
+
+- Confirmei o ponto de partida: `app/Notifications/` **não existe** no boilerplate, `app/Models/User.php` só usa `Notifiable` (linha 23) e não sobrescreve `sendPasswordResetNotification`. Então a fatia cria um diretório novo, uma classe nova e um override no `User`.
+- **Quebra três testes existentes.** `tests/Feature/Auth/PasswordResetTest.php:22,32,48` fazem `Notification::assertSentTo($user, ResetPassword::class)` com o `Illuminate\Auth\Notifications\ResetPassword` importado na linha 4. O `NotificationFake` indexa por nome de classe exato — uma subclasse própria **não** casa. Os três testes precisam mudar de classe no mesmo commit.
+- **Modo de falha em produção: fail-open silencioso.** `.env.example:45` traz `QUEUE_CONNECTION=redis` e o repo tem `laravel/horizon` no `composer.json`. Numa implantação de derivado onde o worker não está de pé, o e-mail de recuperação de senha simplesmente **não chega**, sem erro em lugar nenhum — hoje ele falha alto, dentro do request. É uma troca deliberada, não um upgrade puro, e precisa estar escrita.
+- **O teste proposto não prova o que promete.** `phpunit.xml` define `QUEUE_CONNECTION=sync`, e `Notification::fake()` intercepta *antes* do enfileiramento — `Notification::assertSentTo` continua verde tanto com quanto sem `ShouldQueue`. Para provar de fato, asserte a interface dentro do callback (`expect($notification)->toBeInstanceOf(ShouldQueue::class)`) ou faça disso um teste de Arch em `tests/Arch/ArchTest.php`.
+- **Correção medida ao candidato:** enfileirar **não fecha** o canal de tempo, apenas o estreita. `Password::sendResetLink()` continua fazendo lookup no banco e `INSERT` em `password_reset_tokens` só quando a conta existe; some o round-trip SMTP, permanece a diferença de uma query mais uma escrita. É melhora real e vale — mas descrever como "fecha o canal" é forte demais para o que a mudança entrega.
+
+**Tamanho da fatia:** ~5 arquivos (`app/Notifications/*` novo, `app/Models/User.php`, `tests/Feature/Auth/PasswordResetTest.php`, teste de fila, possivelmente `lang/pt_BR/passwords.php`). **Fatie:** C6a (chave composta, 2 arquivos, risco baixo, ganho de segurança imediato) primeiro e sozinha; C6b depois, ou nunca — o ganho dela é o canal de tempo residual, que é o de menor valor da rodada.
+
+
+
+#### Veredito — ### ATUALIDADE — Rate limiting e superfície de abuso
+
+Ambiente verificado: `/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate` → `php artisan --version` = **Laravel Framework 13.24.0**, `composer.json` = `laravel/framework ^13.0`, `inertiajs/inertia-laravel ^3.0`, `pestphp/pest ^5.1`, `php ^8.4`. Todas as citações de `vendor/` abaixo são desse checkout.
+
+---
+
+#### C1 · Censo mecânico de throttle inline — `[atual]`, mas o regex proposto está errado para o L13
+
+**Tentei derrubar por três caminhos e nenhum pegou:**
+
+- Não existe `RateLimiter::fake()` nem qualquer introspecção nativa de "quais rotas usam throttle inline" — grep em `vendor/laravel/framework/src/Illuminate/Cache/RateLimiter.php` e `.../Support/Facades/RateLimiter.php` não retorna nada com `fake`. A superfície pública é `for()` (`:49`), `limiter()` (`:64`), `attempt()` (`:106`), `tooManyAttempts()` (`:128`), `hit/increment/decrement`, `attempts`, `remaining`, `retriesLeft`, `clear`, `availableIn`.
+- `Route::getRoutes()->getRoutes()` + `gatherMiddleware()` continua sendo a API nativa e já funciona — `tests/Feature/Auth/AuthRouteThrottleTest.php:23-27` faz exatamente isso hoje.
+- Arch test do Pest 5 não alcança: `routes/*.php` não são classes.
+
+**Veredito: `[atual]`.** O guard-rail sobrevive intacto — o boilerplate segue estritamente superior ao spinmax nesse eixo (`app/Providers/AppServiceProvider.php:92-109`, três limiters nomeados; `routes/auth.php:20,31,38,47,51` + `routes/web.php:40`, seis rotas, zero inline).
+
+**Correção de atualidade que o candidato precisa absorver:** o regex proposto — `/^throttle:\d+(,\d+)?$/` — **cobre só uma das quatro formas inline que o L13 aceita**. `vendor/laravel/framework/src/Illuminate/Routing/Middleware/ThrottleRequests.php:85`:
+
+```php
+public function handle($request, Closure $next, $maxAttempts = 60, $decayMinutes = 1, $prefix = '')
+```
+
+e `resolveMaxAttempts()` em `:194-214`. As formas válidas são:
+
+| forma | exemplo | o regex proposto pega? |
+|---|---|---|
+| numérica | `throttle:20,1` | sim |
+| com prefixo (3º arg) | `throttle:20,1,checkout` | **não** |
+| guest\|auth | `throttle:10\|60,1` | **não** |
+| atributo do model | `throttle:rate_limit,1` | **não** |
+
+O discriminador correto não é regex — é a **própria condição de dispatch do framework** (`ThrottleRequests.php:87-90`): um `throttle:X` é limiter nomeado se e somente se `X` não contém vírgula **e** `RateLimiter::limiter(X) !== null`. Escreva o censo assim:
+
+```php
+// para cada middleware string que começa com 'throttle:'
+$param = Str::after($middleware, 'throttle:');
+expect(str_contains($param, ','))->toBeFalse()
+    ->and(RateLimiter::limiter($param))->not->toBeNull();
+```
+
+Isso fecha as quatro formas com uma regra só e usa `RateLimiter::limiter()` (`RateLimiter.php:64`), que o `AuthRouteThrottleTest.php:9,13` já usa. Nota de convenção: `.ai/rules/tests.md:9` manda `it()` — o arquivo atual usa `test()` em `:8,:22,:49`; teste novo entra como `it()`.
+
+---
+
+#### C2 · Teste de lockout do `POST login` — `[atual]`, com uma alternativa nativa que muda comportamento
+
+**O `ensureIsNotRateLimited()` não é padrão obsoleto.** A doc do L13 (`authentication.md`, seção *Login Throttling*) descreve exatamente esse comportamento como o que os starter kits aplicam: *"the user will not be able to login for one minute... throttling is unique to the user's username / email address and their IP address"* — que é `app/Http/Requests/Auth/LoginRequest.php:69` (`Str::lower(email) . '|' . ip()`) ao pé da letra. Não há classe nativa que substitua. **`[atual]`** — o teste faltante continua sendo o entregável.
+
+**Existe, porém, uma API nativa que o candidato não considerou** e que é documentada no L13 para este caso exato (`routing.md`, *Multiple Rate Limits*):
+
+```php
+RateLimiter::for('login', fn (Request $request) => [
+    Limit::perMinute(500),
+    Limit::perMinute(3)->by($request->input('email')),
+]);
+```
+
+`Limit` aceita array desde que os `by()` sejam distintos, e `ThrottleRequests::handleRequestUsingNamedLimiter` (`:108+`) itera a lista. Isso permitiria `->middleware('throttle:login')` na rota, eliminando a exclusão por escrito em `AuthRouteThrottleTest.php:19-21` e fazendo o login cair automaticamente no censo do C1.
+
+**Mas não recomendo trocar, e é preciso dizer por quê:** o limiter nomeado responde **429 bruto**, enquanto o `LoginRequest` devolve `ValidationException` em `email` com `auth.throttle` (`LoginRequest.php:59-64`) — que o Inertia renderiza como erro de campo no formulário — e dispara `Illuminate\Auth\Events\Lockout` (`:55`). São dois contratos de UX diferentes. Verdito prático: **mantenha o `LoginRequest` e adicione o teste**; se algum dia quiser o `throttle:login`, saiba que ele é nativo e disponível, mas que o preço é a mensagem no campo e o evento `Lockout`.
+
+Modernização da assertion: use `assertTooManyRequests()` (`vendor/laravel/framework/src/Illuminate/Testing/Concerns/AssertsStatusCodes.php:239`) em vez de `assertStatus(429)` / `expect(...->status())->toBe(429)`.
+
+---
+
+#### C3 · Forma do teste "loop até o limite + 429" — `[absorver-modernizado]` (assertion), regra `[atual]`
+
+A **forma** (N requests + 1 que estoura) não tem substituto nativo: não há `RateLimiter::fake()`, e limpar o balde por fora é inviável porque a chave do limiter nomeado é hasheada (`ThrottleRequests::resolveRequestSignature` + `cleanRateLimiterKey`, `RateLimiter.php:285`) — `RateLimiter::clear()` (`:257`) exigiria reconstruir a chave à mão. O loop é a forma honesta. **Regra `.ai/rules/tests.md`: `[atual]`, absorva.**
+
+Duas modernizações concretas sobre o que o candidato escreveu:
+
+1. `assertTooManyRequests()` (`AssertsStatusCodes.php:239`) substitui o `assertStatus(429)` copiado do spinmax. Vale também para `AuthRouteThrottleTest.php:62`, que hoje usa `expect($blocked->status())->toBe(429)`.
+2. **`Limit::after()` é nova e muda o desenho recomendado para rota pública de escrita.** `vendor/laravel/framework/src/Illuminate/Cache/RateLimiting/Limit.php:145` + `ThrottleRequests.php:163-171` — callback que decide, **olhando a resposta**, se o request conta para o balde. A doc do L13 (`routing.md`, *Response-Based Rate Limiting*) apresenta isso explicitamente como defesa anti-enumeração e como forma de não gastar o teto do usuário em erro de validação. Para o caso do C3 (checkout que cria linha e chama gateway), o desenho atual é `->after(fn (Response $r) => $r->isSuccessful())` — só a escrita bem-sucedida consome. Registre isso na regra: um limiter novo de rota pública de escrita **começa com a pergunta "o que deve contar?"**, não só "quantos por minuto".
+
+Confirmo a leitura do candidato sobre superfície: `routes/auth.php` tem só 4 rotas guest de escrita (`:19,25,30,37`) e `bootstrap/app.php:19-23` não registra `api:` — censo automático seria quase vácuo hoje. Regra sim, censo não.
+
+---
+
+#### C4 · `throttle:` no lugar de `can:` — `[atual]`, nada mudou no L13
+
+Verifiquei se o L13 trouxe algo que tornasse o censo redundante. Não trouxe, e o censo **já está atualizado** para a única novidade relevante: o cabeçalho de `tests/Feature/Routes/WriteRoutesAuthorizationTest.php:19-22` documenta que o L13 aceita as duas formas (`can:` e o atributo `#[Authorize]`, que vira `Illuminate\Auth\Middleware\Authorize:<ability>` e não `can:`) e o teste importa `Illuminate\Auth\Middleware\Authorize as AuthorizeMiddleware` (`:6`) para cobrir a segunda. `.ai/rules/routes.md:11-12` diz o mesmo.
+
+**`[atual]`.** Nada de código, como o candidato já concluiu — e nada de atualidade a corrigir. A mudança de comentário de origem (creditar ctfinance @ b8c6d57 **e** spinmax @ e4ec01e em `:15-17`) é a ação inteira.
+
+---
+
+#### C5 · Webhook limitado por IP — `[absorver-modernizado]`: a regra vale, escreva-a com a API de hoje
+
+Nenhum recurso nativo do L13 substitui a regra. Confirmado que a superfície não existe: `bootstrap/app.php:19-23` tem só `web`, `commands`, `health`, e o `withMiddleware` (`:24-45`) **não registra nenhuma exceção de CSRF** — não há `validateCsrfTokens(except:)` no boilerplate. `[atual]` no mérito.
+
+Três atualizações de API para a receita documentada, todas verificadas:
+
+1. **`Limit::after()`** (`Limit.php:145`) — para webhook é o ajuste mais útil que existe hoje e não existia quando o padrão do spinmax foi escrito: `->after(fn (Response $r) => $r->getStatusCode() >= 400)` faz o balde contar **só as entregas rejeitadas** (assinatura HMAC inválida, payload malformado). O provedor legítimo, que sempre assina certo, nunca enche o próprio balde — o que dissolve boa parte da preocupação com "perder silenciosamente a notificação nº 121". A rede de reconcile continua sendo obrigatória, mas deixa de ser o único anteparo.
+2. **`Limit::perMinutes($decayMinutes, $maxAttempts)`** (`Limit.php:87`) — janela arbitrária sem aritmética manual, quando 120/min não for o formato certo.
+3. **`->response(callable)`** (`Limit.php:158`, consumido em `ThrottleRequests.php:244-255`) — o 429 de um webhook precisa sair no formato que o provedor entende como "reenvie", não como página de erro. Vale citar na receita.
+
+Sobre ADR 0005 (sem API/Sanctum): registre na regra que **um webhook não exige `routes/api.php`** — ele pode viver em `routes/web.php` com `validateCsrfTokens(except:)` em `bootstrap/app.php`, exatamente como o spinmax faz. A receita não conflita com o ADR.
+
+---
+
+#### C6 · Enumeração no reset de senha — **o achado mais afetado pela lente. Duas das três recomendações caem.**
+
+**(a) "6 e-mails de reset por minuto para um endereço-alvo" → `[rejeitado-obsoleto]`. O framework já limita a 1 por 60s, por e-mail.**
+
+`config/auth.php:93-100` do boilerplate:
+```php
+'users' => [ 'provider' => 'users', 'table' => ..., 'expire' => 60, 'throttle' => 60 ],
+```
+
+`vendor/laravel/framework/src/Illuminate/Auth/Passwords/PasswordBroker.php:94-96`:
+```php
+if ($this->tokens->recentlyCreatedToken($user)) {
+    return static::RESET_THROTTLED;
+}
+```
+
+e `DatabaseTokenRepository.php:110-134` — `recentlyCreatedToken()` consulta `password_reset_tokens` **`->where('email', $user->getEmailForPasswordReset())`** e compara `created_at + throttle` com agora. Ou seja: o balde por e-mail **já existe, é nativo, roda antes de `sendPasswordResetNotification()` (`:107`) e está configurado a 60s no boilerplate**. Um atacante mirando `vitima@empresa.com` consegue **1 e-mail por minuto**, não 6. A proposta `Limit::perMinute(6)->by(ip|email)` seria **mais permissiva** do que o que já está lá — absorvê-la como "correção de segurança" seria um retrocesso documentado como avanço.
+
+O que resta legitimamente da ideia é outro argumento, mais fraco: chave composta impede que um atacante drene o balde compartilhado `throttle:auth` (10/min por IP, `AppServiceProvider.php:95-98`) e negue `register`/`reset-password` a quem compartilha NAT com ele. Isso é **disponibilidade**, não caixa postal. Se for escrever, escreva com essa justificativa e como array de limits (`routing.md`, *Multiple Rate Limits*), não substituindo o teto por IP.
+
+**(b) "vazamento por tempo: conta existente custa um round-trip SMTP a mais" → `[rejeitado-obsoleto]` em ~200ms; `[absorver-modernizado]` só na cauda.**
+
+`PasswordBroker.php:82-113` — o método **inteiro**, incluindo `getUser()`, `recentlyCreatedToken()` e `$user->sendPasswordResetNotification($token)`, roda dentro de `$this->timebox->call($closure, $this->timeboxDuration)`, com `$timeboxDuration = 200000` microssegundos declarado no construtor (`:66`). `Illuminate\Support\Timebox::call()` (`Timebox.php:27-50`) calcula o resto e dorme via `Sleep::usleep()`. **Conta inexistente NÃO "responde na hora"** — ela é acolchoada até 200ms, igualando-se à conta existente. `Password::reset()` recebe o mesmo tratamento (`:146`).
+
+O resíduo é real mas estreito: `Timebox` só estabelece **piso**, não teto (`:39-43`, `if (! $earlyReturn && $remainder > 0)`). Se o envio SMTP síncrono passar de 200ms — o que é comum contra SMTP externo — a diferença reaparece na cauda. **É aí, e só aí, que o `ShouldQueue` fecha o canal.**
+
+**(c) `ResetPassword` com `ShouldQueue` → `[atual]`, absorver — mas com a razão corrigida.**
+
+Verificado: `vendor/laravel/framework/src/Illuminate/Auth/Notifications/ResetPassword.php:9` — `class ResetPassword extends Notification`, **sem `ShouldQueue`** no L13. Idem `VerifyEmail.php:12`. Não há config global de "enfileirar todas as notifications". O hook nativo e documentado (`passwords.md`, *Reset Email Customization*) é sobrescrever `sendPasswordResetNotification($token)` no `App\Models\User` — verificado que o model do boilerplate **não** sobrescreve nenhum dos dois, e `app/Notifications/` não existe. `config/queue.php:16` já tem default `database` e `.env.example:45` `QUEUE_CONNECTION=redis`, com Horizon instalado (`laravel/horizon ^5.45`) — a fila está pronta.
+
+**Absorva, mas venda pelo motivo certo:** tirar o SMTP do caminho do request (latência, resiliência a MTA fora do ar, e fechar a cauda do timing acima de 200ms). Não venda como "o canal de tempo está aberto" — não está.
+
+**(d) Correção ao teste proposto — como está escrito, ele falha.** O candidato pede "mesmo e-mail, 7ª tentativa → 429". No boilerplate `throttle:auth` é `Limit::perMinute(10)` (`AppServiceProvider.php:95-98`), não 6 — o 429 vem na **11ª**, não na 7ª. Pior: com e-mail fixo, as tentativas 2–10 batem em `RESET_THROTTLED` e o controller **descarta o status** (`app/Http/Controllers/Auth/PasswordResetLinkController.php:27-29` ignora o retorno de `sendResetLink`), então a resposta é idêntica — o teste mediria o teto por IP de novo, exatamente o que `AuthRouteThrottleTest.php:49-63` já mede.
+
+O teste que realmente vale, e que exercita o mecanismo nativo recém-descoberto:
+
+```php
+it('sends at most one reset link per email within the broker throttle window', function () {
+    Notification::fake();
+    Sleep::fake();                       // Sleep.php:319 — mata o pad de 200ms/request
+    $user = User::factory()->create();
+
+    for ($i = 0; $i < 5; $i++) {
+        $this->post('/forgot-password', ['email' => $user->email]);
+    }
+
+    Notification::assertSentToTimes($user, ResetPassword::class, 1);
+});
+```
+
+Isso trava `config/auth.php:98` (`'throttle' => 60`) contra alguém zerar o valor, e continua verde independentemente do teto por IP.
+
+**(e) Bônus de atualidade para o eixo enumeração:** `Limit::after()` (`Limit.php:145`) é apresentado pela doc do L13 (`routing.md`, *Response-Based Rate Limiting*) literalmente como ferramenta anti-enumeração — *"Only count 404 responses toward the rate limit to prevent enumeration..."*. Não há uso hoje no boilerplate. É a API certa para `throttle:auth` deixar de gastar o teto de um usuário legítimo que errou o formato do e-mail (422) enquanto continua contando os POSTs que de fato disparam trabalho.
+
+**(f) Observação de custo, verificada:** `AuthRouteThrottleTest.php:49-63` faz 11 POSTs em `/forgot-password` e cada um paga o timebox de 200ms via `Sleep::usleep` → **~2,2s de sleep real** nesse único teste hoje. `Sleep::fake()` (`Sleep.php:319`, curto-circuita antes de dormir e só registra na sequência) elimina isso. Vale aplicar no teste existente junto com qualquer teste novo desta família.
+
+---
+
+**Resumo dos vereditos:** C1 `[atual]` (com correção do discriminador — regex não serve no L13) · C2 `[atual]` (alternativa nativa `throttle:login` existe, mas troca UX e evento) · C3 regra `[atual]`, assertion `[absorver-modernizado]` (`assertTooManyRequests`, `Limit::after`) · C4 `[atual]` · C5 `[absorver-modernizado]` (`Limit::after`/`perMinutes`/`response`; webhook não precisa de `routes/api.php`) · C6 **parcialmente `[rejeitado-obsoleto]`** — o throttle por e-mail e o timebox já são nativos e o teste proposto está numericamente errado; sobra `ShouldQueue` como `[atual]`.
+
+
+
+### Frente: LGPD/PII, uploads, sessão e queries
+
+#### Candidatos levantados
+
+All verified. Here are the findings.
+
+### LGPD/PII, uploads, sessão e queries
+
+Varri as duas bases inteiras nas quatro áreas. Dois achados são de absorção direta com superfície viva no boilerplate (C1, C2); dois são guard-rails contra limitação confirmada nos dois lados (C4, C6); um é o boilerplate já sendo superior e não devendo copiar nada (C3). **Uploads e open redirect não existem em nenhum dos dois** — detalho no fim para não gerar teste vácuo.
+
+---
+
+#### C1 · `UserResource` devolve CPF, telefone e notas internas em claro para qualquer um com `manage_users`
+- **Pergunta**: (a) absorver do spinmax
+- **Evidência (spinmax @ e4ec01e)**: `app/Http/Resources/UserResource.php:25-35` — o viewer é resolvido pelo usuário **original** (não o impersonado) e o teto é aplicado na exibição:
+  ```php
+  $viewer          = app(ImpersonationService::class)->getOriginalUser() ?? $currentUser;
+  $canSeeSensitive = $this->viewerOutranksOrOwns($viewer);
+  'cpf_cnpj'   => $canSeeSensitive ? $this->cpf_cnpj : Cpf::mask((string) $this->cpf_cnpj),
+  'phone'      => $canSeeSensitive ? $this->phone : null,
+  'user_notes' => $canSeeSensitive ? $this->user_notes : null,
+  ```
+  `viewerOutranksOrOwns()` (`:69-80`) libera para si mesmo, `SUPER_USER`, ou prioridade **estritamente maior**. Coberto por `tests/Feature/User/UserResourceCpfCeilingTest.php` (2 casos, incluindo o negativo).
+- **Equivalente no boilerplate**: `app/Http/Resources/UserResource.php:26-31` — sem teto nenhum: `'cpf_cnpj' => $this->cpf_cnpj, 'phone' => $this->phone, 'mobile' => $this->mobile, 'user_notes' => $this->user_notes`.
+- **O que absorver / travar**: portar `viewerOutranksOrOwns()` + mascaramento. O custo é baixo porque **as duas peças já existem no boilerplate**: `App\Enum\Roles::priority()` (`app/Enum/Roles.php:49`, SUPER_USER 100 / ADMIN 90 / MANAGER 70) e `ImpersonationService::getOriginalUser()` (já usado em `app/Policies/UserPolicy.php:166`). Falta só aplicar no resource. Usar `CpfFormatter::mask()` do próprio boilerplate, não o `Cpf::mask` do spinmax.
+- **Superfície no boilerplate hoje**: **sim, e é escalada real.** `UserResource` é consumido em 5 pontos (`User/IndexController.php:136`, `ShowController.php:34`, `EditController.php:40`, `ShowUserPermissionsController.php:30`, `PermissionRole/IndexController.php:44`), todos atrás de `can:manage_users` (`routes/web.php:22-30`). `MANAGER` tem `MANAGE_USERS` (`database/seeders/PermissionRoleSeeder.php:48-51`) e prioridade 70 → **um MANAGER abre `/users` e lê CPF, telefone, celular e notas internas do ADMIN (prioridade 90) em claro**. É exatamente a escalada que o docblock do spinmax diz ter fechado. Hoje **zero testes** do boilerplate tocam `UserResource` (`grep -rln UserResource tests/` → vazio).
+
+---
+
+#### C2 · O `PiiScrubber` do boilerplate casa chave por igualdade exata e ignora objetos — vaza `customer_name`, `card_token` e models inteiros
+- **Pergunta**: (a) absorver do spinmax
+- **Evidência (spinmax @ e4ec01e)**: `app/Support/PiiScrubber.php:38-49` separa duas listas e casa por **substring**:
+  ```php
+  private const SENSITIVE_KEY_PARTS = ['cpf','cnpj','document','email','mail','phone',…,'customer','payer','recipient','holder','password','secret','token','authorization'];
+  private const SENSITIVE_KEYS = ['name','nome']; // exato: role_name/permission_name é dado operacional
+  ```
+  `isSensitiveKey()` (`:103-116`) faz `str_contains($key, $part)`. E `scrub()` (`:79-82`) normaliza objetos antes de descer: `if ($value instanceof Arrayable) { $value = $value->toArray(); }`.
+- **Equivalente no boilerplate**: `app/Support/Logging/PiiScrubber.php:92` — `in_array(mb_strtolower($key), self::SENSITIVE_KEYS, true)`, **match exato**, lista única. E `scrub()` (`:88-110`) trata só `is_array` e `is_string`; qualquer outro tipo cai no `return $value` da linha 109.
+- **O que absorver / travar**: (1) adotar o casamento por substring com a lista `SENSITIVE_KEY_PARTS` + a lista exata só para `name`/`nome` — a separação do spinmax é o detalhe fino que evita redigir `role_name`; (2) adicionar o ramo `Arrayable` antes do `is_array`. Manter os placeholders tipados do boilerplate (`[CPF]`, `[EMAIL]`), que são melhores que o `[REDACTED]` único do spinmax.
+- **Superfície no boilerplate hoje**: **sim.** `PiiAwareTap` está plugado em `single`, `daily` e `stack` (`app/Support/Logging/PiiAwareTap.php` + asserção em `tests/Feature/LogScrubbingTest.php`, caso "keeps the shipped channels wired"), então é o caminho de todo `Log::*`. Dois vazamentos concretos, nenhum coberto pelo teste atual (que só usa chaves exatas `cpf`/`cnpj`/`endereco`/`jwt`):
+  - `Log::info('x', ['customer_name' => 'João da Silva'])` → chave não bate exato, valor não casa nenhum regex → **grava o nome inteiro**. No spinmax, `str_contains('customer_name','customer')` redige.
+  - `Log::info('x', ['user' => $user])` → `User` é `Arrayable` mas não é array nem string → devolvido intacto, e o formatter do Monolog serializa depois do scrub. `App\Models\User` tem `$hidden = ['password','remember_token']` apenas (`app/Models/User.php:42-45`), então **`cpf_cnpj`, `phone`, `mobile`, `user_notes` e `email` vão para o disco em claro**.
+  - Mesma classe de furo para `card_token`/`webhook_token` (boilerplate tem `token` exato, não substring).
+
+---
+
+#### C3 · `CpfHasher`: o boilerplate já é superior — não absorver o `Cpf::hash()` do spinmax
+- **Pergunta**: (a) — resultado é **não absorver**; registrar para evitar retrabalho
+- **Evidência (spinmax @ e4ec01e)**: `app/Support/Cpf.php:31-34` usa a `APP_KEY` **crua** e não valida nada:
+  ```php
+  return hash_hmac('sha256', self::normalize($cpf), (string) config('app.key'));
+  ```
+  Consequências: a chave é a string literal `base64:…` (o prefixo entra no HMAC); `APP_KEY` vazia gera HMAC com chave `''` — hash público, invertível no espaço de ~10^11 CPFs — **em silêncio**; e `Cpf::hash('')` ou `Cpf::hash('123')` devolvem hash aparentemente válido, então lixo vira chave de dedupe em `Customer::upsertByCpf()` (`app/Models/Customer.php:99-108`).
+- **Equivalente no boilerplate**: `app/Support/Br/CpfHasher.php:62-79` — deriva a chave (`hash_hmac('sha256', 'app:cpf-hash:v1', $secret, true)`), decodifica o `base64:`, **lança `RuntimeException` com segredo vazio**, e `normalize()` (`:52-57`) devolve `null` fora de 11 dígitos, então `hash()` devolve `null` em vez de hashear lixo. `tests/Unit/Br/CpfHasherTest.php:16` chega a assertar explicitamente que o resultado **não** é a forma do spinmax: `->not->toBe(hash_hmac('sha256', '39053344705', (string) config('app.key')))`.
+- **O que absorver / travar**: nada do hash. A **única** peça em que o spinmax ganha é `Cpf::mask()` (`app/Support/Cpf.php:41-55`), que **falha fechado**: 11 dígitos → `***.456.789-**`, 14 → `**.***.789/****-**`, qualquer outro comprimento → `'***'`. O `CpfFormatter::mask()` do boilerplate (`app/Support/Br/CpfFormatter.php:47-60`) aplica formato de CPF a qualquer comprimento, rotulando CNPJ como CPF. Vale absorver só o ramo de 14 dígitos e o fallback total.
+- **Superfície no boilerplate hoje**: **`CpfHasher` está dormente** — `grep -rn CpfHasher app/` só encontra a própria classe; nenhum model ou controller a chama, e não há coluna `cpf_hash` nas migrations. `CpfFormatter::mask()` também não é chamado em produção hoje. Ou seja: a classe é melhor que a do spinmax mas nada a exercita — o consumo natural dela é justamente o C1.
+
+---
+
+#### C4 · `profile.destroy` é hard delete idêntico nos dois; o conceito de anonimização só existe no spinmax
+- **Pergunta**: (b) guard-rail contra limitação daqui (que o spinmax herdou sem corrigir para `User`)
+- **Evidência (spinmax @ e4ec01e)**: `app/Http/Controllers/Settings/ProfileController.php:36-53` é **byte-idêntico** ao do boilerplate (`diff` retorna vazio): exige `current_password`, `Auth::logout()`, `$user->delete()`, `session()->invalidate()` + `regenerateToken()`. Sem `SoftDeletes` no `User`. Mas para o titular de dados **de verdade** o spinmax construiu outro caminho, deliberado — `app/Models/Customer.php:76-95`:
+  ```php
+  public function anonymize(): void {
+      $this->forceFill(['name' => self::ANONYMIZED_NAME, 'email' => '', 'phone' => '',
+                        'marketing_opt_in' => false, 'marketing_opt_in_at' => null])->save();
+  }
+  ```
+  com docblock justificando o que **não** apaga (`cpf`/`cpf_hash` ficam: pedido é documento fiscal, retenção ≥ 5 anos), comando idempotente `store:anonymize-customer` (`app/Console/Commands/AnonymizeCustomerCommand.php:26-52`, com `ConfirmableTrait`), e **todo consumidor a jusante checando a flag** — 5 listeners em `app/Listeners/Store/` fazem `return` se `$order->customer?->isAnonymized()`.
+- **Equivalente no boilerplate**: `app/Http/Controllers/Settings/ProfileController.php:36-53` (hard delete) e **nada mais** — não há `anonymize()`, nem flag, nem comando, nem retenção, nem agendamento.
+- **O que absorver / travar**: o padrão, não o código (`Customer` é domínio do spinmax). Absorver: (1) apagar/anonimizar como operação **explícita e idempotente** com o que se preserva documentado no código; (2) marcar o estado e fazer os consumidores checarem, em vez de assumir que a linha sumiu. Travar: um teste sobre `profile.destroy` que fixe o contrato hoje implícito — que sessão morre e o que sobra de rastro. Vale registrar em `.ai/rules` que exclusão de titular no boilerplate é **hard delete sem anonimização**, para que projeto derivado com dado fiscal não descubra isso em produção.
+- **Superfície no boilerplate hoje**: **sim** — a rota `DELETE settings/profile` existe e está viva (`routes/settings.php:16`). Ponto de atenção concreto: o `User` do boilerplate é auditado, então o hard delete **deixa PII para trás** nas linhas de auditoria (`old_values`), e o registro em `sessions` do usuário some só se o driver for banco — o `.env.example` traz `SESSION_DRIVER=redis` (`.env.example:34`). Nada disso é testado.
+
+---
+
+#### C5 · Troca de senha não derruba as outras sessões — nos dois, mesmo código Breeze
+- **Pergunta**: (b) guard-rail
+- **Evidência (spinmax @ e4ec01e)**: `app/Http/Controllers/Settings/PasswordController.php:25-35` — `diff` contra o boilerplate retorna **idêntico**. Faz `current_password` + `Hash::make` + `return back()`. `grep -rn logoutOtherDevices app/ tests/` no spinmax → **vazio**.
+- **Equivalente no boilerplate**: mesmo arquivo, mesmo comportamento. `grep -rn "logoutOtherDevices"` em `app/` → vazio; as únicas invalidações de sessão são `EnsureUserIsActive.php:27-28`, `ProfileController.php:49-50` e `AuthenticatedSessionController.php:37-38` — todas na sessão corrente.
+- **O que absorver / travar**: chamar `Auth::logoutOtherDevices($password)` no `PasswordController::update()` (exige `AuthenticateSession` no grupo web) ou, no mínimo, um teste que fixe a decisão de **não** fazer isso. Hoje o comportamento não é decisão registrada, é default do Breeze que ninguém revisitou: quem troca a senha porque desconfia de acesso indevido não expulsa o invasor.
+- **Superfície no boilerplate hoje**: **sim** — rota `PUT settings/password` viva (`routes/settings.php:19`), com `SESSION_DRIVER=redis` e `SESSION_LIFETIME=120`. O boilerplate já é superior ao spinmax na vizinhança: tem `EnsureUserIsActive` **global** no stack web (`bootstrap/app.php:38-45`), que encerra a sessão de usuário desativado no meio do caminho — o spinmax não tem esse middleware em lugar nenhum.
+
+---
+
+#### C6 · Zero SQL cru dos dois lados, mas o arch test só proíbe a facade `DB` em controllers
+- **Pergunta**: (b) guard-rail — e registro de que **os dois estão limpos hoje**
+- **Evidência (spinmax @ e4ec01e)**: varredura completa por `DB::raw|whereRaw|selectRaw|orderByRaw|havingRaw|groupByRaw|DB::statement|DB::select|DB::unprepared` em todo o repositório (fora de `vendor/` e `node_modules/`) → **0 ocorrências**. Inclusive a busca por CPF no admin evita cru por construção: `Order/OrderFilters.php` filtra por `Cpf::hash()` sobre a coluna indexada `cpf_hash`, e `Customer::findByCpf()` (`app/Models/Customer.php:65-68`) é `where('cpf_hash', Cpf::hash($cpf))` — binding normal. Não há concatenação de input em SQL em lugar nenhum.
+- **Equivalente no boilerplate**: também **0** ocorrências em código de aplicação (as 3 linhas que a grep pega em `tests/Unit/Database/MigrationDialectInvariantTest.php:12,13,58` são comentário e regex do próprio guard). O guard existente é `tests/Arch/ArchTest.php:39-41`, e o escopo dele é estreito: `expect('App\Http\Controllers')->not->toUse('Illuminate\Support\Facades\DB')`.
+- **O que absorver / travar**: o arch test cobre **controller + facade `DB`**. Não pega `->whereRaw()` / `->selectRaw()` / `DB::raw()` chamados de model, service, job ou repository — que é onde query de relatório costuma nascer. Ampliar o guard para os namespaces `App\Models`, `App\Services` e `App\Jobs`, ou trocar por uma varredura textual pelos métodos `*Raw(` no estilo do `MigrationDialectInvariantTest` (que já tem a mecânica de `stripPhpComments` pronta e reaproveitável). Fica como allowlist declarada, não proibição absoluta.
+- **Superfície no boilerplate hoje**: **sim, mas preventiva** — há `App\Services` e `App\Models` populados e nenhum deles é alcançado pelo arch test atual. O `MigrationDialectInvariantTest` já cobre bem o lado das migrations (allowlist hoje vazia).
+
+---
+
+#### C7 · Allowlist de e-mail: paridade no listener, boilerplate melhor testado, gap é o pré-voo
+- **Pergunta**: (a) absorver do spinmax — só a ideia do pré-voo
+- **Evidência (spinmax @ e4ec01e)**: `app/Listeners/Store/EnforceMailAllowlist.php` é **funcionalmente idêntico** ao do boilerplate (mesma estrutura, `filter()`/`allowed()`, match exato ou por domínio, `return false` quando nada sobra); difere só no namespace, na chave de config (`store.mail.allowlist` vs `mail.allowlist`) e no registro (explícito, porque o spinmax usa `withEvents(discover: false)` em `bootstrap/app.php:22`). O que o spinmax tem a mais é o pré-voo em `app/Console/Commands/StagingCheckCommand.php:248-262`, que exige as duas configs **juntas**:
+  ```php
+  // As duas juntas, sempre: allowlist preenchida com caixa vazia
+  // CANCELA o envio em vez de redirecionar.
+  $this->passDeployed('E-mail', $allowlist !== [] && $inbox !== '', …);
+  ```
+- **Equivalente no boilerplate**: `app/Listeners/EnforceMailAllowlist.php` (listener, paridade) + `config/mail.php:129-134` (`allowlist`/`test_inbox`). O boilerplate é **superior no teste**: `tests/Feature/Mail/EnforceMailAllowlistTest.php` tem 8 casos, incluindo o negativo exato (`'cancels the send when nothing is allowlisted and no test inbox is set'`, linha 58) e a fiação por auto-discovery (linha 89) — o spinmax tem 7 e depende de registro manual.
+- **O que absorver / travar**: só o pré-voo. O modo de falha — `MAIL_ALLOWLIST` preenchida com `MAIL_TEST_INBOX` vazia cancela **todo** e-mail de staging em silêncio — está testado como comportamento, mas nada avisa o operador de que a config está assim. Um `artisan` de checagem (ou um teste de config em CI) que exija as duas juntas fora de produção fecha a lacuna.
+- **Superfície no boilerplate hoje**: **parcial.** O listener e o config existem e estão vivos. O que **não** existe é onde pendurar a checagem: `app/Console/Commands/` tem só `CreateSuperUserCommand.php` e `SyncPermissionsCommand.php` — não há comando de health/staging-check no boilerplate, então absorver isso significa criar a categoria, não estender uma existente.
+
+---
+
+### Áreas do escopo sem achado — declarado para não gerar teste vácuo
+
+- **Uploads: não existem em nenhum dos dois.** `grep -rn "UploadedFile|->store\(|storeAs|Storage::|putFile|temporaryUrl|'mimes"` em `app/` e `routes/` → **0 ocorrências** nos dois repositórios; nenhum `<input type="file">` em `resources/` do spinmax. O `config/filesystems.php` do spinmax tem os discos stock (`local`, `public`, `s3`) e o `links` padrão, todos sem uso. Regra de MIME/size, disco privado ou URL assinada **não têm onde ser testadas** — qualquer guard-rail aqui passaria vacuamente. Se o boilerplate for ganhar upload, a regra tem de nascer junto com a primeira feature.
+- **Open redirect: não existe superfície.** Todos os redirecionamentos do spinmax são `back()` ou `redirect()->intended(route('dashboard', absolute: false))` (`Auth/AuthenticatedSessionController.php:31`, `Auth/VerifyEmailController.php:15,24`, `Auth/ConfirmablePasswordController.php:33`). Nenhum parâmetro de retorno controlado pelo usuário (`?next=`, `return_to`, `redirect_url`) em nenhum dos dois.
+- **Sessão/cookies: paridade, com o boilerplate à frente.** `config/session.php` difere em **uma linha** — o separador do nome do cookie (`Str::slug(…) . '-session'` no boilerplate vs `Str::slug(…, '_') . '_session'` no spinmax, `:129-132`), puramente cosmético. `encryptCookies(except: ['appearance'])` é igual nos dois. O boilerplate tem a mais, no `bootstrap/app.php`: `trustProxies` via `TRUSTED_PROXIES` (`:26-35`, sem o qual `isSecure()` é false atrás de LB e o HSTS/CSP nunca sai), `SetSensitiveCacheHeaders` e `EnsureUserIsActive` no stack web — nenhum dos três existe no spinmax.
+
+
+
+#### Veredito — ### REFUTAR — LGPD/PII, uploads, sessão e queries
+
+Reli os dois lados no código. Dois candidatos sobrevivem, dois sobrevivem reduzidos, dois caem no essencial (a proposta, não o fato), e um cai por inteiro. Também corrijo 14 citações de linha e três afirmações de fato falsas.
+
+---
+
+#### C1 — teto de PII no `UserResource` · **SOBREVIVE** (é a única escalada viva desta célula)
+
+Tentei derrubar por quatro vias e nenhuma pegou:
+
+- **Já existe no boilerplate?** Não. `/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate/app/Http/Resources/UserResource.php:27-31` devolve `cpf_cnpj`, `phone`, `mobile` e `user_notes` sem condicional nenhuma. Não há outro ponto de mascaramento: `grep -rn "CpfFormatter" app/` só encontra a própria classe (`app/Support/Br/CpfFormatter.php:12`).
+- **A policy já cobre?** Não — e isto **reforça** o candidato. `app/Policies/UserPolicy.php:23-31`: `viewAny()` e `view()` são `hasPermissionTo('manage_users')` puro. O teto de prioridade existe só a partir de `update()` (`:38-51`, via `outranks()` em `:142-151`). O docblock da classe (`:11-20`) enumera o risco de `manage_users` ir para `super_user`/`admin`/`manager` e trata só de mutação. Leitura ficou de fora, deliberadamente ou não.
+- **Tem mesmo superfície?** Sim. `IndexController` não filtra visibilidade: `app/Http/Controllers/User/IndexController.php:28` é `User::query()->with(['role','permissions'])` e paginação — nenhum `where` por prioridade — e o payload sai em `:136`. As colunas existem (`database/migrations/0001_01_01_000000_create_users_table.php:15-18`) e o seeder padrão dá `MANAGE_USERS` ao `MANAGER` (`database/seeders/PermissionRoleSeeder.php:48-51`), que roda por default (`DatabaseSeeder.php:17-19`). Prioridade `MANAGER` 70 < `ADMIN` 90 (`app/Enum/Roles.php:52-56`). A escalada de leitura é real.
+- **Custo?** Baixo: `ImpersonationService::getOriginalUser()` já é o padrão da casa em 8 pontos (`UserPolicy.php:166`, `RoleFilterService.php:44,159`, `StoreController.php:35`, `UpdateController.php:47`, `AssignRoleController.php:39`, `RevokeRoleController.php:39`, `PermissionRole/UpdateController.php:120`).
+
+**Correções de fato:** o `$viewer` do spinmax está em `:24`, não `:25`; o intervalo BP `:26-31` começa em `email`, os campos sensíveis são `:27-31`; o grupo `can:manage_users` vai de `routes/web.php:22` a `:36` (o candidato parou em `:30` e deixou de fora `users/{user}/permissions`, que também serve `UserResource` — `ShowUserPermissionsController.php:30`). **Ponto de porte que o candidato não viu:** `tests/Feature/User/UserResourceCpfCeilingTest.php:27,41` usa `Roles::OPERATIONS`, cargo que **não existe** no enum do boilerplate (`SUPER_USER/ADMIN/MANAGER/VIEWER/VISITOR`) — o teste não é copiável, tem de ser reescrito com `MANAGER`. E o teto no spinmax lê a prioridade pelo **model** `Role::getPriority()` (`UserResource.php:79`), não pelo enum — o boilerplate tem `Role::getPriority()` em `app/Models/Role.php:39` com fallback para o enum, então use esse, como o `UserPolicy.php:174` já faz.
+
+---
+
+#### C2 — `PiiScrubber` sem substring e sem `Arrayable` · **SOBREVIVE PARCIALMENTE** (a proposta, como escrita, é regressão)
+
+O mecanismo é verdadeiro: `app/Support/Logging/PiiScrubber.php:92` casa `in_array(mb_strtolower($key), self::SENSITIVE_KEYS, true)` e `scrub()` (`:86-109`, não `:88-110`) só trata `is_array` e `is_string`, caindo no `return $value` de `:108`. `PiiAwareTap` está mesmo nos três canais (`config/logging.php:60,68,77`). Mas o candidato exagera o tamanho do furo e propõe um remédio que subtrai cobertura:
+
+1. **A camada de padrão já cobre a maior parte do exemplo.** `PATTERNS` (`:65-84`) pega e-mail, CPF/CNPJ formatado, CEP, telefone BR e E.164, JWT, `Bearer …` **e sequência solta de 11–14 dígitos** (`'/\b\d{11,14}\b/' => '[NUMERIC_ID]'`, `:83`) em qualquer string, independente da chave. Logo `contact_email`, `doc_cliente`, `cpf_do_titular` etc. não vazam. O furo residual é estreito e específico: chaves cujo **valor não tem padrão reconhecível** — nomes próprios (`customer_name`, `nome_completo`, `recipient_name`) e segredos opacos (`api_token`, `webhook_token`, `card_token`). É esse o achado, não "vaza tudo".
+2. **`customer_name` e `card_token` são exemplos do domínio do spinmax.** No boilerplate as sete chamadas `Log::` existentes passam **só escalares**: `auth_user_id`, `effective_user_id`, `target_user_id`, `target_user_role`, `new_role_priority`, `requested_role_name`, `is_impersonating` (`AssignRoleController.php:68-73,89-96`, `RevokeRoleController.php:57-62,76`, `StoreController.php:53-59`, `UpdateController.php:70`). Nenhuma passa model nem nome. O furo é **latente**, para código futuro — o que justifica um scrubber, mas não a moldura de "vazamento em produção hoje".
+3. **Adotar `SENSITIVE_KEY_PARTS` do spinmax verbatim perde 12 chaves que o boilerplate hoje redige.** Confrontei as duas listas: `api_key`, `api-key`, `apikey`, `cookie`, `session`, `auth`, `bearer`, `mobile`, `rg`, `full_name`, `first_name`, `last_name` **não casam nenhum** dos 22 termos de `spinmax/app/app/Support/PiiScrubber.php:34-41`, e nenhum é exatamente `name`/`nome` (`:47`). A proposta só é aceitável como **união** (partes do spinmax **+** lista exata atual), nunca como troca. Do jeito que o candidato escreveu ("adotar o casamento por substring com a lista `SENSITIVE_KEY_PARTS` + a lista exata só para `name`/`nome`"), é regressão líquida.
+4. **O ramo `Arrayable` sobrevive intacto.** `App\Models\User` é `Arrayable`/`JsonSerializable`, `$hidden` só esconde `password` e `remember_token` (`app/Models/User.php:42-45`), e o processor roda antes do formatter (`PiiScrubbingProcessor.php:27-35`) — o objeto passa cru e o Monolog serializa depois. Duas linhas de correção, ganho real.
+
+---
+
+#### C3 — `CpfHasher` já superior · **SOBREVIVE no hash, DERRUBADO na máscara**
+
+A metade principal confere: `spinmax/app/app/Support/Cpf.php:30` usa `config('app.key')` cru, sem validar, sem derivar e sem rejeitar entrada de tamanho errado; `app/Support/Br/CpfHasher.php:35-44,51-56,62-80` deriva a chave, decodifica `base64:`, lança com segredo vazio e devolve `null` fora de 11 dígitos; `tests/Unit/Br/CpfHasherTest.php:16` assere explicitamente que o resultado difere da forma do spinmax. Confirmo também a dormência: `grep -rn CpfHasher app/ database/ routes/` só acha a própria classe, e não existe coluna `cpf_hash` em migration nenhuma.
+
+**Mas a recomendação de absorver a máscara está invertida e eu a derrubo.** O candidato diz que `Cpf::mask()` "falha fechado" e que `CpfFormatter::mask()` é pior. No código:
+
+- `spinmax/app/app/Support/Cpf.php:38-51` (não `:41-55`) devolve `***.456.789-**` para CPF — **expõe 6 dos 11 dígitos** — e `**.***.789/****-**` para CNPJ (3 dígitos).
+- `app/Support/Br/CpfFormatter.php:46-59` (não `:47-60`) devolve `***.***.***-` + os **2 últimos** dígitos, para qualquer comprimento, e `null` para entrada vazia.
+
+No eixo que importa para LGPD — quanto do documento sai — o boilerplate é **estritamente mais restritivo**. O único defeito real é cosmético: um CNPJ sai com pontuação de CPF. Absorver "o ramo de 14 dígitos e o fallback total" trocaria 2 dígitos expostos por 6 no caso comum. Se algo mudar aqui, mude só o rótulo do CNPJ, mantendo os 2 dígitos.
+
+---
+
+#### C4 — hard delete sem anonimização · **SOBREVIVE MUITO REDUZIDO** (metade do "gap" já é teste verde)
+
+`diff` confirma que `ProfileController` é byte-idêntico nos dois, e as peças do spinmax existem (`Customer::anonymize()` em `Customer.php:79-88` — não `:76-95`, que começa dentro do docblock; `isAnonymized()` em `:90-95`; `AnonymizeCustomerCommand.php:24-53`). Três objeções:
+
+1. **"Nada disso é testado" é falso.** `tests/Feature/Settings/ProfileUpdateTest.php:55` (`user can delete their account`) já fixa `assertGuest()`, o redirect e `expect($user->fresh())->toBeNull()`; `:72` cobre a negação por senha errada. O contrato que o candidato quer "travar" já está travado. O que resta sem teste é só o **rastro** (linhas de `activity_log` e sessão), não a rota.
+2. **A afirmação sobre `sessions` está errada.** `database/migrations/0001_01_01_000000_create_users_table.php:33` é `$table->foreignId('user_id')->nullable()->index()` — **índice, sem constraint e sem cascade**. A linha de sessão sobrevive ao hard delete **também** no driver de banco; a distinção "some só se o driver for banco" não existe. O ponto sobre `SESSION_DRIVER=redis` (`.env.example:34`, default `database` em `config/session.php:21`) continua válido só como "a sessão não é limpa em lugar nenhum".
+3. **O rastro de auditoria é o achado que sobra, e é real:** `app/Models/User.php:56-73` loga `name`, `email`, `cpf_cnpj`, `phone`, `mobile`, `user_notes` — o hard delete apaga a linha de `users` e deixa a PII nas `properties` do activitylog. Isso não veio do spinmax (lá o `User` é igualmente auditado e igualmente não tratado); é achado do próprio boilerplate.
+4. **O padrão do spinmax não generaliza.** `anonymize()` é do `Customer`, cuja justificativa é retenção fiscal do pedido (`Customer.php:71-78`). O boilerplate não tem titular de dados além do `User` nem obrigação de retenção — criar um `anonymize()` genérico é superfície que não existe. Nota de precisão: dos 5 listeners, `SendOrderPaidEmails.php:25` usa a forma **invertida** (`if (!$isAnonymized)` envolvendo só parte do envio), não `return` como os outros quatro.
+
+**O que sobra para absorver:** um teste que assere o rastro pós-`profile.destroy` e uma linha em `.ai/rules` dizendo que exclusão é hard delete sem anonimização. Não uma feature.
+
+---
+
+#### C5 — `logoutOtherDevices` · **SOBREVIVE COMO TO-DO, DERRUBADO COMO ACHADO DE HARVEST**
+
+`diff` confirma `PasswordController` idêntico e `grep -rn "logoutOtherDevices\|AuthenticateSession"` em `app/ bootstrap/ config/ tests/` dos **dois** repositórios retorna vazio. Ou seja: o spinmax não ensina nada aqui — é o default do Breeze intocado nos dois. Um candidato de harvest cuja evidência na fonte é "a fonte também não faz" não é colheita; é backlog interno disfarçado. Ele pode virar tarefa, mas não por causa desta rodada.
+
+**Uma afirmação de apoio é falsa:** "o spinmax não tem esse middleware em lugar nenhum". Tem — `spinmax/app/app/Http/Middleware/EnsureUserIsActive.php:18`, montado em `spinmax/app/routes/web.php:61` no grupo `['auth','verified', EnsureUserIsActive::class]`. A vantagem do boilerplate é de **escopo** (append global em `bootstrap/app.php:43`, portanto cobre também `settings/*` e `auth/*`), não de existência.
+
+**Sobre o custo:** ligar `AuthenticateSession` no grupo web é mudança de comportamento em todo projeto derivado (qualquer rehash de senha desloga todas as sessões; integração malfeita produz laço de logout). `Auth::logoutOtherDevices($password)` em si é barato — o `PasswordController::update()` já tem a senha em claro validada. Se entrar, entra com o middleware e com teste; se não entrar, entra o teste que registra a decisão. As duas coisas são defensáveis; o que não se sustenta é chamar isto de aprendizado do spinmax.
+
+---
+
+#### C6 — arch test de SQL cru · **DERRUBADO**
+
+- **O fato é verdadeiro e mata o candidato.** Reproduzi a varredura no repositório inteiro do spinmax (`--include=*.php --exclude-dir=vendor --exclude-dir=node_modules`, 9 marcadores): **0 ocorrências**. No boilerplate, as 3 linhas que a grep pega são comentário e regex do próprio guard (`tests/Unit/Database/MigrationDialectInvariantTest.php:12,13,58`). Nenhum dos dois lados tem um único caso. Não há fato colhido — há uma regra inventada na ausência de fato.
+- **O remédio proposto não faz o que o candidato diz.** `arch()->expect('App\Services')->not->toUse('Illuminate\Support\Facades\DB')` **não** pega `->whereRaw()`, `->selectRaw()` nem `->orderByRaw()`: esses são métodos do builder Eloquent, sem qualquer import da facade `DB`. Ampliar o namespace do guard de `tests/Arch/ArchTest.php:39-41` deixa exatamente o caso que motivou o candidato passando.
+- **Guardrail 4, literal.** `ls app/Jobs` → *No such file or directory*. Uma regra `arch()` sobre `App\Jobs` no boilerplate passa **vacuamente** e vira falso conforto. `App\Services` existe mas tem 4 arquivos, todos de RBAC (`ImpersonationService`, `PermissionCatalogService`, `PermissionManagementService`, `RoleFilterService`), nenhum com query além de Eloquent.
+- Resta a versão por varredura textual, que funcionaria — mas é um invariante novo, com allowlist, contra um problema que nunca ocorreu em nenhum dos dois repositórios. Default: derrubar.
+
+---
+
+#### C7 — pré-voo da allowlist de e-mail · **DERRUBADO na forma proposta; sobra uma linha de log**
+
+- **A parte do listener não é achado:** o `diff` entre `spinmax/app/app/Listeners/Store/EnforceMailAllowlist.php` e `app/Listeners/EnforceMailAllowlist.php` mostra **só** namespace, docblock e a chave de config (`store.mail.*` vs `mail.*`). Lógica idêntica. Contagem de testes confere (8 em `tests/Feature/Mail/EnforceMailAllowlistTest.php` contra 7 em `spinmax/…/tests/Feature/Store/MailAllowlistTest.php`), e o 8º é o parse do env, que o spinmax não tem.
+- **O modo de falha já está documentado e testado, não é silêncio de projeto.** `EnforceMailAllowlistTest.php:58` (`cancels the send when nothing is allowlisted and no test inbox is set`), `config/mail.php:125` e o comentário em `app/Listeners/EnforceMailAllowlist.php:51` dizem exatamente isso. É decisão fail-closed registrada.
+- **O custo do remédio é desproporcional.** `StagingCheckCommand` do spinmax é um comando de domínio (checa `ShippingRate` placeholder, `STORE_NOTIFY_EMAIL`, CNPJ/endereço do rodapé legal — `:239-245,266-270`); o resíduo genérico é `checkMail()` (`:248-262`), e dentro dele o pedaço aproveitável são **duas leituras de config**. Absorver isso significa criar a categoria "comando de health" no boilerplate (hoje `app/Console/Commands/` tem só `CreateSuperUserCommand.php` e `SyncPermissionsCommand.php`) para hospedar duas linhas.
+- **O que de fato falta é menor e mais barato:** o listener retorna `false` (`:53`) sem registrar nada — o cancelamento é que é silencioso, não a config. Um `Log::warning` nessa linha resolve o cegamento do operador sem comando novo, e cabe no teste que já existe.
+
+---
+
+### Áreas sem achado — confirmo o veredito, corrijo a enumeração
+
+- **Uploads: confirmado 0 × 0.** `grep -rnE "UploadedFile|->store\(|storeAs|Storage::|putFile|temporaryUrl|'mimes|file\(\)"` em `app/` e `routes/` dos dois repositórios: vazio nos dois. Nenhum `type="file"` em `spinmax/resources/`. Qualquer `arch()` ou teste de política de upload aqui é o caso vacuoso do guardrail 4 — de acordo com o candidato.
+- **Open redirect: veredito certo, contagem errada.** São **6** sítios de `intended()` em cada repositório, não 4: o candidato omitiu `Auth/EmailVerificationPromptController.php:16` e `Auth/EmailVerificationNotificationController.php:14` (existem nos dois). Nenhum recebe alvo controlado pelo usuário; `->away(` não aparece em nenhum dos dois. Conclusão preservada.
+- **Sessão/cookies: confirmado.** `diff config/session.php` retorna **exatamente uma** linha (`:132`, separador do nome do cookie). `encryptCookies(except: ['appearance'])` igual nos dois. `trustProxies` (`bootstrap/app.php:29-33`) e `SetSensitiveCacheHeaders` (`:39`) são mesmo exclusivos do boilerplate — verifiquei `spinmax/app/bootstrap/app.php:28-54` e `spinmax/app/app/Http/Middleware/` (6 arquivos, nenhum de cache header, nenhum trustProxies). **`EnsureUserIsActive` não é exclusivo** — ver C5.
+
+
+
+#### Veredito — ### RISCO DE ABSORÇÃO — LGPD/PII, uploads, sessão e queries
+
+Li os dois lados. Confirmo a maior parte dos achados, mas três premissas do relatório anterior estão erradas ou incompletas e mudam o custo da fatia (C1: a máscara quebra o front e estoura lazy loading; C3: o formato da máscara do spinmax é *pior*, não melhor; C4/C5: os fluxos **têm** teste hoje). Detalhe por candidato.
+
+---
+
+#### C1 · Teto de PII no `UserResource` — risco **MÉDIO**
+Não toca schema e falha fechado no eixo de segurança, mas altera um payload consumido por 5 controllers e 2 telas, e a forma literal do spinmax quebra duas delas.
+
+**1. Dados persistidos.** Nenhum. É camada de exibição; nada é gravado. Sem trap de migração.
+
+**2. Muda comportamento — e onde falha.**
+- **Fail-closed no que importa** (esconde a mais), mas **fail-open em silêncio se o teto for calculado errado**: `viewerOutranksOrOwns()` devolve `false` para viewer sem cargo, o que só esconde mais. O caso perigoso é o inverso — `$viewer->role` não carregado devolvendo `null` → prioridade 0 → mascara **para todo mundo**, inclusive para quem tem direito. Ruído, não vazamento.
+- **Quebra confirmada nº 1 — lazy loading.** `Model::shouldBeStrict()` está ligado em todos os ambientes (`app/Providers/AppServiceProvider.php:64`) e no Laravel 13.24 o flag é per-instância, setado só quando o hydrate traz **mais de uma linha** (`vendor/laravel/framework/src/Illuminate/Database/Eloquent/Builder.php:471-478`). Em `PermissionRole/IndexController.php:41` os usuários vêm de `$role->users` **sem** `role` carregado: com 2+ usuários no mesmo cargo, `$this->resource->role?->getPriority()` estoura `LazyLoadingViolationException` em dev/test e, em produção, vira N+1 reportado (`AppServiceProvider.php:67-72`). Hoje esse acesso não acontece porque `can_impersonate` (`UserResource.php:59`) sai cedo em `canImpersonate()` antes de tocar `$targetUser->role` (`HasRolesAndPermissions.php:199`). Pior: `tests/Feature/PermissionRole/IndexControllerTest.php` **não pega** — cada cargo tem ≤1 usuário nos cenários, e com 1 linha o flag nem é setado. Absorver exige `$role->load('users.role')` e um teste com 2 usuários no mesmo cargo.
+- **Quebra confirmada nº 2 — front.** `resources/js/pages/users/show.tsx:28` faz `applyCpfCnpjMask(user.cpf_cnpj)`, que começa com `removeNonNumeric()` (`utils/format/masks.ts:41-42`). Máscara vinda do backend (`***.***.***-25`) vira `"25"` na tela. `users/show` é acessível ao MANAGER porque `UserPolicy::view()` só exige `manage_users` (`app/Policies/UserPolicy.php:28-31`) — ou seja, é exatamente o caso que a absorção quer proteger que renderiza lixo.
+- **Não quebra o formulário**: `EditController` chama `authorize('update')` e `UserPolicy::update()` termina em `outranks()` estrito, então quem vê a tela de edição sempre outranks — máscara nunca chega ao `user-form.tsx:28` e não há risco de gravar `***` por cima do CPF real. Isso derruba a hipótese de corrupção de dado.
+- **Regressão de contrato TS:** `phone`/`mobile` viram `null`; `resources/js/types/index.d.ts:104-108` já é `?: string | null`, mas `resources/js/types/users.ts:150-157` é `?: string`. `pnpm types` reclama.
+
+**3. Segurança da própria absorção.** Copiar `Cpf::mask((string) $this->cpf_cnpj)` importa dois defeitos: (a) CPF nulo vira `'***'` (cast de `null` para `''`), então o front passa a exibir um documento inexistente; (b) o formato do spinmax expõe 6 dígitos (ver C3). Usar `CpfFormatter::mask()` puro também está errado hoje: rotula CNPJ como CPF. E `getOriginalUser()` (`app/Services/ImpersonationService.php:58-71`) faz `User::find()` sem memoização — durante impersonação, uma listagem de 25 linhas vira 25 SELECTs a mais; fora dela retorna `null` no primeiro `if` e custa zero.
+
+**4. Fatia.** Como escrito: `UserResource.php` + `CpfFormatter.php` + `users/show.tsx` + `types/users.ts` + `PermissionRole/IndexController.php` + testes ≈ 6 arquivos. **Dá para fatiar em duas.** Fatia A (1 arquivo + 1 teste, sem front): `phone`, `mobile`, `user_notes` → `null` quando o viewer não outranks — o front já trata ausência (`show.tsx:216`, `user-details-dialog.tsx:99`). Fatia B (o CPF), que depende de C3 e do `load('users.role')`. Faça A primeiro: fecha a leitura de anotações internas do ADMIN pelo MANAGER (o pior item) sem tocar em TS nem em máscara.
+
+---
+
+#### C2 · `PiiScrubber` por substring + ramo `Arrayable` — risco **MÉDIO**
+Só log, nada persistido — mas o "flip para substring" na lista atual do boilerplate destrói o rastro de auditoria que esses logs existem para deixar.
+
+**1. Dados persistidos.** Nenhum. Nem invalida log antigo (o scrub roda na escrita).
+
+**2. Muda comportamento — e onde falha.** Fail-closed por natureza (redige demais), e é aí que dói. As **8 únicas** chamadas `Log::` do boilerplate são de auditoria de RBAC e todas carregam `auth_user_id` / `effective_user_id` / `target_user_role` / `requested_role_name` (`PermissionRole/AssignRoleController.php:68-73, 89-96, 108-115`, `User/UpdateController.php:70-78`, `User/StoreController.php:53`, `PermissionRole/RevokeRoleController.php:57,76`). A lista atual do boilerplate tem `'auth'` (`PiiScrubber.php:38`) e `'name'` (`:54`) como **chaves exatas**. Trocar `in_array(...)` (`:92`) por `str_contains` sem a divisão em duas listas redige `auth_user_id`, `auth_user_role`, `auth_user_priority` e `requested_role_name` — o log de "gerente tentou rebaixar administrador" perde **quem** tentou. Falha silenciosa: ninguém percebe até precisar do log.
+
+**3. Segurança da própria absorção.** A divisão do spinmax (`SENSITIVE_KEY_PARTS` vs `SENSITIVE_KEYS = ['name','nome']`, `app/Support/PiiScrubber.php:38-49`) é obrigatória, não cosmética — e mesmo ela precisa de poda: `'customer'`, `'payer'`, `'recipient'`, `'holder'` são vocabulário de e-commerce, inertes no boilerplate. Não importe a lista `PATTERNS` do spinmax junto: ela não tem o `\b\d{11,14}\b → [NUMERIC_ID]` do boilerplate (`PiiScrubber.php:100`), e o spinmax documenta que **removeu** esse padrão de propósito por causa de `gateway_payment_id`. Trocar seria regressão. O ramo `Arrayable` é o item de maior valor e o de maior efeito colateral: `Log::info('x', ['user' => $user])` hoje vaza tudo (Model é `JsonSerializable`, o formatter serializa depois do processor, e `$hidden` só cobre `password`/`remember_token` — `app/Models/User.php:42-45`); com o ramo, um `Collection` grande vira uma linha de log gigante e `toArray()` roda dentro do processor. Limite herdado que continua de pé nos dois: `Throwable` não é `Arrayable` e escapa (o próprio spinmax documenta isso).
+
+**4. Fatia.** 1 arquivo (`app/Support/Logging/PiiScrubber.php`) + casos novos em `tests/Feature/LogScrubbingTest.php`. Fatiável em duas independentes: (a) ramo `Arrayable`; (b) duas listas + substring. Cada uma vale sozinha. Peça um teste que asserte o **negativo** — `auth_user_id` e `requested_role_name` sobrevivem ao scrub.
+
+---
+
+#### C3 · Não absorver `Cpf::hash()`; da máscara, só o fallback — risco **BAIXO**
+Confirmo o veredito, e a inversão vai além: o **formato** da máscara do spinmax é menos protetor que o do boilerplate.
+
+**1. Dados persistidos.** `CpfHasher` está dormente — `grep -rn CpfHasher app/` só acha a própria classe, não há coluna `cpf_hash` em `database/migrations/`, e `users.cpf_cnpj` é `string` nullable em claro (`0001_01_01_000000_create_users_table.php:14`), gravado **como digitado** (não há `prepareForValidation` normalizando; `StoreUserRequest.php:39` só valida com a rule `CpfCnpj`). Absorver qualquer coisa aqui não mexe em dado. A trap fica registrada para o dia em que alguém ligar o hash: `DERIVATION_CONTEXT` ou rotação da `APP_KEY` invalida todos os hashes gravados — o docblock do `CpfHasher` já avisa.
+
+**2. Muda comportamento.** Só `CpfFormatter::mask()`, hoje sem nenhum call site em produção. Adotar o fallback (14 dígitos → CNPJ; qualquer outro tamanho → redação total) é estritamente mais seguro.
+
+**3. Segurança da própria absorção — inversão.** `Cpf::mask()` do spinmax devolve `***.456.789-**`: expõe 6 dos 11 dígitos. Com d4..d9 conhecidos, restam ~10³ candidatos. O `CpfFormatter::mask()` atual expõe os 2 últimos (dígitos verificadores), o que deixa ~10⁷ candidatos após a restrição do DV. **Copiar o formato é regredir três ordens de grandeza no espaço de busca.** Absorva o comportamento (falha fechado por comprimento), mantenha o formato do boilerplate. E `Cpf::hash()` do spinmax fica fora por três motivos verificados (`app/Support/Cpf.php:31-34`): chave crua com o prefixo `base64:` dentro do HMAC, `APP_KEY` vazia gerando HMAC público em silêncio, e `hash('123')` devolvendo chave de dedupe válida — `tests/Unit/Br/CpfHasherTest.php:16` já asserta explicitamente que o boilerplate **não** é essa forma.
+
+**4. Fatia.** 1 arquivo + 1 teste unitário. É a menor fatia da lista e é pré-requisito da metade "CPF" de C1.
+
+---
+
+#### C4 · Anonimização vs. hard delete — risco **BAIXO** (doc + teste) / **ALTO** (portar o padrão)
+A parte barata é registrar a decisão; a parte cara colide com um índice único e com o log de atividade.
+
+**1. Dados persistidos — trap real.** `users.email` é `unique()` (`0001_01_01_000000_create_users_table.php:13`). Em `customers` do spinmax o e-mail é só `index()` (`database/migrations/2026_07_22_120003_create_customers_table.php:16`) — por isso `anonymize()` pode escrever `email = ''` lá. Copiar essa forma para `users` **viola a unique no segundo usuário anonimizado**. Anonimização em `users` exige e-mail sintético único (ou `SoftDeletes` + coluna de estado), ou seja: migração. Segundo ponto persistido: `User` usa `LogsActivity` com `logOnly([... 'cpf_cnpj','phone','mobile','user_notes'])` (`app/Models/User.php:60-68`), e `activity_log` guarda `nullableMorphs('subject')` sem FK (`2026_03_27_004320_create_activity_log_table.php:12`). O hard delete **deixa CPF, telefone e notas internas nas linhas antigas**; `config/activitylog.php:18` define `clean_after_days => 365`, mas `routes/console.php` só agenda `horizon:snapshot` — o `activitylog:clean` **nunca roda**, então a retenção é infinita. Uma anonimização que não trate o `activity_log` é fail-open: promete apagar e não apaga.
+
+**2. Muda comportamento.** Correção ao relatório anterior: o fluxo **está testado** — `tests/Feature/Settings/ProfileUpdateTest.php:55` (`user can delete their account`, com `expect($user->fresh())->toBeNull()`) e `:72` (senha errada). O que não existe é teste do resíduo. Absorver o padrão inteiro muda o significado de "excluído" em toda a aplicação (consumidores passam a precisar checar a flag) — no spinmax isso custou 5 listeners em `app/Listeners/Store/`.
+
+**3. Segurança da própria absorção.** Anonimizar sem `SoftDeletes` e sem invalidar o cache `user:{id}:permissions` deixaria uma conta "anônima" ainda autenticável. E `sessions` existe como tabela (`0001_01_01_000000_create_users_table.php:31-38`) mas o `.env.example:34` traz `SESSION_DRIVER=redis`: apagar linha de `sessions` não derruba sessão nenhuma no deploy padrão.
+
+**4. Fatia.** Fatia mínima (**baixo**): um teste que fixe o contrato atual (sessão morre, linha some, rastro fica) + uma linha em `.ai/rules` dizendo que exclusão de titular é hard delete sem anonimização. Fatia completa (**alto**): migração + model + comando + todo consumidor + limpeza do `activity_log`. Uma fatia intermediária que vale sozinha: agendar `activitylog:clean` (1 linha em `routes/console.php`), que faz o `clean_after_days` já configurado significar alguma coisa.
+
+---
+
+#### C5 · `logoutOtherDevices` na troca de senha — risco **ALTO**
+É a única absorção da lista que mexe em toda sessão autenticada, e o mecanismo real não é o que o candidato descreve.
+
+**1. Dados persistidos.** `Auth::logoutOtherDevices()` **reescreve a coluna `password`** (`vendor/.../SessionGuard.php:766-777`, `rehashPasswordIfRequired(..., force: true)`). Não é só sessão.
+
+**2. Muda comportamento — ordem importa e o efeito principal não vem do que se pensa.** `logoutOtherDevices()` não faz nada sem `AuthenticateSession` no grupo web (não está lá: `bootstrap/app.php:38-45`). E ao adicionar `AuthenticateSession`, o efeito de derrubar outras sessões passa a existir **sozinho**: o middleware compara `password_hash_web` da sessão com o hash atual do usuário (`vendor/.../Session/Middleware/AuthenticateSession.php:63-69`), e `PasswordController::update()` (`app/Http/Controllers/Settings/PasswordController.php:31-33`) já grava um hash novo. Consequência: **com só o middleware, quem troca a senha é deslogado inclusive na sessão corrente**; o `logoutOtherDevices()` existe justamente para atualizar o hash da sessão atual e poupá-la. As duas mudanças têm de entrar juntas, e na ordem certa — chamar `logoutOtherDevices($nova)` **antes** do `update()` lança `InvalidArgumentException` (`SessionGuard.php:770-772`) → 500 na troca de senha. Falha alta e barulhenta, não silenciosa.
+
+**3. Segurança da própria absorção.** Verifiquei a interação com impersonação e ela **sobrevive**, por pouco: `ImpersonationService::start()`/`stop()` usam `Auth::login()` (`app/Services/ImpersonationService.php:27,42`), e o `tap()` pós-resposta do middleware regrava o hash da nova persona (`AuthenticateSession.php:71-75`), então a próxima requisição bate. Isso é acidental e não está coberto por teste — `tests/Feature/ImpersonateTest.php` e `ImpersonateStopOrderingTest.php` passariam a depender de um detalhe de ordem de middleware. Também entra no jogo o ramo `viaRemember()` (`:52-59`): com `remember_me`, o cookie carrega o hash e o rehash da senha invalida o "lembrar-me" — comportamento correto, mas novo. Já testado hoje: `tests/Feature/Settings/PasswordUpdateTest.php` (2 casos), que passariam a exigir revisão.
+
+**4. Fatia.** Duas linhas de produção (`PasswordController` + `bootstrap/app.php`), mas superfície = toda requisição autenticada, mais testes novos para impersonação, remember-me e sessão corrente. Fatia menor e honesta: **só o teste que fixa a decisão atual** ("trocar a senha não derruba as outras sessões"), transformando um default do Breeze em decisão registrada; a mudança de comportamento vira ADR separada.
+
+---
+
+#### C6 · Ampliar o guard de SQL cru — risco **BAIXO**
+Teste puro, sem runtime; o único cuidado é não escrever a regra na forma que quebra código legítimo.
+
+**1. Dados persistidos.** Nenhum. **2. Comportamento.** Nenhum em produção; falha em CI (vermelho), fail-closed por definição.
+
+**3. Segurança/forma.** Confirmo 0 ocorrências de `DB::raw|whereRaw|selectRaw|orderByRaw|havingRaw|groupByRaw|DB::statement|DB::select|DB::unprepared` em `app/`, `database/` e `routes/` do boilerplate, e que `arch()->preset()->security()` (`tests/Arch/ArchTest.php:12`) não cobre SQL — a lista dele é `md5/sha1/eval/exec/...` (`vendor/pestphp/pest/src/ArchPresets/Security.php:15-35`). **A forma errada é estender `not->toUse('Illuminate\Support\Facades\DB')` para outros namespaces**: `SyncPermissionsCommand.php:83,96,101` usa `DB::transaction()` e `DB::table('permission_role')->whereIn(...)->delete()`, que são bindings normais e legítimos. A regra tem de mirar os métodos `*Raw(` / `statement` / `unprepared`, não a facade. A mecânica textual já existe pronta em `tests/Unit/Database/MigrationDialectInvariantTest.php` (com `stripPhpComments`) e evita justamente o falso positivo de comentário.
+
+**4. Fatia.** 1 arquivo de teste. Não dá para fatiar menor e não precisa.
+
+---
+
+#### C7 · Pré-voo da allowlist de e-mail — risco **BAIXO** (config + teste) / **MÉDIO** (comando novo)
+O gap é real e a fatia barata é menor do que o candidato sugere.
+
+**1. Dados persistidos.** Nenhum. **2. Comportamento.** Um comando de checagem não muda nada em runtime; um teste de config muda só o CI.
+
+**3. Segurança da própria absorção — o teste vazio é a armadilha.** `phpunit.xml:24-35` não define `MAIL_ALLOWLIST` nem `MAIL_TEST_INBOX`, então `config('mail.allowlist')` é `[]` na suíte: um teste que asserte "allowlist e caixa de teste sempre juntas" **passa vacuamente** e vira falsa confiança. O teste tem de setar a config e checar o par (ou o comando tem de ser rodado no deploy, não no CI). Achado novo: `MAIL_ALLOWLIST`/`MAIL_TEST_INBOX` **não estão no `.env.example`** — as únicas referências no repositório são o listener, o `config/mail.php` e o teste. Quem faz o deploy de staging não tem como saber que a variável existe, quanto mais que ela é meia-trava sem a caixa.
+
+**4. Fatia.** Menor do que "criar a categoria de comando": (a) duas linhas comentadas no `.env.example` documentando que as duas andam juntas; (b) um teste que, com allowlist preenchida e caixa vazia, asserte o cancelamento **e** falhe se o par estiver incompleto na config carregada. Isso são 2 arquivos. O `StagingCheckCommand` do spinmax tem 438 linhas e é quase todo domínio de loja — portar a categoria inteira é uma decisão separada (e o boilerplate hoje só tem `CreateSuperUserCommand` e `SyncPermissionsCommand` em `app/Console/Commands/`).
+
+---
+
+### Uploads e open redirect — risco de absorção: **N/A, e é isso que deve ser registrado**
+Confirmo: zero superfície nos dois lados. O risco aqui não é absorver, é **fingir que absorveu**: qualquer teste de MIME/tamanho/disco privado ou de redirect com `?next=` passa vacuamente hoje, exatamente como o teste de allowlist em C7. Guard-rail vazio é pior que nenhum, porque o próximo agente lê o teste verde e conclui que a regra está coberta. Se virar item, que vire linha em `.ai/rules` ("upload nasce com disco privado, allowlist de MIME e URL assinada"), não teste.
+
+### Ordem sugerida por risco/retorno
+C3 (baixo, 1 arquivo, destrava C1) → C2-a (`Arrayable`, baixo) → C1-fatia-A (`phone`/`mobile`/`user_notes`, fecha a escalada real sem tocar no front) → C6 (teste só) → C7-a (`.env.example` + teste com config setada) → C2-b (duas listas) → C1-fatia-B (CPF, exige `load('users.role')` e `show.tsx`) → C4-doc → C5-teste-que-fixa-a-decisão. `C4` completo e `C5` completo ficam como ADR, não como fatia.
+
+
+
+#### Veredito — ### ATUALIDADE — LGPD/PII, uploads, sessão e queries
+
+Boilerplate verificado: `laravel/framework ^13.0`, `inertiajs/inertia-laravel v3.3.1`, `monolog/monolog 3.10.0`, `pestphp/pest ^5.1`, `spatie/laravel-activitylog ^5.0` (`composer.json` + `composer.lock`). Tudo abaixo foi conferido contra `search-docs` (version-aware, 13.x) e contra o vendor real.
+
+---
+
+#### C1 · Teto de visibilidade no `UserResource` — `[absorver-modernizado]`
+
+**Tentei derrubar e não caiu.** Enumerei o trait inteiro de condicionais de resource em `vendor/laravel/framework/src/Illuminate/Http/Resources/ConditionallyLoadsAttributes.php`: `when` (:120), `mergeWhen` (:163), `whenHas` (:208), `whenNull` (:226), `whenNotNull` (:240), `whenAppended` (:255), `whenLoaded` (:272), `whenCounted` (:303), `whenAggregated` (:336), `whenExistsLoaded` (:367), `whenPivotLoaded` (:394), `whenPivotLoadedAs` (:408). **Não existe `whenCan` / `whenAuthorized`** — o L13 não tem condicional de campo ligada a gate/policy. A regra de precedência de cargo continua sendo código de aplicação.
+
+**O que muda com a API atual.** O ternário do spinmax (`$canSeeSensitive ? $this->cpf_cnpj : Cpf::mask(...)`) é exatamente a assinatura de `when($condition, $value, $default)` — o terceiro parâmetro existe desde sempre e tem default `new MissingValue`. Escreva:
+
+```php
+'cpf_cnpj' => $this->when($canSeeSensitive, $this->cpf_cnpj, fn() => CpfFormatter::mask($this->cpf_cnpj)),
+```
+
+**Não use `mergeWhen` aqui**, apesar de ser a resposta natural para "três campos, uma condição". Dois motivos verificados: (1) `mergeWhen` **remove** as chaves quando falso, e o `CLAUDE.md` deste repo trata `resources/js/types/` como contrato espelhado — sumir com `cpf_cnpj`/`phone`/`user_notes` do payload quebra o tipo em vez de mascarar; (2) o doc do 13.x traz warning explícito de que `mergeWhen` não deve ser usado em arrays que misturam chave string e numérica. `when()` com default preserva a chave e o shape TS.
+
+Confirmei as duas peças de apoio no boilerplate: `app/Enum/Roles.php:49-58` (`priority()`, SUPER_USER 100 / ADMIN 90 / MANAGER 70 / VIEWER 10 / VISITOR 5) e `app/Services/ImpersonationService.php:58-64` (`getOriginalUser()`, devolve `null` fora de impersonation — o `?? $currentUser` do spinmax é necessário). O `app/Http/Resources/UserResource.php:26-31` hoje devolve `cpf_cnpj`, `phone`, `mobile`, `user_notes` sem condicional nenhuma. **O achado sobrevive inteiro; só a forma de escrever muda.**
+
+---
+
+#### C2 · `PiiScrubber` — fiação `[atual]`, lógica `[absorver-modernizado]`
+
+**A fiação por `tap` não foi superada — e é a única saída.** Verifiquei `vendor/laravel/framework/src/Illuminate/Log/LogManager.php`: `createSingleDriver()` (:308-318) monta o Monolog com processors fixos — `$config['replace_placeholders'] ? [new PsrLogMessageProcessor()] : []` — e **ignora `$config['processors']` por completo**. A chave `processors` só é lida em `createMonologDriver()` (:433-469), ou seja, apenas em canais `driver => 'monolog'`. Como `config/logging.php` usa `single`/`daily`/`stack`, o `PiiAwareTap` (`config/logging.php:60,68,77`) é o mecanismo correto e atual. `[rejeitado-obsoleto]` seria errado aqui.
+
+**Também não há redação nativa.** `Context::addHidden()` (13.x) só mantém fora do log o que você deliberadamente esconde — não varre o que você passou em `Log::info('x', [...])`. Não é substituto.
+
+**A modernização é na chave do ramo de objeto, e é mais forte que a do spinmax.** O spinmax normaliza via `Arrayable`; o gatilho real no stack atual é `JsonSerializable`. Verifiquei em `vendor/monolog/monolog/src/Monolog/Formatter/NormalizerFormatter.php:219`:
+
+```php
+if ($data instanceof \JsonSerializable) {
+    $value = $data->jsonSerialize();
+}
+```
+
+`Illuminate\Database\Eloquent\Model` implementa `JsonSerializable`. O processor roda **antes** do formatter, então `Log::info('x', ['user' => $user])` passa pelo `scrub()` (`app/Support/Logging/PiiScrubber.php:88-110`), cai no `return $value` da linha 109 por não ser array nem string, e só depois o `NormalizerFormatter` chama `jsonSerialize() → toArray()`. Com `$hidden = ['password','remember_token']` (`app/Models/User.php:42-45`), **`email`, `cpf_cnpj`, `phone`, `mobile` e `user_notes` chegam ao disco em claro**. Ramifique por `JsonSerializable` (cobre todo Model e mais), não por `Arrayable`.
+
+O casamento por substring do spinmax segue válido: `SENSITIVE_KEYS` do boilerplate (:24-64) já inclui `name` exato, então `customer_name`/`card_token` escapam. Nada nativo cobre isso.
+
+**Nota de atualidade adjacente que ninguém pediu mas é real:** o Inertia 3.3.1 trouxe um **segundo** canal de redação — `devtools.redact` (`vendor/inertiajs/inertia-laravel/config/inertia.php:177-201`). O `config/inertia.php` publicado no boilerplate **não declara o bloco `devtools`** (grep por `devtools|redact` só acha a linha 42, de outro assunto), então ele roda no default do pacote, cuja lista de keys é `password, password_confirmation, current_password, token, _token, access_token, refresh_token, secret, client_secret, api_key` — **zero PII brasileira**: sem `cpf`, `cnpj`, `phone`, `email`, `user_notes`. Se o recorder for ligado (`INERTIA_DEVTOOLS_ENABLED`), props de `UserResource` são gravadas em `storage/inertia-devtools` com CPF em claro. Isso não substitui o C2 — é um alvo novo que a versão atual criou e que deve receber a mesma lista.
+
+---
+
+#### C3 · `CpfHasher` / `CpfFormatter` — hasher `[atual]`, `mask()` `[absorver-modernizado]`
+
+**Hasher: nada nativo.** Não há blind index no L13. Confirmei `app/Support/Br/CpfHasher.php:62-79` — deriva com `hash_hmac(..., DERIVATION_CONTEXT, $secret, true)`, decodifica `base64:`, lança `RuntimeException` com segredo vazio. A conclusão de "não absorver o `Cpf::hash()` do spinmax" se mantém.
+
+**Mas a versão atual criou um risco que o docblock só menciona de passagem.** O doc 13.x de Encryption traz `APP_PREVIOUS_KEYS`: na rotação, o framework tenta a chave atual e cai para as anteriores **no caminho de decrypt**. Isso salva o cast `encrypted` da coluna e não salva nada do hash: `CpfHasher::key()` lê só `config('app.key', '')`, sem fallback. Resultado concreto no stack atual — rotacionar `APP_KEY` com `APP_PREVIOUS_KEYS` preenchido deixa o dado cifrado legível e **órfã 100% dos `cpf_hash` gravados**, silenciosamente, porque nada quebra: a busca simplesmente para de achar. O docblock diz "exige rotina deliberada de re-hash"; o que mudou é que o L13 agora torna a rotação **indolor para tudo, menos para o hash**, o que aumenta a chance de alguém rotacionar sem lembrar. Vale um `DERIVATION_CONTEXT` versionado + segredo próprio (`config('app.cpf_hash_key')`) em vez de acoplar à `APP_KEY`.
+
+**`mask()`: use `Str::mask()`.** Confirmado nos docs 13.x (`Str::mask` e a variante fluente `Str::of()->mask()`), com offset negativo — que é exatamente o caso do CNPJ. `app/Support/Br/CpfFormatter.php:47-60` hoje concatena `substr()` à mão e, pior, aplica formato de CPF a qualquer comprimento. Absorva o comportamento do spinmax (11 → parcial, 14 → forma de CNPJ, resto → `'***'`), mas escrito com `Str::mask` em vez de `substr`.
+
+---
+
+#### C4 · Anonimização vs. hard delete — conceito `[atual]`, retenção `[rejeitado-obsoleto]`
+
+**A anonimização em si é `[atual]`.** Não há nada nativo no L13 para "preservar o documento fiscal e apagar o resto". O padrão do spinmax (`anonymize()` + flag checada a jusante) sobrevive.
+
+**A metade de retenção não é.** Duas APIs nativas cobrem o que um comando caseiro faria:
+
+1. **`Prunable` / `MassPrunable` + `model:prune`** (doc 13.x, Eloquent → Pruning Models). É a API atual para janela de retenção, com `--pretend` e agendamento por `Schedule::command('model:prune')`. Escrever um comando de expurgo à mão hoje já nasce obsoleto.
+2. **`activitylog:clean` — já instalado e já configurado, e não roda.** Verifiquei `vendor/spatie/laravel-activitylog/src/Commands/CleanActivitylogCommand.php` (existe) e `config/activitylog.php:18` (`'clean_after_days' => 365`). E `routes/console.php` agenda **só** `Schedule::command('horizon:snapshot')->everyFiveMinutes()`. O limpador nativo nunca é invocado.
+
+**Isso torna o C4 pior do que o relato, e eu confirmei o vetor exato.** `app/Models/User.php:55-75` — `getActivitylogOptions()` faz `logOnly([...])` com **`email`, `cpf_cnpj`, `phone`, `mobile`, `user_notes`** explicitamente na lista. Combinado com o hard delete de `app/Http/Controllers/Settings/ProfileController.php:36-53`, o titular que exerce direito de exclusão some da tabela `users` e **permanece integralmente em `activity_log.properties`**, sem teto de tempo, porque o cleaner nativo não está agendado. Uma linha (`Schedule::command('activitylog:clean')->daily()`) fecha a metade de retenção com API atual; o resto — decidir anonimizar em vez de apagar — segue sem nativo.
+
+---
+
+#### C5 · `logoutOtherDevices` — `[absorver-modernizado]`, e é a maior vitória de atualidade da rodada
+
+O achado sobrevive, mas o **custo despencou** e a receita mudou em dois pontos que importam.
+
+**1. O pré-requisito virou uma linha.** O doc fala em "colocar `auth.session` num route group". No L11+ existe helper de configuração: `vendor/laravel/framework/src/Illuminate/Foundation/Configuration/Middleware.php:771-776` define `authenticateSessions()`, e :492 injeta `$this->authenticatedSessions ? 'auth.session' : null` direto no grupo `web` padrão. O `bootstrap/app.php` do boilerplate **não chama** esse método (li o arquivo inteiro — só `trustProxies`, `encryptCookies`, `web(append: [...])`). Então o pré-requisito é `$middleware->authenticateSessions();` dentro do `withMiddleware()` que já existe, não um route group novo. O alias existe em `Middleware.php:808`.
+
+**2. A ordem no `PasswordController` é load-bearing — e o código atual conflita.** `SessionGuard::logoutOtherDevices()` (`vendor/.../Auth/SessionGuard.php:740`) chama `rehashUserPasswordForDeviceLogout()` (:766), que faz `Hash::check($password, $user->getAuthPassword())` e **lança `InvalidArgumentException`** se não bater, e então `rehashPasswordIfRequired($user, ['password' => $password], force: true)` → `EloquentUserProvider.php:169-178` → `forceFill(['password' => $this->hasher->make($password)])->save()`. Ou seja: **o próprio `logoutOtherDevices` persiste a senha nova**.
+
+Consequência prática para `app/Http/Controllers/Settings/PasswordController.php:25-35`: chamar `Auth::logoutOtherDevices($validated['password'])` *antes* do `update()` **explode** (o hash em banco ainda é o antigo); chamar *depois* funciona mas faz `Hash::make` duas vezes. A forma atual correta é **substituir** o `$request->user()->update(['password' => Hash::make(...)])` por `Auth::logoutOtherDevices($validated['password'])` — uma chamada que grava o hash novo e rotaciona a sessão.
+
+**3. O mecanismo, confirmado.** `AuthenticateSession::handle()` (`vendor/.../Session/Middleware/AuthenticateSession.php:60-68`) compara `session('password_hash_web')` com o hash vivo e faz `logout()` na divergência. É o force-rehash que derruba as outras sessões — não há caminho nativo alternativo.
+
+O `#[\SensitiveParameter]` já está em `logoutOtherDevices` (:740) e em `rehashUserPasswordForDeviceLogout` (:766), então a senha não vaza em stack trace. **Achado válido, receita atualizada em três pontos.**
+
+---
+
+#### C6 · Guarda de SQL cru — `[atual]`
+
+**Tentei derrubar por preset e por nativo; nenhum dos dois pega.**
+
+Li o corpo inteiro de `vendor/pestphp/pest/src/ArchPresets/Security.php`: são 20 entradas num único `expect([...])->not->toBeUsed()` — `md5, sha1, uniqid, rand, mt_rand, tempnam, str_shuffle, shuffle, array_rand, eval, exec, shell_exec, system, passthru, create_function, unserialize, extract, mb_parse_str, dl, assert`. **Nenhuma entrada de SQL.** Li também `ArchPresets/Laravel.php` inteiro — nada de SQL lá tampouco. E `tests/Arch/ArchTest.php:14` já roda `arch()->preset()->security()`, então o preset está ligado e comprovadamente não cobre.
+
+**E o próprio `toUse` é estruturalmente incapaz de cobrir o caso principal.** Ampliar `->expect('App\Models')->not->toUse(DB::class)` pegaria `DB::raw()` e `DB::statement()` (são imports de classe), mas **não pega `$query->whereRaw(...)`/`->selectRaw(...)`**, que são chamadas de método no query builder, não dependência de classe. Isso confirma que a proposta certa é a varredura textual, não uma expectativa arch.
+
+O `tests/Unit/Database/MigrationDialectInvariantTest.php` é o host correto e o cabeçalho dele (linhas 22-27) já diz literalmente que "não proíbe SQL cru… o que ela proíbe é fazer isso EM SILÊNCIO", com allowlist declarada — a mesma mecânica. Reconfirmei o estado: `grep -rnE "whereRaw|selectRaw|orderByRaw|havingRaw|groupByRaw|DB::raw|DB::statement|DB::select|DB::unprepared" app/` → **NONE**. Guarda preventiva, sem nativo que a substitua.
+
+---
+
+#### C7 · Allowlist de e-mail — listener `[atual]`, pré-voo `[absorver-modernizado]`
+
+**O listener não foi superado.** `vendor/laravel/framework/src/Illuminate/Mail/Mailer.php` tem exatamente dois helpers globais: `alwaysFrom` (:114) e `alwaysTo` (:149). O doc 13.x é explícito: `alwaysTo` redireciona **tudo** para um endereço e "any additional cc or bcc addresses will be removed". Isso não é allowlist — não sabe deixar passar `@empresa.com.br` e desviar o resto, e destrói cc/bcc legítimos. `app/Listeners/EnforceMailAllowlist.php` (match exato ou por domínio, `return false` para cancelar) resolve um problema que `alwaysTo` não resolve. `[rejeitado-obsoleto]` seria errado.
+
+**O pré-voo, ao contrário, não deve virar comando novo.** A proposta era portar o `StagingCheckCommand`. Duas superfícies nativas já existentes fazem isso melhor e o boilerplate não usa nenhuma:
+
+1. **`AboutCommand::add()`** — verificado em `vendor/laravel/framework/src/Illuminate/Foundation/Console/AboutCommand.php:302`. Uma seção "Mail" em `php artisan about` mostrando allowlist preenchida / test inbox vazio custa três linhas no `AppServiceProvider` e aparece em toda inspeção de ambiente, sem inventar categoria.
+2. **`DiagnosingHealth`** — verificado: `vendor/laravel/framework/src/Illuminate/Foundation/Events/DiagnosingHealth.php` existe, e `bootstrap/app.php:22` **já declara `health: '/up'`**. O doc 13.x diz que o evento é despachado a cada request do health route e que um listener pode lançar exceção para reprovar. Um listener que lança quando `mail.allowlist !== [] && mail.test_inbox === ''` fora de produção faz o `/up` ficar vermelho no deploy — que é o que o `StagingCheckCommand` queria e o monitor já consome.
+
+Isso também dissolve o custo levantado ("não há onde pendurar; `app/Console/Commands/` só tem `CreateSuperUserCommand` e `SyncPermissionsCommand`" — confirmei, é isso mesmo): com as duas APIs nativas, não se cria comando nenhum.
+
+---
+
+### Áreas sem achado — confirmação sob a lente de atualidade
+
+- **Uploads.** Concordo que não há superfície e que guard-rail hoje passaria vácuo. Registro só a nota prospectiva: quando nascer a primeira feature, a API atual **não** é `'mimes:pdf|max:2048'` em string — é `Illuminate\Validation\Rules\File` (`vendor/laravel/framework/src/Illuminate/Validation/Rules/File.php`, com `ImageFile.php` e `Dimensions.php` ao lado). Absorver regra de upload de um projeto que roda L12 tende a trazer a forma antiga; a regra deve nascer com `File::image()->max(...)`.
+- **Open redirect.** Nada a acrescentar: sem parâmetro de retorno controlado pelo usuário, não há o que modernizar.
+- **Sessão/cookies.** A diferença é cosmética, como relatado. A única atualização relevante nessa vizinhança é o C5 — e ela cai justamente sobre `bootstrap/app.php`, o mesmo arquivo onde o boilerplate já está à frente do spinmax.
+
+**Não verificado:** se `Str::mask()` preserva multibyte de forma equivalente ao `substr()` atual do `CpfFormatter` — irrelevante para dígitos, mas não confirmei o comportamento em input não-ASCII.
