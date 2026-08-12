@@ -108,6 +108,11 @@
     --brand-navy-soft: #2c485e;
     --brand-cyan-light: #8ac7e5;
     --brand-cyan: #379bcb;
+    /* O ciano da marca na mesma matiz e saturacao (H 199.5, S 58.7%),
+       escurecido de L 50.6% para 40%. Existe porque o anel de foco precisa de
+       3:1 contra o canvas BRANCO do tema claro, e o --brand-cyan nao chega la
+       contra a borda dos campos (2.53:1). Este da 4.72:1 e 3.81:1. */
+    --brand-cyan-dark: #2a7ba2;
     --brand-gray: #e6e7e8;
 
     /* Map application colors to theme variables - LIGHT MODE */
@@ -135,7 +140,10 @@
     --info-foreground: white;
     --border: var(--brand-gray);
     --input: var(--brand-gray);
-    --ring: var(--brand-cyan-light);
+    /* Anel de foco: 4.72:1 contra o fundo e 3.81:1 contra --input. O
+       --brand-cyan-light daqui dava 1.85:1 e 1.49:1 — no tema claro o foco
+       simplesmente nao aparecia. Ver styles/theme-tokens.test.ts. */
+    --ring: var(--brand-cyan-dark);
     --chart-1: var(--brand-navy-dark);
     --chart-2: var(--brand-cyan-light);
     --chart-3: var(--brand-navy-soft);
@@ -151,7 +159,7 @@
     --sidebar-accent: var(--brand-cyan-light);
     --sidebar-accent-foreground: var(--brand-navy-dark);
     --sidebar-border: var(--brand-gray);
-    --sidebar-ring: var(--brand-cyan-light);
+    --sidebar-ring: var(--brand-cyan-dark);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -186,6 +194,9 @@
     --info-foreground: var(--brand-navy-dark);
     --border: var(--brand-navy-soft);
     --input: var(--brand-navy-soft);
+    /* Aqui o ciano claro e o tom certo: 7.93:1 contra o fundo navy e 5.18:1
+       contra --input. O anel de foco e a unica cor que muda de familia entre
+       os temas — ele contrasta com o canvas, entao acompanha o inverso dele. */
     --ring: var(--brand-cyan-light);
     --chart-1: var(--brand-cyan-light);
     --chart-2: #4b9cd3;

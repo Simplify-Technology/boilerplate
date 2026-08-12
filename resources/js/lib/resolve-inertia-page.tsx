@@ -53,7 +53,7 @@ function createMissingPageFallback(name: string, reload: () => void): PageModule
                         <button
                             type="button"
                             onClick={reload}
-                            className="bg-primary text-primary-foreground focus-visible:ring-ring/50 hover:bg-primary/90 inline-flex min-h-9 w-full items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] sm:w-auto"
+                            className="bg-primary text-primary-foreground focus-visible:ring-ring hover:bg-primary/90 inline-flex min-h-9 w-full items-center justify-center rounded-md px-4 py-2 text-sm font-medium transition-colors outline-none focus-visible:ring-[3px] sm:w-auto"
                         >
                             Atualizar agora
                         </button>
