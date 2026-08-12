@@ -328,6 +328,19 @@ Dois fatos que valem para as próximas fatias de frontend:
 1. **O mock de `@inertiajs/react` era cego às props.** `Link: ({ children }) => <a href="#">{children}</a>` descartava tudo — className, `aria-label`, `ref`. Qualquer teste escrito sobre ele para provar que o Slot do Radix repassa props teria passado verde **sem provar nada**. Corrigido no mesmo commit; vale conferir esse padrão nos outros mocks antes de escrever teste de `asChild`.
 2. **O contador do candidato bateu exato** (6 pontos, os 6 path:linha) — a lente já havia dito "nenhum fato errado" nesta entrada, e a aplicação confirmou. É a primeira entrada da rodada em que isso acontece.
 
+### ⚠️ Trap grave: o worktree principal carrega trabalho não commitado do dono
+
+O worktree do boilerplate tem, desde o início desta rodada, **duas modificações não commitadas do dono** que não são da harvest: `docs/migration/PLAYBOOK.md` e `docs/migration/projects/transitado-em-julgado.md` (do outro playbook, o de migração). Elas atravessam todas as trocas de branch das fatias.
+
+Nesta invocação um `git checkout origin/main -- .` (feito para inspecionar arquivos de outro branch) **sobrescreveu as duas** junto com o resto da árvore. Recuperado na íntegra, mas por sorte: o `lint-staged` grava um stash de backup do estado ORIGINAL a cada commit — `git show --stat <sha>` naqueles "Backing up original state… (<sha>)" mostra o conteúdo, e `git restore --source=<sha> --worktree <paths>` traz de volta.
+
+**Regras que saem daí, para o resto da rodada:**
+
+- **Nunca** usar `git checkout <ref> -- .` nem `git reset --hard` no worktree principal. Para ler arquivo de outro ref, `git show <ref>:<path>`.
+- Restaurar sempre por caminho explícito (`git restore --source=<ref> --worktree <path>`), nunca por `.`.
+- Antes de qualquer operação de árvore inteira, conferir `git status --short` e tratar tudo que não é da fatia como intocável.
+- O SHA do backup do `lint-staged` aparece na saída do próprio `git commit` — vale copiar para o STATE quando a fatia tiver diff grande.
+
 ### ⚠️ Trap de ambiente: zsh não faz word-splitting
 
 A 1ª passada de mutação do F22 **não mediu nada e pareceu verde**: a função de teste recebia os caminhos numa variável (`vitest run $T`), e no zsh `$T` sem aspas **não** se divide em palavras — o vitest recebeu um argumento único inválido, não achou arquivo e o grep voltou vazio. Só a ausência total de saída denunciou. **Regra:** em script de mutação, caminhos literais ou array (`${(z)T}`/`"${T[@]}"`), nunca `$T` cru — e sempre imprimir a linha de baseline antes da primeira mutação, que é o que torna o silêncio visível.
