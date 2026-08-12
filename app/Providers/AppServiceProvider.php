@@ -106,6 +106,23 @@ class AppServiceProvider extends ServiceProvider
             'verification',
             static fn(Request $request): Limit => Limit::perMinute(6)->by($request->user()->id ?? $request->ip())
         );
+
+        /*
+         * `POST confirm-password` valida a senha do próprio usuário e não tinha
+         * teto nenhum: nem aqui, nem no controller — ao contrário do login, que
+         * carrega o dele no `LoginRequest`. É o MESMO segredo, e a tela existe
+         * justamente porque "estar logado" não basta para o que vem depois
+         * dela; sem limite, quem chega a uma sessão alheia chuta a senha do
+         * dono à vontade até abrir as áreas sensíveis.
+         *
+         * Chave por usuário, como `impersonate` e `verification`: a rota já
+         * exige autenticação, e chavear por IP trancaria colegas atrás do mesmo
+         * NAT para fora dessas áreas.
+         */
+        RateLimiter::for(
+            'password-confirmation',
+            static fn(Request $request): Limit => Limit::perMinute(6)->by($request->user()->id ?? $request->ip())
+        );
     }
 
     private function configCommands(): void
