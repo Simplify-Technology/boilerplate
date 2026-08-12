@@ -25,3 +25,9 @@ Iniciar e encerrar impersonation passa por startImpersonation/stopImpersonation 
 
 ## Textos de UI em português hardcoded
 O frontend é monolíngue pt_BR: escreva textos de UI (páginas React, labels, mensagens) diretamente em português, sem biblioteca de i18n nem chaves JSON.
+
+## Vazio-por-filtro e vazio-inicial são estados diferentes, com saídas diferentes
+Listagem vazia porque o filtro não casou nada pede "limpar filtros"; listagem vazia porque não há registro nenhum pede o CTA de criar o primeiro. Use `EmptyState` com a prop `action` e escolha a saída pela condição — não basta trocar o TEXTO e deixar a pessoa sem caminho, que era o caso de `pages/users/index.tsx` ("Limpe os filtros ou tente outro termo" sem botão de limpar, com o `clearFilters` do `use-user-filters` já disponível na mesma tela). Todo estado vazio de listagem sai com uma ação.
+
+## EmptyState não emite linha de tabela
+`EmptyState` renderiza só o conteúdo; quem abre `<Table.Row>`/`<Table.Cell>` é o call-site. O componente já teve um ramo `type="row"` que montava a linha por dentro enquanto o call-site também montava — e o DOM recebia `<tr>` dentro de `<div>` dentro de `<td>`. Ao usar em tabela, abra a célula na tabela e ponha o `EmptyState` dentro dela, sem embrulho extra.

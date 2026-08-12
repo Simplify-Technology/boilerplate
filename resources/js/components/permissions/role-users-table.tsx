@@ -5,6 +5,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { cn } from '@/lib/utils';
 import type { RoleUsersTableProps } from '@/types/permissions';
 import { getUserInitials } from '@/utils/users/user-helpers';
+import { Link } from '@inertiajs/react';
 import { Table } from '@radix-ui/themes';
 import { Ellipsis, Mail, Settings, UserPlus, Users, UserX } from 'lucide-react';
 import { useState } from 'react';
@@ -133,14 +134,16 @@ export function RoleUsersTable({ users, roleLabel, assignableRoles = [], onRevok
                             ) : (
                                 <Table.Row>
                                     <Table.Cell colSpan={3}>
-                                        <div className="flex items-center justify-center py-12">
-                                            <EmptyState
-                                                title="Nenhum usuário encontrado"
-                                                description={`Ninguém está no cargo de ${roleLabel} ainda. Atribua o cargo pela tela de usuários.`}
-                                                icon={UserX}
-                                                type="row"
-                                            />
-                                        </div>
+                                        <EmptyState
+                                            title="Nenhum usuário encontrado"
+                                            description={`Ninguém está no cargo de ${roleLabel} ainda. O cargo se atribui na tela de usuários.`}
+                                            icon={UserX}
+                                            action={
+                                                <Button variant="outline" size="sm" asChild>
+                                                    <Link href={route('users.index')}>Ir para usuários</Link>
+                                                </Button>
+                                            }
+                                        />
                                     </Table.Cell>
                                 </Table.Row>
                             )}
