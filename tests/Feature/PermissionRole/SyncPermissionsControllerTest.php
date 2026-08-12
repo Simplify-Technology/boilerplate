@@ -14,7 +14,7 @@ it('replaces the direct permissions of a user', function(): void {
         'permissions' => [Permissions::ASSIGN_ROLES->value],
     ])
         ->assertRedirect()
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     expect($target->fresh()->permissions()->pluck('name')->all())
         ->toBe([Permissions::ASSIGN_ROLES->value]);

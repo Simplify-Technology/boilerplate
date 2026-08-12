@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 final class SyncPermissionsController extends Controller
 {
@@ -25,8 +26,9 @@ final class SyncPermissionsController extends Controller
 
         Cache::forget(User::permissionCacheKey($user->id));
 
+        Inertia::flash('success', 'Permissões individuais atualizadas com sucesso!');
+
         return redirect()
-            ->back()
-            ->with('success', 'Permissões individuais atualizadas com sucesso!');
+            ->back();
     }
 }

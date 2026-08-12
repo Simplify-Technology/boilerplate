@@ -10,6 +10,7 @@ use App\Services\ImpersonationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 final class StartImpersonateController extends Controller
 {
@@ -37,8 +38,9 @@ final class StartImpersonateController extends Controller
             targetUser: $targetUser
         );
 
+        Inertia::flash('success', "Você está usando o painel como {$targetUser->name}");
+
         return redirect()
-            ->route('dashboard')
-            ->with('success', "Você está usando o painel como {$targetUser->name}");
+            ->route('dashboard');
     }
 }

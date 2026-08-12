@@ -15,6 +15,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 final class StoreController extends Controller
 {
@@ -85,8 +86,9 @@ final class StoreController extends Controller
         // Limpa cache de permissões
         Cache::forget(User::permissionCacheKey($user->id));
 
+        Inertia::flash('success', 'Usuário criado com sucesso!');
+
         return redirect()
-            ->route('users.index')
-            ->with('success', 'Usuário criado com sucesso!');
+            ->route('users.index');
     }
 }

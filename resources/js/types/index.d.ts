@@ -50,15 +50,28 @@ export interface NavItem {
 }
 
 /**
- * Mensagens de uma ação, consumidas por `useFlashMessages`. Espelha o bloco
- * `flash` de `HandleInertiaRequests::share()` — as quatro chaves vêm sempre,
- * com `null` quando não há mensagem.
+ * Mensagens de uma ação. Viajam pelo flash NATIVO do Inertia 3 — no objeto de
+ * página, não entre as props — e são consumidas por um único listener global
+ * (`resources/js/lib/flash.ts`).
+ *
+ * As chaves são opcionais de propósito: `Inertia::flash()` só publica o que
+ * foi realmente setado, ao contrário do bloco antigo do `share()`, que mandava
+ * as quatro com `null` em toda resposta.
+ *
+ * O `declare module` abaixo é o que faz `page.flash` e `event.detail.flash`
+ * chegarem tipados no lugar de `PageFlashData` (índice aberto).
  */
 export interface FlashMessages {
-    success: string | null;
-    error: string | null;
-    warning: string | null;
-    info: string | null;
+    success?: string;
+    error?: string;
+    warning?: string;
+    info?: string;
+}
+
+declare module '@inertiajs/core' {
+    export interface InertiaConfig {
+        flashDataType: FlashMessages;
+    }
 }
 
 /**
@@ -74,7 +87,6 @@ export interface SharedData {
     name: string;
     quote: { message: string; author: string };
     auth: Auth;
-    flash: FlashMessages;
     ziggy: Config & { location: string };
 
     // Exigido pelo constraint `PageProps` do @inertiajs/react: sem o index

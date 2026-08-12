@@ -15,7 +15,7 @@ it('updates the permission set of a role and redirects back with a success flash
             'permissions' => [Permissions::MANAGE_USERS->value],
         ])
         ->assertRedirect(route('role-permissions'))
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $viewer = Role::query()->where('name', Roles::VIEWER->value)->firstOrFail();
 
@@ -109,7 +109,7 @@ it('allows an admin to edit a lower role with permissions they hold', function()
 
     $this->put(route('roles-permissions.update', ['role' => Roles::MANAGER->value]), [
         'permissions' => [Permissions::MANAGE_USERS->value],
-    ])->assertRedirect()->assertSessionHas('success');
+    ])->assertRedirect()->assertInertiaFlash('success');
 
     $manager = Role::query()->where('name', Roles::MANAGER->value)->firstOrFail();
 
@@ -140,7 +140,7 @@ it('allows a super user to trim their own role while keeping manage_roles', func
             Permissions::MANAGE_ROLES->value,
             Permissions::MANAGE_USERS->value,
         ],
-    ])->assertRedirect()->assertSessionHas('success');
+    ])->assertRedirect()->assertInertiaFlash('success');
 
     $superUser = Role::query()->where('name', Roles::SUPER_USER->value)->firstOrFail();
 

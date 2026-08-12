@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\PermissionManagementService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 final class GrantPermissionController extends Controller
 {
@@ -28,6 +29,8 @@ final class GrantPermissionController extends Controller
             canImpersonateAny: $request->boolean('can_impersonate_any')
         );
 
-        return back()->with('success', 'Permissão concedida com sucesso.');
+        Inertia::flash('success', 'Permissão concedida com sucesso.');
+
+        return back();
     }
 }

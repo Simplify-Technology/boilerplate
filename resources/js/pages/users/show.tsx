@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
 import { UserShowInfoDialog } from '@/components/users/user-show-info-dialog';
-import { useFlashMessages } from '@/hooks/use-flash-messages';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, Role, User } from '@/types';
 import { applyCpfCnpjMask, applyMobileMask, applyPhoneMask } from '@/utils/format/masks';
@@ -23,7 +22,6 @@ type ShowUserProps = {
 };
 
 export default function Show({ user }: ShowUserProps) {
-    useFlashMessages();
     const [showInfoDialog, setShowInfoDialog] = useState(false);
 
     // Formatar dados com máscaras

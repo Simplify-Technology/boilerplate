@@ -15,7 +15,7 @@ it('updates a user and redirects to their page with a success flash', function()
         'email' => 'atualizado@example.com',
     ])
         ->assertRedirect(route('users.show', $target))
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $this->assertDatabaseHas('users', [
         'id'    => $target->id,

@@ -11,8 +11,8 @@ Páginas em pages/<domínio>/<ação>.tsx com export default; componentes de dom
 ## Autorização no frontend: usePermissions e PermissionsGuard
 Cheque autorização no frontend com usePermissions() (hasPermission/hasRole sobre os nomes compartilhados em auth) ou com hooks de domínio use-<domínio>-permissions que expõem callbacks canX(); itens de navegação declaram permission/role e são filtrados em nav-main. Não leia auth.user.role diretamente em componentes.
 
-## Feedback pós-ação: useFlashMessages, nunca toast manual
-Cada página Inertia chama useFlashMessages() no topo do componente — o hook exibe as flash keys success|error|warning|info via react-hot-toast com as opções de lib/toast-config. Não dispare toasts manualmente para respostas do servidor.
+## Feedback pós-ação: um listener global, página nenhuma consome flash
+O consumo de flash é global e nativo: `registerFlashListener()` (resources/js/lib/flash.ts) registra UM `router.on('flash')` no ponto de montagem em app.tsx, e ele exibe as chaves success|error|warning|info via react-hot-toast com as opções de lib/toast-config. Página nenhuma consome flash — não chame nada no componente, não leia `page.flash` na tela, não dispare toasts manualmente para respostas do servidor. A regra anterior mandava cada página chamar um hook e 8 das 17 esqueceram, deixando mudas as telas de auth e o dashboard; consumo opt-in por tela não volta. O flash nativo vive no OBJETO DE PÁGINA (irmão de component/props/url), então não é prop: nenhum filtro de partial reload o alcança e ele não persiste no history state. Se precisar tipar chaves novas, edite `FlashMessages` em resources/js/types — o `declare module '@inertiajs/core'` ao lado é o que faz `event.detail.flash` chegar tipado.
 
 ## Tabelas com Table de @radix-ui/themes, não shadcn
 Construa tabelas de listagem (e Box/Flex/Tabs dessas telas) com @radix-ui/themes — o app já é envolvido em <Theme>; não use o components/ui/table.tsx do shadcn, que existe mas não é adotado.

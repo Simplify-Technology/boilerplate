@@ -1,6 +1,7 @@
 import '../css/app.css';
 
 import ToastProvider from '@/components/ui/toast-provider';
+import { registerFlashListener } from '@/lib/flash';
 import { resolveInertiaPage } from '@/lib/resolve-inertia-page';
 import { createInertiaApp } from '@inertiajs/react';
 import { Theme } from '@radix-ui/themes';
@@ -15,6 +16,10 @@ createInertiaApp({
     title: (title) => `${title} - ${appName}`,
     resolve: (name) => resolveInertiaPage(name, pages).then((module) => module.default),
     setup({ el, App, props }) {
+        // Consumo de flash: um listener, no ponto de montagem. Página nenhuma
+        // consome flash — ver resources/js/lib/flash.ts.
+        registerFlashListener();
+
         const root = createRoot(el);
 
         root.render(

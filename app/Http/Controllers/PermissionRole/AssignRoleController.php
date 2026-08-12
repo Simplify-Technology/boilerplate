@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 final class AssignRoleController extends Controller
 {
@@ -127,6 +128,8 @@ final class AssignRoleController extends Controller
         // Dispara evento
         Broadcast::event(new RoleUserUpdatedEvent($user));
 
-        return redirect()->back()->with('success', 'Cargo atualizado com sucesso!');
+        Inertia::flash('success', 'Cargo atualizado com sucesso!');
+
+        return redirect()->back();
     }
 }

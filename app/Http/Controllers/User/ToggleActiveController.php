@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class ToggleActiveController extends Controller
 {
@@ -19,8 +20,9 @@ class ToggleActiveController extends Controller
             ? 'Usuário ativado com sucesso!'
             : 'Usuário desativado com sucesso!';
 
+        Inertia::flash('success', $message);
+
         return redirect()
-            ->back()
-            ->with('success', $message);
+            ->back();
     }
 }

@@ -13,7 +13,7 @@ it('grants a direct permission to a user', function(): void {
         'permission' => Permissions::ASSIGN_ROLES->value,
     ])
         ->assertRedirect()
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     expect(
         $target->fresh()->permissions()->where('name', Permissions::ASSIGN_ROLES->value)->exists()

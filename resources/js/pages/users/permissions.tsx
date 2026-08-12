@@ -2,7 +2,6 @@ import { PermissionCard } from '@/components/permissions/permission-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
-import { useFlashMessages } from '@/hooks/use-flash-messages';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, User } from '@/types';
 import type { PermissionOption } from '@/types/permissions';
@@ -38,8 +37,6 @@ interface UserPermissionsProps {
 }
 
 export default function UserPermissions({ user, all_permissions }: UserPermissionsProps) {
-    useFlashMessages();
-
     // Estado local das permissões selecionadas
     const [userPermissions, setUserPermissions] = useState<string[]>(() => {
         return user.custom_permissions_list.map((p) => p.name);

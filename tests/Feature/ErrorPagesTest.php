@@ -54,5 +54,5 @@ it('redirects back with a flash when the session expires (419)', function() {
     $this->from(route('login'))
         ->post(route('login'), [])
         ->assertRedirect(route('login'))
-        ->assertSessionHas('error');
+        ->assertInertiaFlash('error');
 });

@@ -8,7 +8,6 @@ import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { usePermissionActions } from '@/hooks/permissions/use-permission-actions';
 import { usePermissionPermissions } from '@/hooks/permissions/use-permission-permissions';
-import { useFlashMessages } from '@/hooks/use-flash-messages';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem } from '@/types';
 import type { PermissionsPageProps } from '@/types/permissions';
@@ -24,8 +23,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Roles({ roles, assignableRoles = [], permissions }: PermissionsPageProps) {
-    useFlashMessages();
-
     // Local state
     const [selectedRole, setSelectedRole] = useState<string>(Object.keys(roles)[0] || '');
     const [showInfoDialog, setShowInfoDialog] = useState(false);

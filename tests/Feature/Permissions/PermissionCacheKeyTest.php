@@ -31,7 +31,7 @@ it('drops the cached permissions when the role changes through the panel', funct
         ->and(Cache::has(User::permissionCacheKey($target->id)))->toBeTrue();
 
     $this->post(route('user.assign-role', $target), ['role' => Roles::VIEWER->value])
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     expect(Cache::has(User::permissionCacheKey($target->id)))->toBeFalse()
         ->and($target->fresh()?->hasPermissionTo(Permissions::MANAGE_USERS))->toBeFalse();
@@ -45,7 +45,7 @@ it('drops the cached permissions when the role matrix changes', function(): void
 
     $this->put(route('roles-permissions.update', ['role' => Roles::MANAGER->value]), [
         'permissions' => [Permissions::ASSIGN_ROLES->value],
-    ])->assertSessionHas('success');
+    ])->assertInertiaFlash('success');
 
     expect(Cache::has(User::permissionCacheKey($target->id)))->toBeFalse()
         ->and($target->fresh()?->hasPermissionTo(Permissions::MANAGE_USERS))->toBeFalse();
