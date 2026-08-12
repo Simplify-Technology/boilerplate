@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **19 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4) · **4 PRs abertos** (#90 scrubber de PII, #92 erro anunciado, #94 estado vazio com saída, #96 diálogo controlado)
+- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **21 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20) · **2 PRs abertos, ambos MERGEABLE após merge de `main`** (#94 estado vazio com saída, #96 diálogo controlado)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -143,8 +143,8 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **S4** — test(auth): prova que o lockout do login morde | [#83](https://github.com/Simplify-Technology/boilerplate/issues/83) | `83-harvest-v2-lockout-login` | ✅ 7 testes + **7 mutações** | ✅ ambos exit 0 (390/1969) | [#84](https://github.com/Simplify-Technology/boilerplate/pull/84) | ✅ **MESCLADO** 2026-08-12 |
 | **S5** — test(auth): alcance do `EnsureUserIsActive` | [#85](https://github.com/Simplify-Technology/boilerplate/issues/85) | `85-harvest-v2-alcance-usuario-inativo` | ✅ 4 testes + 3 mutações | ✅ ambos exit 0 (394/1984) | [#86](https://github.com/Simplify-Technology/boilerplate/pull/86) | ✅ **MESCLADO** 2026-08-12 |
 | **C4** — fix(auth): limite no `confirm-password` | [#87](https://github.com/Simplify-Technology/boilerplate/issues/87) | `87-harvest-v2-limite-confirm-password` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (395/1982) | [#88](https://github.com/Simplify-Technology/boilerplate/pull/88) | ✅ **MESCLADO** 2026-08-12 |
-| **S3** — fix(lgpd): objeto e chave composta no scrubber | [#89](https://github.com/Simplify-Technology/boilerplate/issues/89) | `89-harvest-v2-scrubber-objeto-e-chave-composta` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (416/2046) | [#90](https://github.com/Simplify-Technology/boilerplate/pull/90) | **aguardando merge do dono** |
-| **E6+E20** — fix(a11y): erro anunciado + fusão de ARIA | [#91](https://github.com/Simplify-Technology/boilerplate/issues/91) | `91-harvest-v2-erro-anunciado` | ✅ 9 testes + 5 mutações | ✅ ambos exit 0 (31/212) | [#92](https://github.com/Simplify-Technology/boilerplate/pull/92) | **aguardando merge do dono** |
+| **S3** — fix(lgpd): objeto e chave composta no scrubber | [#89](https://github.com/Simplify-Technology/boilerplate/issues/89) | `89-harvest-v2-scrubber-objeto-e-chave-composta` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (416/2046) | [#90](https://github.com/Simplify-Technology/boilerplate/pull/90) | ✅ **MESCLADO** 2026-08-12 |
+| **E6+E20** — fix(a11y): erro anunciado + fusão de ARIA | [#91](https://github.com/Simplify-Technology/boilerplate/issues/91) | `91-harvest-v2-erro-anunciado` | ✅ 9 testes + 5 mutações | ✅ ambos exit 0 (31/212) | [#92](https://github.com/Simplify-Technology/boilerplate/pull/92) | ✅ **MESCLADO** 2026-08-12 |
 | **E14+E15** — fix(ux): estado vazio com saída + metade visual | [#93](https://github.com/Simplify-Technology/boilerplate/issues/93) | `93-harvest-v2-vazio-com-saida` | ✅ 7 testes + 5 mutações | ✅ ambos exit 0 (31/211) | [#94](https://github.com/Simplify-Technology/boilerplate/pull/94) | **aguardando merge do dono** |
 | **E30** — fix(ux): diálogo de excluir conta controlado | [#95](https://github.com/Simplify-Technology/boilerplate/issues/95) | `95-harvest-v2-dialogo-controlado` | ✅ 5 testes + 4 mutações | ✅ ambos exit 0 (31/209) | [#96](https://github.com/Simplify-Technology/boilerplate/pull/96) | **aguardando merge do dono** |
 
@@ -613,6 +613,31 @@ Para as próximas invocações: o push do estado precisará do mesmo `SKIP_GIT_H
 **Nota sobre o mock:** ele reproduz de propósito a topologia real (estado do `useForm` no COMPONENTE, não dentro do `<Dialog>`) — é isso que faz o erro persistir entre aberturas. Um mock com estado dentro do conteúdo do diálogo passaria verde nos dois lados e não provaria nada. Vale para a fila: mock que não reproduz a topologia do defeito é teste decorativo.
 
 **Detalhe de API confirmado no código:** `onOpenChange` do Radix não dispara quando o `open` muda por código, então o fechamento programático (`onSuccess`) chama o funil explicitamente. Está comentado no arquivo e na regra.
+
+### ⚠️ Trap estrutural: PR de frontend em paralelo SEMPRE conflita em `.ai/rules/js.md`
+
+Com #90 e #92 mesclados, os dois PRs que restavam (#94 e #96) viraram `CONFLICTING` — os dois no MESMO arquivo, `.ai/rules/js.md`, e pelo mesmo motivo: **toda fatia de frontend acrescenta seção ao fim dele**. Não é conflito de conteúdo, é colisão de append. Vai se repetir em cada leva de fatias de UX/UI que ficar aberta junto.
+
+**Resolução correta, e o erro que quase entrou:** o conflito vem em formato **diff3** (`<<<<<<<` / `||||||| base` / `=======` / `>>>>>>>`), três partes. Tratá-lo como duas partes deixa o marcador `||||||| <sha>` DENTRO do arquivo resolvido — foi o que aconteceu na primeira tentativa, e passaria despercebido num arquivo markdown que nenhum linter cobre.
+
+A forma à prova disso é resolver pelos **estágios do índice**, não pelo texto marcado:
+
+```
+base  = git show :1:<arquivo>
+nosso = git show :2:<arquivo>
+deles = git show :3:<arquivo>
+# append puro dos dois lados ⇒ resultado = deles + (nosso - base)
+```
+
+com `assert nosso.startswith(base) and deles.startswith(base)` — se a asserção falhar, não era append puro e a resolução precisa de leitura humana.
+
+**Checagem que fecha:** `git diff origin/main --stat -- <arquivo>` tem de mostrar SÓ as linhas que a fatia acrescenta (3 no #96, 6 no #94). Se mostrar remoção, alguma seção do main se perdeu.
+
+Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — a árvore mesclada é nova: 32 arquivos / 217 e 219 testes), `git commit --no-edit`, push. Os dois PRs voltaram a `MERGEABLE`.
+
+**`rerere` está ligado neste repositório** e gravou as duas resoluções, então repetições idênticas se resolvem sozinhas. Não confie nisso para conflito de conteúdo real — só para este, que é mecânico.
+
+**Alternativa para a próxima leva:** manter no máximo um PR de frontend aberto por vez, ou aceitar o merge de `main` como passo fixo antes de pedir revisão. A segunda é mais barata e é o que ficou feito aqui.
 
 ## Próxima unidade
 
