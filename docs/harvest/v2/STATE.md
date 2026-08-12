@@ -56,18 +56,45 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | # | Projeto | Inv | 1 Seg | 2 Arq | 3 Perf-BE | 4 Front | 5 UX | 6 UI | 7 Copy | 8 Ops | Crítico | Projeto |
 | - | ------- | --- | ----- | ----- | --------- | ------- | ---- | ---- | ------ | ----- | ------- | ------- |
 | 1 | ctfinance | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 2 | spinmax | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 2 | spinmax | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 3 | sorteiopix | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 4 | ctjuris | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 5 | ctvitrine | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 7/70 células (10%) · BACKLOG: **16 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23)**, 1 realocado (A2), **~104 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 8/70 células (11%) · BACKLOG: **16 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23)**, 1 realocado (A2), **~104 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
 **Baseline de gates em `main` com as 4 fatias mescladas combinadas** (medido 2026-08-11, primeira vez que rodaram juntas): `composer ci:check` 311 testes / 1678 asserções, `corepack pnpm ci:check` 25 arquivos / 158 testes. Ambos exit 0.
+
+### Inventário do spinmax — célula 0 ✅ (2026-08-12)
+
+`docs/harvest/v2/spinmax.md` (210 KB). Produzido por **workflow de 9 agentes** (8 frentes paralelas + crítico de completude), 0 erros, ~966k tokens de subagente, 289 chamadas de ferramenta, ~17 min. Read-only integral: nenhum comando de escrita ou execução tocou o projeto-fonte, e o `.env` nunca foi aberto (só o `.env.example`).
+
+**Varredura por segredo antes do commit** (o `docs/harvest/` é commitado): zero e-mail real, CPF, CNPJ, telefone, JWT, chave AWS, chave privada ou URL com credencial. 15 redações `***` feitas pelos próprios agentes; a senha de dev do `UserSeeder` está redigida na origem.
+
+**O crítico de completude pagou o próprio custo, e caro.** Ele achou superfície inteira que as 8 frentes não enumeraram — e **derrubou 12 números**. Os corrigidos entraram num banner no TOPO do inventário, porque quem consome a célula não pode herdar contagem errada. O caso mais grave não é numérico: uma frente afirmou que a landing é "Blade pura, sem JS"; são **593 linhas de JS vanilla em 5 blocos inline**, fora do Vite, do ESLint e do Vitest.
+
+Nota de método que vale para os 5 inventários restantes: **frente paralela erra contagem com frequência alta** (12 erros em 8 frentes), quase sempre por contar o texto que ela mesma escreveu em vez do disco. O crítico não é opcional.
+
+### Ponteiros do inventário do spinmax (fatos verificados, ainda SEM veredito)
+
+| # | Fato verificado no código @ `e4ec01e` | Dimensão dona |
+| - | ------------------------------------- | ------------- |
+| 1 | `POST users/impersonate` tem só `throttle:10,1`, **sem `can:`** (`routes/web.php:87`) — o mesmo furo do ctfinance, em segundo projeto | 1 — confirma o guard-rail A1 já mesclado |
+| 2 | **9 throttles inline com número literal** e zero limiter nomeado além de `mp-webhook`; `POST login` (`routes/auth.php:18`) e `POST logout` (`:52`) **sem throttle nenhum** | 1 — guard-rail |
+| 3 | Webhook MP: HMAC (`x-signature` + `x-request-id` + `dataId` + secret + tolerância de 300s), `WebhookEvent` para idempotência, job em fila, `PROCESSABLE_TOPICS` fechado, 401 em assinatura inválida | 1/3 — **tema multi-fonte "webhooks"** |
+| 4 | 7 tarefas agendadas em `routes/console.php` e **zero `onOneServer`/`runInBackground` no repositório inteiro**; só uma declara timezone | 3 — guard-rail |
+| 5 | `User/IndexController.php:32-37` esconde contas `super_user` do cliente — regra por **cargo**, não por e-mail, travada por `MaintenanceAccountsHiddenTest` | 1/2 — candidato |
+| 6 | `resources/views/landing.blade.php`: 2.090 linhas, **593 de JS vanilla inline** fora de Vite/ESLint/Vitest, usando a **mesma chave `appearance`** do painel | 4/8 — guard-rail forte |
+| 7 | `routes/settings.php:20` define `settings/appearance` como **closure** — única rota do projeto sem controller | 2 — guard-rail |
+| 8 | `DELETE settings/profile` → `profile.destroy`: autoexclusão de conta | 1/5 — candidato |
+| 9 | `public/site.webmanifest` é o **terceiro** lugar onde os hex da marca são declarados, fora do alcance do `scripts/check-contrast.mjs` | 6 — guard-rail |
+| 10 | `app/Traits/Models/HasRolesAndPermissions.php` faz `json_decode($permission->pivot->meta)` cru; o boilerplate tem `app/Models/PermissionUser.php` para isso | 2 — direção inversa (o boilerplate é superior) |
+| 11 | `tests/Feature/Auth/RegistrationTest.php` **trava a AUSÊNCIA** do registro público (404 em `GET`/`POST /register`) | 2 — candidato de método |
+| 12 | `MaintenanceModeTest` injeta uma classe anônima `MaintenanceMode` no container em vez de escrever `storage/framework/down` — teste que morresse no meio prenderia a app local em 503 | 2 — candidato de método |
 
 ### ⚠️ O que a dimensão 4 ensinou sobre a rodada
 
@@ -399,7 +426,11 @@ Três notas:
 
 ~~**F42+F35**~~ ✅ aplicados juntos — PR [#76](https://github.com/Simplify-Technology/boilerplate/pull/76) aberto.
 
-**Fatia F3 — trio `--state-{status}-{bg,fg,border}`.** É a próxima unidade grande e a mais destravante: tem catraca esperando no teste do F1 (`destructive` escuro parado em 3.67:1), é pré-requisito da metade visual do E6 (sem ele o `InputError` regride ao trocar de className) e o F2 (os 6 pares `--color-success/warning/info` que nunca foram exportados, com call-site vivo em `user-actions-menu.tsx:125`) viaja junto. M, risco médio. **Não copiar os percentuais do ctfinance** — a aritmética já foi refeita e 3 dos 4 reprovam na paleta daqui; os `fg` entram como HEX literais derivados de alvo calculado.
+**Célula: spinmax × dimensão 1 (Segurança).** O inventário deixou 12 ponteiros, 5 deles de segurança, e o spinmax é o projeto de criticidade MÁXIMA (e-commerce em produção com pagamento). É a célula com maior densidade de material pronto.
+
+**Sobre o F3 — adiado com motivo, não esquecido.** Ele é fatia de aplicação pronta (prioridade 1 do protocolo), mas canonizar uma ARQUITETURA de tokens de estado é decisão fundacional, e a pergunta de abertura da dimensão 6 é literalmente "qual projeto tem o sistema mais maduro". Responder isso tendo lido só o ctfinance — sem cuidari e ctvitrine, os dois L13 + Inertia 3 em produção — é o tipo de escolha que se refaz. Ele destrava quando as células 6 desses dois estiverem varridas. A catraca do teste do F1 segura o `destructive` em 3.67:1 enquanto isso, então nada regride na espera.
+
+~~**Fatia F3 — trio `--state-{status}-{bg,fg,border}`.**~~ É a próxima unidade grande e a mais destravante: tem catraca esperando no teste do F1 (`destructive` escuro parado em 3.67:1), é pré-requisito da metade visual do E6 (sem ele o `InputError` regride ao trocar de className) e o F2 (os 6 pares `--color-success/warning/info` que nunca foram exportados, com call-site vivo em `user-actions-menu.tsx:125`) viaja junto. M, risco médio. **Não copiar os percentuais do ctfinance** — a aritmética já foi refeita e 3 dos 4 reprovam na paleta daqui; os `fg` entram como HEX literais derivados de alvo calculado.
 
 ~~**F23**~~ ✅ aplicado — PR [#78](https://github.com/Simplify-Technology/boilerplate/pull/78). **Alternativa barata se a unidade tiver de ser curta:** **F32** (animação de toast é CSS morto — `react-hot-toast` 2.6.0 não emite `data-state` nem `data-icon`; poda autossuficiente).
 
