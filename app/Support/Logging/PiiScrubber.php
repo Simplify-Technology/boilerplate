@@ -4,61 +4,104 @@ declare(strict_types = 1);
 
 namespace App\Support\Logging;
 
+use Illuminate\Contracts\Support\Arrayable;
+
 /**
  * Scrubber de PII (LGPD) usado pelo processor Monolog
  * ({@see PiiScrubbingProcessor}) que intercepta o stack de logs padrão.
  *
  * Duas camadas:
- *  - Por chave: qualquer chave de contexto presente em {@see SENSITIVE_KEYS}
- *    (case insensitive) tem o valor substituído por `[REDACTED]` — campos
- *    sensíveis pelo nome, independente do formato do payload
- *    (cpf, cnpj, phone, email, password, token, …).
+ *  - Por chave: chave de contexto que CONTENHA um termo de
+ *    {@see SENSITIVE_KEY_PARTS}, ou que seja exatamente um de
+ *    {@see SENSITIVE_KEYS}, tem o valor substituído por `[REDACTED]` —
+ *    inclusive subárvore inteira.
  *  - Por padrão: strings são varridas por assinaturas de CPF/CNPJ/CEP/
  *    telefone/email/JWT/bearer e substituídas por placeholders.
  *
+ * Objeto que implementa `Arrayable` (model, Collection, DTO, resource) é
+ * convertido antes de descer. Sem isso ele atravessava o processor intacto e
+ * só era serializado pelo formatter do Monolog — DEPOIS das duas camadas —,
+ * então `Log::info('x', ['user' => $user])` gravava nome, CPF formatado e
+ * notas internas em claro, mesmo com o CPF tendo assinatura de regex.
+ *
  * Idempotente: rodar o scrub sobre saída já redigida é um no-op.
+ *
+ * **Limite conhecido, medido:** a mensagem e o trace de um `Throwable` passado
+ * em `['exception' => $e]` são renderizados pelo formatter, fora do alcance de
+ * qualquer processor. A regra continua sendo não colocar PII em mensagem de
+ * exception.
  */
 final class PiiScrubber
 {
     public const REDACTED = '[REDACTED]';
 
-    /** @var list<string> Chaves cujo valor é substituído por inteiro. */
-    private const SENSITIVE_KEYS = [
+    /**
+     * Termos inequívocos: a chave é sensível se os CONTIVER. Cobre a família
+     * composta (`user_email`, `customer_cpf`, `billing_address`), que a
+     * igualdade exata deixava passar sempre que o valor não tinha assinatura
+     * de regex — nome de pessoa e endereço livre não têm.
+     *
+     * Todo termo aqui passou por auditoria de substring acidental. `cep` NÃO
+     * entra: "ex**cep**tion" o contém, e casá-lo apagaria a classe do erro em
+     * todo log de falha.
+     *
+     * @var list<string>
+     */
+    private const SENSITIVE_KEY_PARTS = [
         // Secrets
         'password',
-        'password_confirmation',
         'token',
-        'access_token',
-        'refresh_token',
+        'secret',
         'api_key',
         'api-key',
         'apikey',
-        'secret',
         'authorization',
+        // PII (LGPD)
+        'cpf',
+        'cnpj',
+        'phone',
+        'telefone',
+        'celular',
+        'whatsapp',
+        'email',
+        'e_mail',
+        'address',
+        'endereco',
+    ];
+
+    /**
+     * Termos ambíguos: sensíveis só quando a chave é exatamente isto.
+     *
+     * `name` sozinho é o nome do titular, mas `role_name`, `permission_name` e
+     * `file_name` são dado operacional que o log PRECISA carregar — este
+     * repositório registra os dois primeiros o tempo todo. Pela mesma razão
+     * `rg` (que "o**rg**anization" e "ta**rg**et" contêm), `auth` ("**auth**or"),
+     * `session`, `mobile` e `cep` ficam aqui. Composto de `name` que nomeia
+     * pessoa entra explicitamente na lista, um a um.
+     *
+     * @var list<string>
+     */
+    private const SENSITIVE_KEYS = [
         'auth',
         'bearer',
         'cookie',
         'session',
-        // PII (LGPD)
-        'cpf',
-        'cnpj',
-        'cpf_cnpj',
         'rg',
-        'phone',
-        'telefone',
-        'celular',
         'mobile',
-        'whatsapp',
-        'email',
-        'e_mail',
+        'cep',
         'name',
         'nome',
+        'user_name',
         'full_name',
         'first_name',
         'last_name',
-        'cep',
-        'address',
-        'endereco',
+        // Os quatro campos que o `UserPolicy::viewSensitive()` protege são
+        // `cpf_cnpj`, `phone`, `mobile` e `user_notes`. Os três primeiros já
+        // caem nos termos acima; este faltava, e um model no contexto o
+        // entregava inteiro. `notes` fica exato porque `release_notes` e
+        // `notes_count` são operacionais.
+        'notes',
+        'user_notes',
     ];
 
     /** @var array<string, string> Regex → substituição em strings. */
@@ -85,11 +128,15 @@ final class PiiScrubber
 
     public function scrub(mixed $value): mixed
     {
+        if ($value instanceof Arrayable) {
+            $value = $value->toArray();
+        }
+
         if (is_array($value)) {
             $out = [];
 
             foreach ($value as $key => $sub) {
-                if (is_string($key) && in_array(mb_strtolower($key), self::SENSITIVE_KEYS, true)) {
+                if (is_string($key) && $this->isSensitiveKey($key)) {
                     $out[$key] = self::REDACTED;
 
                     continue;
@@ -106,6 +153,23 @@ final class PiiScrubber
         }
 
         return $value;
+    }
+
+    private function isSensitiveKey(string $key): bool
+    {
+        $key = mb_strtolower($key);
+
+        if (in_array($key, self::SENSITIVE_KEYS, true)) {
+            return true;
+        }
+
+        foreach (self::SENSITIVE_KEY_PARTS as $part) {
+            if (str_contains($key, $part)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function scrubString(string $value): string
