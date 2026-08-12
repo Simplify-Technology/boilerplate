@@ -504,11 +504,19 @@ Fonte: ctfinance @ `b8c6d57` × boilerplate `main` @ `fb3eb67`. **66 sobrevivent
 - **Absorver a FORMA** (`ctfinance app.css:185-196` claro, `:281-292` escuro, classes em `:378-400`), **via `@utility`, não `@layer components`**.
 - **⚠️ NÃO copiar os percentuais.** Aritmética refeita ao centésimo: com a fórmula do ctfinance na paleta do boilerplate, **3 dos 4 reprovam** — warning **2.53:1**, info **3.26:1**, success **3.92:1**. Fixar os `fg` como HEX literais derivados de alvo calculado (≥4.5:1 contra o bg do próprio estado; **≥14:1 onde for substituir o emerald atual**, que hoje tem **14.38:1** em `verify-email.tsx` — trocá-lo por soft mal calibrado é regressão).
 
-### F5 · `[guard-rail]` `--ring` é igual nos dois temas e dá 1.34:1: o anel de foco é invisível · P · risco baixo · **independente, o mais barato da célula**
+### F5 · ✅ **APLICADO** (PR [#72](https://github.com/Simplify-Technology/boilerplate/pull/72), 2026-08-12) · `[guard-rail]` `--ring` é igual nos dois temas e dá 1.34:1: o anel de foco é invisível · P · risco baixo
 
-- **Corrigir o VALOR, não absorver a forma.** Dar a `--ring` um par próprio no `.dark` e escolher tons com **≥3:1 contra `--background` E contra `--input`** nos dois temas. Manter `focus-visible:ring-ring/50 ring-[3px]`.
-- **Nada de `.focus-ring-brand`** (a classe do ctfinance). Se quiser `--focus-ring-{width,offset}`, que sejam vars simples no `:root` consumidas pelos primitivos.
+- **Corrigir o VALOR, não absorver a forma.** ~~Dar a `--ring` um par próprio no `.dark`~~ e escolher tons com **≥3:1 contra `--background` E contra `--input`** nos dois temas. ~~Manter `focus-visible:ring-ring/50 ring-[3px]`.~~
+- **Nada de `.focus-ring-brand`** (a classe do ctfinance). Se quiser `--focus-ring-{width,offset}`, que sejam vars simples no `:root` consumidas pelos primitivos. ✅ respeitado.
 - Correção de método da lente: o caçador compôs `ring-ring/50` em sRGB, mas o CSS compilado usa `color-mix(in oklab, …)`. O hex exato difere; a razão continua em 1.3–1.5, longe de 3:1. Conclusão intacta.
+
+**Três correções que a aplicação trouxe** (o escopo entregue é este, não o de cima):
+
+1. **A prescrição estava invertida.** O `.dark` era o lado CERTO (7.93:1 vs fundo, 5.18:1 vs `--input`); quem reprovava era o `:root` — **1.85:1** e **1.49:1**. O par novo nasceu no tema claro (`--brand-cyan-dark: #2a7ba2`, o `--brand-cyan` na mesma matiz/saturação escurecido de L 50.6% → 40% ⇒ 4.72:1 e 3.81:1).
+2. **`focus-visible:border-ring` é no-op em 5 das 6 variantes de `Button`** — pinta só a cor, e o preflight deixa `border-width: 0`. Com `outline-none`, o halo de 50% era o indicador inteiro. O F5 não era "anel fraco": era **foco invisível em todo botão**.
+3. **Por isso o "manter `/50`" caiu.** Medido: composto a 50% sobre branco, **nenhum** tom da família ciano alcança 3:1 (teto ~3.08:1, e só com azul quase preto). A fatia trocou `focus-visible:ring-ring/50` → `focus-visible:ring-ring` nos 8 primitivos vivos. O anel de erro (`ring-destructive/20|40`) ficou de fora de propósito — acompanha `aria-invalid:border-destructive` num campo que tem borda.
+
+**Achado que muda o E27:** `ui/navigation-menu.tsx` usa um TERCEIRO idioma de foco (`ring-ring/10 dark:ring-ring/20` + `outline-ring/50`), pior que o de 50%, e é **código morto** — nada importa `layouts/app/app-header-layout.tsx`, único consumidor de `components/app-header.tsx`, único de `navigation-menu`. Os três arquivos somam à lista do E27. Estão em allowlist verificada nos dois sentidos no teste novo, então a limpeza do E27 tem de removê-la junto.
 
 ### F9b · `[absorver]` `<Alert variant="destructive">` é texto branco em fundo branco no tema claro · P · risco baixo · **bug visível**
 

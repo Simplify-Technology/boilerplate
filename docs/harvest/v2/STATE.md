@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (6/70 células) · **8 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17) · **1 PR aberto** (#70, conserto do `@theme`)
+- **Situação:** Fase 0 concluída · varredura em andamento (7/70 células) · **10 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1) · **1 PR aberto** (#72, anel de foco)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 7/70 células (10%) · BACKLOG: **11 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1)**, 1 realocado (A2), **~109 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **74 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 7/70 células (10%) · BACKLOG: **12 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5)**, 1 realocado (A2), **~108 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **73 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -106,9 +106,12 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 
 | **E17** — fix: ordenação e page size crus na listagem (500 por URL) | [#65](https://github.com/Simplify-Technology/boilerplate/issues/65) | `65-harvest-v2-normaliza-ordenacao-listagem` | ✅ 41 testes + 4 mutações | ✅ ambos exit 0 (352/1831) | [#66](https://github.com/Simplify-Technology/boilerplate/pull/66) | ✅ **MESCLADO** 2026-08-11 |
 | **E2+E13** — refactor: canal de flash nativo do Inertia 3 | [#67](https://github.com/Simplify-Technology/boilerplate/issues/67) | `67-harvest-v2-flash-nativo` | ✅ 15 testes + 2 mutações | ✅ ambos exit 0 (364/1896) | [#68](https://github.com/Simplify-Technology/boilerplate/pull/68) | ✅ **MESCLADO** 2026-08-11 |
-| **F1** — fix: colisão de token que matava o dark mode | [#69](https://github.com/Simplify-Technology/boilerplate/issues/69) | `69-harvest-v2-conserta-theme` | ✅ 18 testes + 3 mutações | ✅ ambos exit 0 (364/1896) | [#70](https://github.com/Simplify-Technology/boilerplate/pull/70) | **aguardando merge do dono** |
+| **F1** — fix: colisão de token que matava o dark mode | [#69](https://github.com/Simplify-Technology/boilerplate/issues/69) | `69-harvest-v2-conserta-theme` | ✅ 18 testes + 3 mutações | ✅ ambos exit 0 (364/1896) | [#70](https://github.com/Simplify-Technology/boilerplate/pull/70) | ✅ **MESCLADO** 2026-08-12 |
+| **F5** — fix: anel de foco invisível no tema claro | [#71](https://github.com/Simplify-Technology/boilerplate/issues/71) | `71-harvest-v2-anel-de-foco` | ✅ 30 testes de estilo + 6 mutações | ✅ ambos exit 0 (364/1896) | [#72](https://github.com/Simplify-Technology/boilerplate/pull/72) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
+
+**Reconciliação de 2026-08-12 (3ª invocação):** os TRÊS que o STATE dava como pendentes — **#60 (D5)**, **#62 (D4)** e **#70 (F1)** — já estavam **mesclados**. Corrigido acima antes de executar qualquer unidade. A rodada entrou nesta invocação **sem nenhum PR aberto e sem fatia em andamento**, então Prioridade 1 do protocolo (fatia pronta do BACKLOG) foi a unidade correta. `main` local em `03b4440`.
 
 ### A1 — o que entrou
 
@@ -284,11 +287,38 @@ Cinco fatos medidos nesta fatia:
 
 **Dívida registrada como catraca:** `destructive` no escuro dá 3.67:1 e não passa. Não dá para pagar aqui — escurecer para `#e11d48` leva o botão a 4.70 mas derruba `text-destructive` de 3.99 para 3.12, e é ele que o E6 vai usar no `InputError`. O teste impede piorar **e** falha se alguém consertar sem mover o par para a tabela principal. A cura é o **F3**.
 
+### F5 — o que entrou (2026-08-12)
+
+`resources/css/app.css` + `resources/js/test/styles/focus-ring.test.ts` (novo) + asserções novas em `theme-tokens.test.ts` + 8 primitivos + `.ai/rules/css.md`. PR [#72](https://github.com/Simplify-Technology/boilerplate/pull/72).
+
+| Mutação | Resultado |
+| ------- | --------- |
+| Volta `--ring` do claro para o ciano claro | ⨯ 2 falham |
+| Volta só `--sidebar-ring` do claro | ⨯ 4 falham |
+| `--brand-cyan-dark` vira o `--brand-cyan` puro | ⨯ 4 falham (passa vs fundo, reprova vs `--input`) |
+| Devolve `ring-ring/50` ao Button | ⨯ falha |
+| Esvazia a allowlist de código morto | ⨯ falha |
+| Entrada obsoleta na allowlist | ⨯ falha |
+
+Cinco fatos medidos, e os três primeiros **corrigem o candidato**:
+
+1. **A prescrição do BACKLOG estava invertida.** "Dar a `--ring` um par próprio no `.dark`" — mas o `.dark` é justamente o que já estava certo (7.93:1 vs fundo, 5.18:1 vs `--input`). Quem reprovava era o `:root`: **1.85:1** e **1.49:1**. O tema escuro acertava por acidente de o mesmo ciano claro servir aos dois papéis.
+2. **`focus-visible:border-ring` é no-op em 5 das 6 variantes de `Button`.** Ele pinta só a *cor* da borda; o preflight do Tailwind deixa `border-width: 0`, e `default`/`destructive`/`secondary`/`ghost`/`link` não declaram borda. Com `outline-none` no lugar, o halo de 50% era o indicador **inteiro**. Isso eleva a severidade do F5: não era "anel fraco", era "foco invisível em todo botão".
+3. **O alfa fazia parte do defeito, não só o valor.** Composto a 50% sobre branco, **nenhum** tom da família ciano da marca alcança 3:1 — teto medido ~3.08:1 e só com um azul quase preto. Por isso a fatia mexeu na opacidade (`ring-ring/50` → `ring-ring`), contra a letra do BACKLOG ("manter"), que fora escrita para impedir a absorção da `.focus-ring-brand` do ctfinance — não para proibir que o alfa fosse examinado.
+4. **Um terceiro idioma de foco apareceu, e é código morto.** `ui/navigation-menu.tsx` usa `ring-ring/10 dark:ring-ring/20` + `outline-ring/50` — pior que o de 50%. Ficou de fora porque a cadeia `app-header-layout → app-header → navigation-menu` é **órfã** (nada importa o layout). Isso **soma 3 arquivos à lista do E27** e entrou como allowlist verificada nos dois sentidos.
+5. **`--ring` é o único token que troca de família entre os temas.** Ciano escuro no claro, ciano claro no escuro — ele contrasta com o canvas, então acompanha o inverso dele. Registrado em `.ai/rules/css.md` para ninguém "corrigir" a assimetria depois.
+
+### ⚠️ Trap de método paga nesta fatia — mutação sem backup destrói trabalho
+
+A passada de mutação usou `git checkout -- <arquivo>` para reverter cada mutação. Como a fatia ainda **não estava commitada**, o `checkout` restaurou o HEAD e apagou as edições reais junto com a mutação — três edições do `app.css` tiveram de ser refeitas. **Regra para as próximas fatias:** mutar só depois de commitar, ou copiar o arquivo para o scratchpad antes de mutar. Vale para toda a rodada.
+
 ## Próxima unidade
 
-~~**Fatia F1**~~ ✅ aplicada — PR #70 aberto, aguardando merge.
+~~**Fatia F1**~~ ✅ mesclada (PR #70) · ~~**Fatia F5**~~ ✅ aplicada — PR [#72](https://github.com/Simplify-Technology/boilerplate/pull/72) aberto, aguardando merge.
 
-**Fatia F5 — `--ring` invisível (1.34:1).** P, risco baixo, sem dependência, e agora com o teste do F1 pronto para receber a asserção do anel. Alternativa igualmente barata: **F22** (`<Link><Button>` produzindo `<a><button>` em 6 pontos), também P e sem dependência.
+**Fatia F22** — `<Link><Button>` produzindo `<a><button>` em 6 pontos. P, risco baixo, sem dependência, nenhum fato derrubado pelas lentes. Cuidado registrado: **não** limpar a string cyan de 190 caracteres em `pages/users/show.tsx:59,64` e `permissions.tsx:110,116` — isso é o F7 e misturar torna o diff ilegível.
+
+**F3 segue subindo:** tem catraca esperando no teste do F1 (`destructive` escuro em 3.67:1) e destrava a metade visual do E6.
 
 **F3 subiu de prioridade:** ele agora tem uma catraca esperando por ele no teste do F1, e destrava a metade visual do E6 (sem o F3, o E6 entra sem a troca de className, senão regride).
 
