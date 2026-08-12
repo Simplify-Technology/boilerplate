@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (7/70 células) · **10 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1) · **1 PR aberto** (#72, anel de foco)
+- **Situação:** Fase 0 concluída · varredura em andamento (7/70 células) · **10 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1) · **2 PRs abertos** (#72 anel de foco, #74 link-botão)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 7/70 células (10%) · BACKLOG: **12 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5)**, 1 realocado (A2), **~108 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **73 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 7/70 células (10%) · BACKLOG: **13 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22)**, 1 realocado (A2), **~107 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **72 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -108,6 +108,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **E2+E13** — refactor: canal de flash nativo do Inertia 3 | [#67](https://github.com/Simplify-Technology/boilerplate/issues/67) | `67-harvest-v2-flash-nativo` | ✅ 15 testes + 2 mutações | ✅ ambos exit 0 (364/1896) | [#68](https://github.com/Simplify-Technology/boilerplate/pull/68) | ✅ **MESCLADO** 2026-08-11 |
 | **F1** — fix: colisão de token que matava o dark mode | [#69](https://github.com/Simplify-Technology/boilerplate/issues/69) | `69-harvest-v2-conserta-theme` | ✅ 18 testes + 3 mutações | ✅ ambos exit 0 (364/1896) | [#70](https://github.com/Simplify-Technology/boilerplate/pull/70) | ✅ **MESCLADO** 2026-08-12 |
 | **F5** — fix: anel de foco invisível no tema claro | [#71](https://github.com/Simplify-Technology/boilerplate/issues/71) | `71-harvest-v2-anel-de-foco` | ✅ 30 testes de estilo + 6 mutações | ✅ ambos exit 0 (364/1896) | [#72](https://github.com/Simplify-Technology/boilerplate/pull/72) | **aguardando merge do dono** |
+| **F22** — fix: `<a><button>` aninhado em 6 links-botão | [#73](https://github.com/Simplify-Technology/boilerplate/issues/73) | `73-harvest-v2-link-botao` | ✅ 8 testes + 3 mutações | ✅ ambos exit 0 (364/1896 · 29/192) | [#74](https://github.com/Simplify-Technology/boilerplate/pull/74) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -312,13 +313,34 @@ Cinco fatos medidos, e os três primeiros **corrigem o candidato**:
 
 A passada de mutação usou `git checkout -- <arquivo>` para reverter cada mutação. Como a fatia ainda **não estava commitada**, o `checkout` restaurou o HEAD e apagou as edições reais junto com a mutação — três edições do `app.css` tiveram de ser refeitas. **Regra para as próximas fatias:** mutar só depois de commitar, ou copiar o arquivo para o scratchpad antes de mutar. Vale para toda a rodada.
 
+### F22 — o que entrou (2026-08-12)
+
+6 call sites (`user-table-row`, `users/index`, `users/permissions`, `users/show`) + `resources/js/test/components/link-button-nesting.test.ts` (novo) + 2 testes de DOM em `user-table-row.test.tsx` + `.ai/rules/js.md`. PR [#74](https://github.com/Simplify-Technology/boilerplate/pull/74).
+
+| Mutação | Resultado |
+| ------- | --------- |
+| Devolve o aninhamento em `index.tsx` | ⨯ 2 falham |
+| Tira o `asChild` do Button do `user-table-row` | ⨯ 3 falham (fonte + DOM) |
+| Mock do `Link` volta a descartar as props | ⨯ 2 falham |
+
+Dois fatos que valem para as próximas fatias de frontend:
+
+1. **O mock de `@inertiajs/react` era cego às props.** `Link: ({ children }) => <a href="#">{children}</a>` descartava tudo — className, `aria-label`, `ref`. Qualquer teste escrito sobre ele para provar que o Slot do Radix repassa props teria passado verde **sem provar nada**. Corrigido no mesmo commit; vale conferir esse padrão nos outros mocks antes de escrever teste de `asChild`.
+2. **O contador do candidato bateu exato** (6 pontos, os 6 path:linha) — a lente já havia dito "nenhum fato errado" nesta entrada, e a aplicação confirmou. É a primeira entrada da rodada em que isso acontece.
+
+### ⚠️ Trap de ambiente: zsh não faz word-splitting
+
+A 1ª passada de mutação do F22 **não mediu nada e pareceu verde**: a função de teste recebia os caminhos numa variável (`vitest run $T`), e no zsh `$T` sem aspas **não** se divide em palavras — o vitest recebeu um argumento único inválido, não achou arquivo e o grep voltou vazio. Só a ausência total de saída denunciou. **Regra:** em script de mutação, caminhos literais ou array (`${(z)T}`/`"${T[@]}"`), nunca `$T` cru — e sempre imprimir a linha de baseline antes da primeira mutação, que é o que torna o silêncio visível.
+
 ## Próxima unidade
 
-~~**Fatia F1**~~ ✅ mesclada (PR #70) · ~~**Fatia F5**~~ ✅ aplicada — PR [#72](https://github.com/Simplify-Technology/boilerplate/pull/72) aberto, aguardando merge.
+~~**Fatia F1**~~ ✅ mesclada (PR #70) · ~~**F5**~~ ✅ PR [#72](https://github.com/Simplify-Technology/boilerplate/pull/72) · ~~**F22**~~ ✅ PR [#74](https://github.com/Simplify-Technology/boilerplate/pull/74) — os dois aguardando merge do dono.
 
-**Fatia F22** — `<Link><Button>` produzindo `<a><button>` em 6 pontos. P, risco baixo, sem dependência, nenhum fato derrubado pelas lentes. Cuidado registrado: **não** limpar a string cyan de 190 caracteres em `pages/users/show.tsx:59,64` e `permissions.tsx:110,116` — isso é o F7 e misturar torna o diff ilegível.
+**Fatia F42** — `errors/500.blade.php` pinta fundo escuro diferente do canvas do app, e o guard do D4 (`InlineThemeBackgroundTest`) só olha **um** dos dois arquivos. P, risco baixo, fecha buraco de fatia já mesclada e o teste que precisa crescer já existe. Alternativa igualmente barata: **F35** (`<meta name="color-scheme">` calculado no servidor e nunca atualizado na troca de tema — fecha o outro buraco que o D4 deixou); as duas são do mesmo par e podem viajar juntas se o diff continuar pequeno.
 
-**F3 segue subindo:** tem catraca esperando no teste do F1 (`destructive` escuro em 3.67:1) e destrava a metade visual do E6.
+**F3 segue subindo:** tem catraca esperando no teste do F1 (`destructive` escuro em 3.67:1) e destrava a metade visual do E6. É M/risco médio — a próxima unidade "grande" natural.
+
+Fila com as metades visuais pareadas: **E6+F-input-error** · **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** (agora **+3 arquivos**: `navigation-menu`, `app-header`, `app-header-layout`, achados no F5) · **F7** (cor de marca — decisão do dono).
 
 **F3 subiu de prioridade:** ele agora tem uma catraca esperando por ele no teste do F1, e destrava a metade visual do E6 (sem o F3, o E6 entra sem a troca de className, senão regride).
 

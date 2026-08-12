@@ -524,12 +524,14 @@ Fonte: ctfinance @ `b8c6d57` × boilerplate `main` @ `fb3eb67`. **66 sobrevivent
 - Teste: renderizar a variante e exigir que a className resolvida contenha classe de background.
 - Correção de citação: a variante `destructive` do ctfinance está em `ui/alert.tsx:12-13`, não `:16-17` (`:16-17` é a `warning`).
 
-### F22 · `[absorver]` `<Link><Button>` produz `<a><button>` em 6 pontos · P · risco baixo · **sem dependência, mandar cedo**
+### F22 · ✅ **APLICADO** (PR [#74](https://github.com/Simplify-Technology/boilerplate/pull/74), 2026-08-12) · `[absorver]` `<Link><Button>` produz `<a><button>` em 6 pontos · P · risco baixo
 
 - Os 6 viram `<Button asChild><Link/></Button>`, className migra para o `<Button>`, e a asserção "zero `<Link ...><Button`" entra no mesmo PR nascendo verde.
 - **Cuidado que o caçador não citou:** em `pages/users/show.tsx:59,64` e `permissions.tsx:110,116` os botões carregam a string cyan de 190 caracteres — **não limpar a cor aqui** (é o F7), misturar torna o diff ilegível.
 - Melhor precedente do caso difícil (Tooltip + `asChild` + `size="icon"`): `ctfinance users/user-table-row.tsx:92`.
 - Lente: **nenhum fato errado** — os 6 path:linha, os 12 do ctfinance e o `asChild` em 62 linhas, todos verificados.
+- **Confirmado na aplicação:** os 6 path:linha bateram exato. Primeira entrada da rodada em que a lente disse "nenhum fato errado" e a aplicação não achou correção nenhuma.
+- **Achado de brinde:** o mock de `@inertiajs/react` em `user-table-row.test.tsx` descartava as props do `Link`, então teste sobre Slot/`asChild` passaria verde sem provar nada. Corrigido junto. Conferir esse padrão nos outros mocks antes das próximas fatias de `asChild`.
 
 ### Metades visuais que viajam com fatias já decididas na dimensão 5
 
