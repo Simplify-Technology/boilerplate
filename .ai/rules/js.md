@@ -25,3 +25,6 @@ Iniciar e encerrar impersonation passa por startImpersonation/stopImpersonation 
 
 ## Textos de UI em português hardcoded
 O frontend é monolíngue pt_BR: escreva textos de UI (páginas React, labels, mensagens) diretamente em português, sem biblioteca de i18n nem chaves JSON.
+
+## Diálogo é controlado, e fechar tem um funil só
+`<Dialog>` recebe `open` e `onOpenChange`, e toda limpeza (resetar formulário, `clearErrors`, zerar seleção) mora DENTRO do `onOpenChange` — nunca pendurada no `onClick` do botão Cancelar. O X do `DialogContent`, o Escape e o clique no overlay fecham por fora de qualquer handler de botão; se o estado do formulário vive fora do `<Dialog>` (o caso do `useForm`), ele não desmonta e o erro da tentativa anterior reaparece na próxima abertura. O padrão é o do `ui/confirm-dialog.tsx`: `onOpenChange={(next) => { if (!next) limpar(); }}`. Fechamento programático (ex.: `onSuccess`) chama o MESMO funil, porque `onOpenChange` não dispara sozinho quando o estado muda por código.
