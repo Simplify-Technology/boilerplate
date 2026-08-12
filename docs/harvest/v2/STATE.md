@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 6/70 células (8,6%) · BACKLOG: **10 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13)**, 1 realocado (A2), **35 aplicáveis** (8 de dim. 1–3 + 27 de dim. 5: E1–E30 menos E17, E2 e E13), 7 adiados, **10 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`), **1 decisão de arquitetura pendente do dono** (flash nativo do Inertia 3.6)
+**Progresso:** 6/70 células (8,6%) · BACKLOG: **10 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13)**, 1 realocado (A2), **35 aplicáveis** (8 de dim. 1–3 + 27 de dim. 5: E1–E30 menos E17, E2 e E13), 7 adiados, **10 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
