@@ -569,6 +569,14 @@ Consertado sem perder nada: worktree de estado de volta para `50-harvest-v2-roda
 - **Depois de `checkout -b`, confira `git branch --show-current` no worktree que você acha que está usando**, antes de editar arquivo.
 - Um commit no branch errado se desfaz com `reset --soft` + `checkout`, que carrega o índice para o branch certo. O `--hard` é que é irreversível.
 
+### ⚠️ A trap do worktree sem hook VIROU: agora o worktree de estado tem hook e ele não passa
+
+O `pnpm install` acidental descrito acima gerou `.husky/_/` no worktree de ESTADO, que até então não tinha hook nenhum (era a trap registrada na Fase 0). Efeito colateral: o `pre-push` passou a rodar lá — e falha, porque o worktree de estado **nunca teve `vendor/`**, então o `composer ci:check` do hook não tem o que executar.
+
+**`SKIP_GIT_HOOKS=1` usado no push do estado de 2026-08-12 (9f8a16b), e registrado aqui conforme o Guardrail 7.** É o caso de exceção previsto — falha de AMBIENTE, não gate vermelho: o diff são 2 arquivos markdown (`BACKLOG.md`, `STATE.md`), o branch de estado nunca toca código (checagem contra a merge-base segue vazia), e os dois `ci:check` rodaram verdes no worktree PRINCIPAL em cada fatia desta invocação (S3: 416/2046; E6+E20: 31/212 · composer exit 0).
+
+Para as próximas invocações: o push do estado precisará do mesmo `SKIP_GIT_HOOKS=1` enquanto o worktree de estado não tiver `vendor/`. A alternativa — rodar `composer install` lá — custa espaço e não compra nada, porque o branch é markdown puro.
+
 ## Próxima unidade
 
 **Reconciliação da 7ª invocação (2026-08-12):** os TRÊS PRs abertos — **#82 (S2)**, **#86 (S5)** e **#88 (C4)** — foram mesclados pelo dono. `main` em `f43478a`. Os 7 SHAs das fontes seguem idênticos aos pinados: **zero drift** desde a abertura da rodada, 7 invocações atrás.
