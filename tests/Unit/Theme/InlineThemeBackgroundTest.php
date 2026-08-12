@@ -14,7 +14,7 @@ declare(strict_types = 1);
 | justamente na janela que o bloco existe para cobrir, e o fundo fica sem cor.
 |
 | Foi o que aconteceu em c2ffbc7 (um commit de fontes): a linha escura virou
-| `var(--color-primary-dark)` e ninguém viu, porque em produção o CSS é
+| `var(--color-primary-dark)` — hoje `--brand-navy-dark` — e ninguém viu, porque em produção o CSS é
 | render-blocking e o token já existe no primeiro paint. A janela real é o
 | `composer dev`, onde o Vite injeta o CSS por JS.
 |
@@ -43,7 +43,7 @@ function appCssToken(string $token): string
 
 it('reads both files', function(): void {
     expect(inlineThemeStyleBlock())->not->toBe('')
-        ->and(appCssToken('color-primary-dark'))->not->toBe('');
+        ->and(appCssToken('brand-navy-dark'))->not->toBe('');
 });
 
 it('paints the dark background with a literal, never a css variable', function(): void {
@@ -56,11 +56,11 @@ it('paints the dark background with a literal, never a css variable', function()
 });
 
 it('keeps the inline dark background in sync with the app.css token', function(): void {
-    $token = appCssToken('color-primary-dark');
+    $token = appCssToken('brand-navy-dark');
 
     expect(str_contains(inlineThemeStyleBlock(), $token))->toBe(true, sprintf(
         'O fundo escuro inline de resources/views/app.blade.php saiu de sincronia '
-        . 'com --color-primary-dark (%s) de resources/css/app.css. Os dois pintam '
+        . 'com --brand-navy-dark (%s) de resources/css/app.css. Os dois pintam '
         . 'a mesma superfície em momentos diferentes do carregamento: divergir faz '
         . 'a cor trocar sozinha quando o CSS termina de chegar.',
         $token

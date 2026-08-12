@@ -104,28 +104,27 @@
 /* -------------------------------------------------------------------------- */
 :root {
     /* Application color palette - base colors */
-    --color-primary-dark: #0f2a44;
-    --color-primary: #1f3c57;
-    --color-primary-darker: #2c485e;
-    --color-accent-light: #8ac7e5;
-    --color-accent: #379bcb;
-    --color-muted-light: #e6e7e8;
+    --brand-navy-dark: #0f2a44;
+    --brand-navy-soft: #2c485e;
+    --brand-cyan-light: #8ac7e5;
+    --brand-cyan: #379bcb;
+    --brand-gray: #e6e7e8;
 
     /* Map application colors to theme variables - LIGHT MODE */
     --background: white;
-    --foreground: var(--color-primary-dark);
+    --foreground: var(--brand-navy-dark);
     --card: white;
-    --card-foreground: var(--color-primary-dark);
+    --card-foreground: var(--brand-navy-dark);
     --popover: white;
-    --popover-foreground: var(--color-primary-dark);
-    --primary: var(--color-primary-dark);
+    --popover-foreground: var(--brand-navy-dark);
+    --primary: var(--brand-navy-dark);
     --primary-foreground: white;
-    --secondary: var(--color-accent-light);
-    --secondary-foreground: var(--color-primary-dark);
-    --muted: var(--color-muted-light);
-    --muted-foreground: var(--color-primary-darker);
-    --accent: var(--color-accent-light);
-    --accent-foreground: var(--color-primary-dark);
+    --secondary: var(--brand-cyan-light);
+    --secondary-foreground: var(--brand-navy-dark);
+    --muted: var(--brand-gray);
+    --muted-foreground: var(--brand-navy-soft);
+    --accent: var(--brand-cyan-light);
+    --accent-foreground: var(--brand-navy-dark);
     --destructive: #e11d48;
     --destructive-foreground: white;
     --success: #16a34a;
@@ -134,25 +133,25 @@
     --warning-foreground: white;
     --info: #0ea5e9;
     --info-foreground: white;
-    --border: var(--color-muted-light);
-    --input: var(--color-muted-light);
-    --ring: var(--color-accent-light);
-    --chart-1: var(--color-primary-dark);
-    --chart-2: var(--color-accent-light);
-    --chart-3: var(--color-primary-darker);
+    --border: var(--brand-gray);
+    --input: var(--brand-gray);
+    --ring: var(--brand-cyan-light);
+    --chart-1: var(--brand-navy-dark);
+    --chart-2: var(--brand-cyan-light);
+    --chart-3: var(--brand-navy-soft);
     --chart-4: #4b9cd3;
     --chart-5: #13b5ea;
     --radius: 0.625rem;
 
     /* Sidebar - LIGHT MODE */
     --sidebar: white;
-    --sidebar-foreground: var(--color-primary-dark);
-    --sidebar-primary: var(--color-primary-dark);
+    --sidebar-foreground: var(--brand-navy-dark);
+    --sidebar-primary: var(--brand-navy-dark);
     --sidebar-primary-foreground: white;
-    --sidebar-accent: var(--color-accent-light);
-    --sidebar-accent-foreground: var(--color-primary-dark);
-    --sidebar-border: var(--color-muted-light);
-    --sidebar-ring: var(--color-accent-light);
+    --sidebar-accent: var(--brand-cyan-light);
+    --sidebar-accent-foreground: var(--brand-navy-dark);
+    --sidebar-border: var(--brand-gray);
+    --sidebar-ring: var(--brand-cyan-light);
 }
 
 /* -------------------------------------------------------------------------- */
@@ -160,47 +159,49 @@
 /* -------------------------------------------------------------------------- */
 .dark {
     /* Dark mode - improved for better contrast and consistency */
-    --background: var(--color-primary-dark);
+    --background: var(--brand-navy-dark);
     --foreground: #ffffff;
-    --card: var(--color-primary-dark);
+    --card: var(--brand-navy-dark);
     --card-foreground: #ffffff;
-    --popover: var(--color-primary-dark);
+    --popover: var(--brand-navy-dark);
     --popover-foreground: #ffffff;
-    /* Buttons/CTAs should be high-contrast in dark mode */
-    --primary: var(--color-accent);
-    --primary-foreground: #ffffff;
+    /* Buttons/CTAs should be high-contrast in dark mode.
+       O texto sobre o ciano e navy, nao branco: branco da 3.13:1 (reprova AA)
+       e o navy da 4.68:1. Medido, nao estimado — ver o teste de contraste. */
+    --primary: var(--brand-cyan);
+    --primary-foreground: var(--brand-navy-dark);
     --secondary: #2c485e;
     --secondary-foreground: #ffffff;
     --muted: #1a3a5a;
     --muted-foreground: #e6e7e8;
     --accent: #a5d8f3;
-    --accent-foreground: var(--color-primary-dark);
+    --accent-foreground: var(--brand-navy-dark);
     --destructive: #f43f5e;
     --destructive-foreground: #ffffff;
     --success: #22c55e;
     --success-foreground: #ffffff;
     --warning: #fbbf24;
-    --warning-foreground: var(--color-primary-dark);
+    --warning-foreground: var(--brand-navy-dark);
     --info: #38bdf8;
-    --info-foreground: var(--color-primary-dark);
-    --border: var(--color-primary-darker);
-    --input: var(--color-primary-darker);
-    --ring: var(--color-accent-light);
-    --chart-1: var(--color-accent-light);
+    --info-foreground: var(--brand-navy-dark);
+    --border: var(--brand-navy-soft);
+    --input: var(--brand-navy-soft);
+    --ring: var(--brand-cyan-light);
+    --chart-1: var(--brand-cyan-light);
     --chart-2: #4b9cd3;
     --chart-3: #13b5ea;
     --chart-4: #a5d8f3;
     --chart-5: #d6ebf7;
 
     /* Sidebar - DARK MODE */
-    --sidebar: var(--color-primary-dark);
+    --sidebar: var(--brand-navy-dark);
     --sidebar-foreground: #ffffff;
-    --sidebar-primary: var(--color-accent-light);
-    --sidebar-primary-foreground: var(--color-primary-dark);
-    --sidebar-accent: var(--color-primary-darker);
+    --sidebar-primary: var(--brand-cyan-light);
+    --sidebar-primary-foreground: var(--brand-navy-dark);
+    --sidebar-accent: var(--brand-navy-soft);
     --sidebar-accent-foreground: #ffffff;
     --sidebar-border: #1e3a4f;
-    --sidebar-ring: var(--color-accent-light);
+    --sidebar-ring: var(--brand-cyan-light);
 }
 
 /* -------------------------------------------------------------------------- */

@@ -9,6 +9,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Http/Controllers/** | .ai/rules/controllers.md |
 | app/Enum/** | .ai/rules/enum.md |
 | app/Events/** | .ai/rules/events.md |
+| resources/css/** | .ai/rules/css.md |
 | resources/js/** | .ai/rules/js.md |
 | app/Listeners/** | .ai/rules/listeners.md |
 | app/Http/Middleware/** | .ai/rules/middleware.md |
