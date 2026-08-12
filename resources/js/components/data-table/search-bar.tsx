@@ -53,8 +53,19 @@ export function SearchBar({
                 onKeyDown={handleKeyDown}
                 aria-label={ariaLabel}
             />
+            {/*
+             * O indicador de busca ocupa o lugar da lupa, não o canto direito.
+             * Ali vive o botão de limpar, que aparece com o campo preenchido —
+             * exatamente quando a busca está em curso. Disputar aquele canto
+             * faria o X piscar a cada tecla, o que é pior do que não ter
+             * indicador. Aqui o slot já é fixo e o conteúdo só alterna.
+             */}
             <div className="absolute top-1/2 left-3 -translate-y-1/2 cursor-pointer" onClick={focusInput} role="button" aria-label="Focar busca">
-                <Search className="text-muted-foreground dark:text-muted-foreground/70 h-4 w-4" />
+                {isSearching ? (
+                    <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" data-testid="search-spinner" />
+                ) : (
+                    <Search className="text-muted-foreground dark:text-muted-foreground/70 h-4 w-4" />
+                )}
             </div>
             {value && (
                 <button
@@ -69,11 +80,6 @@ export function SearchBar({
                 >
                     <X className="text-muted-foreground hover:text-foreground dark:text-muted-foreground/70 dark:hover:text-foreground/90 h-4 w-4 transition-colors duration-200" />
                 </button>
-            )}
-            {isSearching && !value && (
-                <div className="absolute top-1/2 right-3 -translate-y-1/2">
-                    <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
-                </div>
             )}
         </div>
     );
