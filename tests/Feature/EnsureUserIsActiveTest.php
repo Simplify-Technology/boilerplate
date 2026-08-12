@@ -20,7 +20,7 @@ it('logs out a user that gets deactivated mid-session', function() {
 
     $this->get('/dashboard')
         ->assertRedirect(route('login'))
-        ->assertSessionHas('error');
+        ->assertInertiaFlash('error');
 
     $this->assertGuest();
 });

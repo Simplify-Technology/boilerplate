@@ -14,6 +14,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 final class UpdateController extends Controller
 {
@@ -114,8 +115,9 @@ final class UpdateController extends Controller
         $user->refresh();
         $user->load('role');
 
+        Inertia::flash('success', 'Usuário atualizado com sucesso!');
+
         return redirect()
-            ->route('users.show', $user)
-            ->with('success', 'Usuário atualizado com sucesso!');
+            ->route('users.show', $user);
     }
 }

@@ -2,7 +2,6 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import UserForm from '@/components/user-form';
 import { UserInfoDialog } from '@/components/users/user-info-dialog';
-import { useFlashMessages } from '@/hooks/use-flash-messages';
 import AppLayout from '@/layouts/app-layout';
 import { BreadcrumbItem, Role, User } from '@/types';
 import { Head } from '@inertiajs/react';
@@ -20,7 +19,6 @@ type EditUserProps = {
 };
 
 export default function Edit({ user, roles }: EditUserProps) {
-    useFlashMessages();
     const [showInfoDialog, setShowInfoDialog] = useState(false);
 
     return (

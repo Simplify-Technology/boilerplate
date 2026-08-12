@@ -7,6 +7,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -26,9 +27,10 @@ final class EnsureUserIsActive
             $request->session()->invalidate();
             $request->session()->regenerateToken();
 
+            Inertia::flash('error', 'Sua conta foi desativada. Entre em contato com o administrador.');
+
             return redirect()
-                ->route('login')
-                ->with('error', 'Sua conta foi desativada. Entre em contato com o administrador.');
+                ->route('login');
         }
 
         return $next($request);

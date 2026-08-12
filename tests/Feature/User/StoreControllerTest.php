@@ -27,7 +27,7 @@ it('creates a user, hashes the password and redirects with a success flash', fun
 
     $this->post(route('users.store'), validUserPayload(['role_id' => $managerRoleId]))
         ->assertRedirect(route('users.index'))
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $created = User::query()->where('email', 'novo.usuario@example.com')->firstOrFail();
 

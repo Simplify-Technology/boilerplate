@@ -87,7 +87,7 @@ it('allows an admin to delete a manager', function(): void {
 
     $this->delete(route('users.destroy', $target))
         ->assertRedirect(route('users.index'))
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $this->assertDatabaseMissing('users', ['id' => $target->id]);
 });
@@ -98,7 +98,7 @@ it('allows a super user to delete another super user', function(): void {
 
     $this->delete(route('users.destroy', $target))
         ->assertRedirect(route('users.index'))
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $this->assertDatabaseMissing('users', ['id' => $target->id]);
 });
@@ -149,7 +149,7 @@ it('allows an admin to mutate the permissions of a manager', function(): void {
 
     $this->post(route('user.sync-permissions', $target), [
         'permissions' => [Permissions::MANAGE_PERMISSIONS->value],
-    ])->assertRedirect()->assertSessionHas('success');
+    ])->assertRedirect()->assertInertiaFlash('success');
 
     expect($target->fresh()?->permissions()->pluck('name')->all())
         ->toBe([Permissions::MANAGE_PERMISSIONS->value]);
@@ -188,7 +188,7 @@ it('allows a manager to demote a viewer', function(): void {
 
     $this->delete(route('user.revoke-role', $target))
         ->assertRedirect()
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $visitorRoleId = Role::query()->where('name', Roles::VISITOR->value)->firstOrFail()->id;
 

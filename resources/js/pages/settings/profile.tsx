@@ -14,7 +14,6 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useSettingsActions } from '@/hooks/settings/use-settings-actions';
-import { useFlashMessages } from '@/hooks/use-flash-messages';
 import AppLayout from '@/layouts/app-layout';
 import type { ProfilePageProps } from '@/types/settings';
 import { Info, Mail, Menu, Save, Trash2, User2 } from 'lucide-react';
@@ -32,8 +31,6 @@ interface ProfileForm {
 }
 
 export default function Profile({ mustVerifyEmail, status }: ProfilePageProps) {
-    useFlashMessages();
-
     const { auth } = usePage<SharedData>().props;
     const currentPath = window.location.pathname;
     const [sidebarOpen, setSidebarOpen] = useState(false);

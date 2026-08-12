@@ -13,7 +13,6 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { useSettingsActions } from '@/hooks/settings/use-settings-actions';
-import { useFlashMessages } from '@/hooks/use-flash-messages';
 import { Info, KeyRound, Lock, Menu, Save } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -24,8 +23,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Password() {
-    useFlashMessages();
-
     const passwordInput = useRef<HTMLInputElement>(null);
     const currentPasswordInput = useRef<HTMLInputElement>(null);
     const currentPath = window.location.pathname;

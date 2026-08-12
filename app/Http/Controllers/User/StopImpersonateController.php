@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Services\ImpersonationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 final class StopImpersonateController extends Controller
 {
@@ -24,8 +25,9 @@ final class StopImpersonateController extends Controller
 
         $originalUser = $this->impersonationService->stop();
 
+        Inertia::flash('success', "Você voltou para sua conta original: {$originalUser->name}");
+
         return redirect()
-            ->route('users.index')
-            ->with('success', "Você voltou para sua conta original: {$originalUser->name}");
+            ->route('users.index');
     }
 }

@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Inertia\Inertia;
 
 final class RevokeRoleController extends Controller
 {
@@ -95,6 +96,10 @@ final class RevokeRoleController extends Controller
         // Dispara evento
         Broadcast::event(new RoleUserUpdatedEvent($user));
 
-        return redirect()->back()->with(['success' => 'Cargo removido com sucesso!', 'role' => $user->role?->name]);
+        // A chave 'role' que viajava junto aqui era dado morto: o share() antigo
+        // só publicava success|error|warning|info, então nada no front a lia.
+        Inertia::flash('success', 'Cargo removido com sucesso!');
+
+        return redirect()->back();
     }
 }

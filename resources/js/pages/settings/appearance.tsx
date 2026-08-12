@@ -9,7 +9,6 @@ import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
-import { useFlashMessages } from '@/hooks/use-flash-messages';
 import AppLayout from '@/layouts/app-layout';
 import { Info, Menu, Palette } from 'lucide-react';
 
@@ -21,8 +20,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function Appearance() {
-    useFlashMessages();
-
     const currentPath = window.location.pathname;
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [showInfoDialog, setShowInfoDialog] = useState(false);

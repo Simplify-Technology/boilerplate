@@ -4,6 +4,7 @@ declare(strict_types = 1);
 
 use App\Enum\Permissions;
 use App\Enum\Roles;
+use Inertia\Inertia;
 
 /*
  * Guardas de copy. Não testam comportamento — testam que o painel volta a falar
@@ -87,7 +88,7 @@ test('starting impersonation says it in Portuguese', function(): void {
     $this->post(route('users.impersonate', $target))
         ->assertRedirect(route('dashboard'));
 
-    expect(session('success'))
+    expect(Inertia::getFlashed()['success'] ?? '')
         ->not->toContain('impersonando')
         ->toContain('usando o painel como');
 });

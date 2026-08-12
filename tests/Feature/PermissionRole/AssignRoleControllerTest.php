@@ -13,7 +13,7 @@ it('assigns a role to a user and redirects back with a success flash', function(
         'role' => Roles::MANAGER->value,
     ])
         ->assertRedirect()
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $managerRoleId = Role::query()->where('name', Roles::MANAGER->value)->firstOrFail()->id;
 

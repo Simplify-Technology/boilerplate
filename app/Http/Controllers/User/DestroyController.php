@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Inertia\Inertia;
 
 class DestroyController extends Controller
 {
@@ -15,8 +16,9 @@ class DestroyController extends Controller
 
         $user->delete();
 
+        Inertia::flash('success', 'Usuário excluído com sucesso!');
+
         return redirect()
-            ->route('users.index')
-            ->with('success', 'Usuário excluído com sucesso!');
+            ->route('users.index');
     }
 }

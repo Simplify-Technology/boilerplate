@@ -10,7 +10,7 @@ it('deletes a user and redirects to the index with a success flash', function():
 
     $this->delete(route('users.destroy', $target))
         ->assertRedirect(route('users.index'))
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $this->assertDatabaseMissing('users', ['id' => $target->id]);
 });

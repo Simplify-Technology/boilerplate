@@ -10,6 +10,12 @@ use Inertia\Testing\AssertableInertia as Assert;
  * `HandleInertiaRequests::share()` é a fonte única das props globais, e o que
  * sai daqui viaja em TODA navegação do painel. O espelho deste shape são os
  * tipos em resources/js/types — os dois mudam juntos.
+ *
+ * `flash` NÃO está aqui de propósito: desde a migração para o flash nativo do
+ * Inertia 3 ele viaja no objeto de página, irmão de `component`/`props`/`url`,
+ * e não entre as props. Se ele reaparecer neste contrato, alguém republicou
+ * flash como prop — e trouxe de volta o bug de partial reload que consumia a
+ * mensagem sem exibir. Ver tests/Feature/FlashMessagesTest.php.
  */
 
 it('trava o conjunto inteiro de props globais que toda página recebe', function(): void {
@@ -44,11 +50,6 @@ it('trava o conjunto inteiro de props globais que toda página recebe', function
                     ->has('active')
                     ->has('originalUserName')
                     ->has('impersonatedUserName')))
-            ->has('flash', fn(Assert $flash) => $flash
-                ->has('success')
-                ->has('error')
-                ->has('warning')
-                ->has('info'))
             ->has('ziggy')
             ->interacted());
 });

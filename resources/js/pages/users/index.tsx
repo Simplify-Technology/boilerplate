@@ -10,7 +10,6 @@ import { Dialog, DialogTrigger } from '@/components/ui/dialog';
 import { FilterPanel } from '@/components/users/filter-panel';
 import { UserInfoDialog } from '@/components/users/user-info-dialog';
 import { UserTableRow } from '@/components/users/user-table-row';
-import { useFlashMessages } from '@/hooks/use-flash-messages';
 import { useUserActions } from '@/hooks/users/use-user-actions';
 import { useUserFilters } from '@/hooks/users/use-user-filters';
 import { useUserPermissions } from '@/hooks/users/use-user-permissions';
@@ -27,8 +26,6 @@ import { useCallback, useMemo, useState } from 'react';
 const breadcrumbs: BreadcrumbItem[] = [{ title: 'Usuários', href: '/users' }];
 
 export default function Index({ users, roles, assignableRoles = [], filters = {}, pagination }: UsersPageProps) {
-    useFlashMessages();
-
     // Local state for modals and processing
     const [showFilters, setShowFilters] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);

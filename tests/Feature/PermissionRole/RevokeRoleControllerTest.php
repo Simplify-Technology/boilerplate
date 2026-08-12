@@ -11,7 +11,7 @@ it('revokes the role of a user, demoting them to visitor', function(): void {
 
     $this->delete(route('user.revoke-role', $target))
         ->assertRedirect()
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $visitorRoleId = Role::query()->where('name', Roles::VISITOR->value)->firstOrFail()->id;
 

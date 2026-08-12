@@ -11,7 +11,7 @@ it('deactivates an active user and redirects back with a success flash', functio
     $this->from(route('users.index'))
         ->patch(route('users.toggle-active', $target))
         ->assertRedirect(route('users.index'))
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $this->assertDatabaseHas('users', ['id' => $target->id, 'is_active' => false]);
 });

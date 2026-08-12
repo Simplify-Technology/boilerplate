@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Services\ImpersonationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
+use Inertia\Inertia;
 
 final class UpdateController extends Controller
 {
@@ -53,7 +54,9 @@ final class UpdateController extends Controller
                 }
             });
 
-        return redirect()->back()->with('success', "Permissões de {$role->label} atualizadas com sucesso!");
+        Inertia::flash('success', "Permissões de {$role->label} atualizadas com sucesso!");
+
+        return redirect()->back();
     }
 
     /**

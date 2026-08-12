@@ -31,7 +31,7 @@ it('still lets a role be revoked, which is the trap', function(): void {
 
     $this->delete(route('user.revoke-role', $target))
         ->assertRedirect()
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $visitorRoleId = Role::query()->where('name', Roles::VISITOR->value)->firstOrFail()->id;
 
@@ -46,7 +46,7 @@ it('lets a manager revoke too, the case that would break first', function(): voi
 
     $this->delete(route('user.revoke-role', $target))
         ->assertRedirect()
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $visitorRoleId = Role::query()->where('name', Roles::VISITOR->value)->firstOrFail()->id;
 
@@ -61,7 +61,7 @@ it('keeps accepting visitor when it is posted straight to assign-role', function
 
     $this->post(route('user.assign-role', $target), ['role' => Roles::VISITOR->value])
         ->assertRedirect()
-        ->assertSessionHas('success');
+        ->assertInertiaFlash('success');
 
     $visitorRoleId = Role::query()->where('name', Roles::VISITOR->value)->firstOrFail()->id;
 

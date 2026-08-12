@@ -65,7 +65,8 @@ return Application::configure(basePath: dirname(__DIR__))
                     $response = response()->view('errors.500', status: $status);
                 }
             } elseif ($status === 419) {
-                $response = back()->with('error', 'Sua sessão expirou. Por favor, tente novamente.');
+                Inertia::flash('error', 'Sua sessão expirou. Por favor, tente novamente.');
+                $response = back();
             }
 
             return SecurityHeaders::stamp($response);

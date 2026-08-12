@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\PermissionManagementService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Gate;
+use Inertia\Inertia;
 
 final class RevokePermissionController extends Controller
 {
@@ -29,6 +30,8 @@ final class RevokePermissionController extends Controller
             permissionName: $permissionModel->name
         );
 
-        return back()->with('success', 'Permissão revogada com sucesso.');
+        Inertia::flash('success', 'Permissão revogada com sucesso.');
+
+        return back();
     }
 }
