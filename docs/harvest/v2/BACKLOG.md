@@ -209,7 +209,7 @@ Não vieram de projeto-fonte, então não têm origem `projeto/path@SHA`. Ficam 
 - A tela do sync **não tem** o campo `can_impersonate_any`; ele só entra pelo caminho avulso (`GrantPermissionRequest`). Ou seja: pelo painel não existe caminho de volta — só re-conceder pelo grant.
 - Conserto candidato: `syncWithPivotValues` preservando o `meta` das linhas que sobrevivem, ou expor a opção na tela do sync. Fatia própria.
 
-### C4 · `POST confirm-password` aceita chute de senha sem limite nenhum · P · risco **médio** · **medido em 2026-08-12**
+### ~~C4~~ ✅ APLICADO · PR [#88](https://github.com/Simplify-Technology/boilerplate/pull/88) · `POST confirm-password` aceita chute de senha sem limite nenhum · P · risco **médio** · **medido em 2026-08-12**
 
 - Verificado durante a fatia #84: `routes/auth.php:58` registra a rota **sem throttle**, e `ConfirmablePasswordController::store()` chama `Auth::guard('web')->validate()` **sem limiter próprio** — ao contrário do `LoginRequest`, que tem o dele. Não há teto de tentativa em lugar nenhum do caminho.
 - **Consequência:** sessão sequestrada (ou máquina destravada) chuta a senha do dono à vontade para abrir as áreas protegidas por `password.confirm`. O login está defendido; a re-confirmação, não — e é o mesmo segredo.
