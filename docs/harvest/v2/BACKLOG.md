@@ -636,11 +636,11 @@ completos em `spinmax.md § Dimensão 1`.
 
 - Sobrevive **parcialmente**: a lente mediu que a proposta como escrita é regressão. Escopo reduzido — casar por substring e somar ramo `Arrayable`, sem trocar a fiação (que é `[atual]`).
 
-### ~~S4~~ ✅ APLICADO · PR [#84](https://github.com/Simplify-Technology/boilerplate/pull/84) · `[guard-rail]` o lockout do `POST login` não tem teste em nenhum dos dois repositórios · P · risco baixo
+### ~~S4~~ ✅ APLICADO E MESCLADO · PR [#84](https://github.com/Simplify-Technology/boilerplate/pull/84) · `[guard-rail]` o lockout do `POST login` não tem teste em nenhum dos dois repositórios · P · risco baixo
 
 - Único candidato da célula que sobreviveu **intacto** às três lentes. O limite mora num FormRequest e ninguém prova que morde.
 
-### S5 · `[guard-rail]` o teste do `EnsureUserIsActive` não atravessa arquivo de rota · P · risco baixo
+### ~~S5~~ ✅ APLICADO · PR [#86](https://github.com/Simplify-Technology/boilerplate/pull/86) · `[guard-rail]` o teste do `EnsureUserIsActive` não atravessa arquivo de rota · P · risco baixo
 
 - O boilerplate é **superior** aqui (middleware no `web(append:)`, cobre os 3 arquivos de rota; o spinmax o pendura no grupo de `web.php` e deixa `settings/*` e `auth` descobertos). O guard-rail é contra a regressão: `EnsureUserIsActiveTest` só exercita `/dashboard`, então mover o middleware para o grupo — o jeito "natural" de escrever — mantém o teste verde e reabre o buraco do spinmax. Falta um caso em `route('profile.edit')`.
 

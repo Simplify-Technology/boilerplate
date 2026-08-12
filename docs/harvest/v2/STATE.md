@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **15 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1) · **2 PRs abertos** (#82 teto de concessão, #84 lockout do login)
+- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **16 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S4) · **2 PRs abertos** (#82 teto de concessão, #86 alcance do usuário inativo)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 9/70 células (13%) · BACKLOG: **19 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 9/70 células (13%) · BACKLOG: **20 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -140,7 +140,8 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **F23** — fix: `<button>` sem `type` + regra `react/button-has-type` | [#77](https://github.com/Simplify-Technology/boilerplate/issues/77) | `77-harvest-v2-button-type` | ✅ lint como gate + 2 mutações | ✅ ambos exit 0 (364/1896 · 30/204) | [#78](https://github.com/Simplify-Technology/boilerplate/pull/78) | ✅ **MESCLADO** 2026-08-12 |
 | **S1** — fix(seguranca): teto de PII no `UserResource` | [#79](https://github.com/Simplify-Technology/boilerplate/issues/79) | `79-harvest-v2-teto-pii-resource` | ✅ 10 testes + 4 mutações | ✅ ambos exit 0 (374/1931 · 30/204) | [#80](https://github.com/Simplify-Technology/boilerplate/pull/80) | ✅ **MESCLADO** 2026-08-12 |
 | **S2** — fix(rbac): teto de concessão nos 3 caminhos de permissão | [#81](https://github.com/Simplify-Technology/boilerplate/issues/81) | `81-harvest-v2-teto-concessao-permissao` | ✅ 12 testes + **7 mutações** | ✅ ambos exit 0 (395/1977 · 30/204) | [#82](https://github.com/Simplify-Technology/boilerplate/pull/82) | **aguardando merge do dono** |
-| **S4** — test(auth): prova que o lockout do login morde | [#83](https://github.com/Simplify-Technology/boilerplate/issues/83) | `83-harvest-v2-lockout-login` | ✅ 7 testes + **7 mutações** | ✅ ambos exit 0 (390/1969) | [#84](https://github.com/Simplify-Technology/boilerplate/pull/84) | **aguardando merge do dono** |
+| **S4** — test(auth): prova que o lockout do login morde | [#83](https://github.com/Simplify-Technology/boilerplate/issues/83) | `83-harvest-v2-lockout-login` | ✅ 7 testes + **7 mutações** | ✅ ambos exit 0 (390/1969) | [#84](https://github.com/Simplify-Technology/boilerplate/pull/84) | ✅ **MESCLADO** 2026-08-12 |
+| **S5** — test(auth): alcance do `EnsureUserIsActive` | [#85](https://github.com/Simplify-Technology/boilerplate/issues/85) | `85-harvest-v2-alcance-usuario-inativo` | ✅ 4 testes + 3 mutações | ✅ ambos exit 0 (394/1984) | [#86](https://github.com/Simplify-Technology/boilerplate/pull/86) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -485,7 +486,27 @@ Generalização para o resto da rodada: **teste de teto com duas condições (pe
 
 **Achado colateral registrado (C4):** `POST confirm-password` não tem throttle de rota **nem** limiter próprio no controller — sessão sequestrada chuta a senha do dono à vontade para abrir as áreas de `password.confirm`. É o mesmo segredo do login, defendido de um lado e não do outro. Fatia própria.
 
+### S5 — o que entrou (2026-08-12)
+
+4 casos novos em `tests/Feature/EnsureUserIsActiveTest.php` + correção de fato em `.ai/rules/middleware.md`. Zero linha de app. PR [#86](https://github.com/Simplify-Technology/boilerplate/pull/86).
+
+| Mutação | Resultado |
+| ------- | --------- |
+| Fora do grupo `web`, nada no lugar | ⨯ 5 falham |
+| Só no grupo autenticado de `routes/web.php` (**a forma do spinmax**) | ⨯ 4 falham |
+| Declarado nos **três** arquivos de rota, fora do grupo | ⨯ **exatamente 2** (rota sem `auth` + estrutural) |
+
+**O gradiente é o achado.** As três mutações matam quantidades diferentes, e a terceira é a que justifica os dois últimos casos: declarar o middleware nos três arquivos deixa verdes os três testes "por arquivo" e já quebrou a promessa — o próximo `routes/*.php` nasce descoberto. Guard-rail de ALCANCE precisa de um caso que não seja "mais uma rota"; precisa de um caso sobre a FORMA da declaração.
+
+**⚠️ Regra nova, e é dívida que a rodada mesma criou:** `.ai/rules/middleware.md` ainda descrevia `flash` como prop compartilhada lida com `session()->pull()` — contrato desfeito pela fatia E2+E13 (PR #68, mesclada em 2026-08-11). Aquela fatia atualizou `controllers.md` e `js.md` e deixou `middleware.md` afirmando algo falso por 4 fatias. **Fatia que muda um contrato tem de varrer `.ai/rules` INTEIRO por menções ao contrato antigo** (`grep -rn "<termo>" .ai/rules/`), não só os arquivos que ela edita. Corrigido nesta fatia, com a lista real do `share()` (`name`, `quote`, `auth`, `ziggy`).
+
+**Segunda correção, minha, dentro da própria fatia:** a primeira versão da regra nova citava `tests/Feature/Inertia/SharedPropsContractTest.php`, caminho que não existe — o arquivo é `tests/Feature/SharedPropsTest.php`. Peguei antes do commit. Ponteiro para arquivo em regra é afirmação verificável como qualquer outra: `ls` antes de escrever.
+
 ## Próxima unidade
+
+**Reconciliação da 6ª invocação (2026-08-12):** **#84 (S4) mesclado**; **#82 (S2) segue aberto**. `main` em `c599f05`. Os 7 SHAs das fontes seguem idênticos aos pinados — **zero drift** desde a abertura da rodada.
+
+~~**S5**~~ ✅ aplicado — PR [#86](https://github.com/Simplify-Technology/boilerplate/pull/86) aberto. **Com isso a célula 1 do spinmax não tem mais fatia P pronta**: S1, S2, S4 e S5 saíram; sobra S3 (M, risco médio) e os S7–S13, todos com decisão do dono ou escopo grande.
 
 **Reconciliação da 5ª invocação (2026-08-12):** os DOIS que o STATE dava como abertos — **#76 (F42+F35)** e **#80 (S1)** — já estavam **mesclados**. Corrigido acima antes de executar qualquer unidade. `main` local em `a3cc87e`. Os 7 SHAs das fontes seguem idênticos aos pinados: **zero drift na rodada até agora**. Nota operacional: `gh issue create` foi bloqueado pelo classificador de permissões na primeira tentativa desta sessão e passou na segunda, a pedido do dono — se repetir, é a mesma coisa.
 
@@ -495,10 +516,9 @@ Generalização para o resto da rodada: **teste de teto com duas condições (pe
 
 **Fila de fatias prontas do BACKLOG (prioridade 1 do protocolo), em ordem sugerida:**
 
-1. **S5** — `[guard-rail]` o teste do `EnsureUserIsActive` não atravessa arquivo de rota. P, risco baixo; o boilerplate é superior aqui e o guard-rail é contra a regressão que reabriria o buraco do spinmax. Fecha o trio de segurança do spinmax e é a menor da fila.
-2. **C4** — `POST confirm-password` sem limite nenhum (achado interno desta invocação). P/M, risco médio; é a única lacuna de segurança VIVA conhecida no BACKLOG agora que S1/S2/S4 saíram.
-3. **S3** — `[guard-rail]` `PiiScrubber` casa chave por igualdade exata e não desce em objeto. M, risco médio, escopo já reduzido pela lente (substring + ramo `Arrayable`, sem trocar a fiação).
-4. Fila de UX/UI pareada da dimensão 5+6: **E6+F-input-error** · **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
+1. **C4** — `POST confirm-password` sem limite nenhum (achado interno desta invocação). P/M, risco médio; é a única lacuna de segurança VIVA conhecida no BACKLOG agora que S1/S2/S4 saíram.
+2. **S3** — `[guard-rail]` `PiiScrubber` casa chave por igualdade exata e não desce em objeto. M, risco médio, escopo já reduzido pela lente (substring + ramo `Arrayable`, sem trocar a fiação).
+3. Fila de UX/UI pareada da dimensão 5+6: **E6+F-input-error** · **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
 
 **Quando a fila de P do spinmax secar, a unidade mais rentável volta a ser varredura** — a matriz está em 9/70 e cinco projetos ainda não têm inventário. Candidato natural: **célula 0 (inventário) do cuidari ou do ctvitrine**, os dois L13 + Inertia 3 em produção, que são exatamente os que destravam o F3 (a decisão fundacional de tokens de estado, represada desde 2026-08-12).
 
