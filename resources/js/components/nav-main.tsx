@@ -52,16 +52,26 @@ export function NavMain({ items = [] }: { items: NavItem[] }) {
         <SidebarGroup className="px-2 py-0">
             <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
             <SidebarMenu>
-                {filteredItems.map((item) => (
-                    <SidebarMenuItem key={item.title}>
-                        <SidebarMenuButton asChild isActive={isItemActive(item)}>
-                            <Link href={item.url} prefetch>
-                                {item.icon && <item.icon />}
-                                <span>{item.title}</span>
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                ))}
+                {filteredItems.map((item) => {
+                    const active = isItemActive(item);
+
+                    return (
+                        <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton asChild isActive={active}>
+                                {/*
+                                 * `isActive` só decide a cor. Quem não enxerga a tela
+                                 * depende do `aria-current` para saber onde está — e ele
+                                 * fica AUSENTE quando o item não é o atual: `aria-current="false"`
+                                 * é ruído que alguns leitores anunciam mesmo assim.
+                                 */}
+                                <Link href={item.url} prefetch aria-current={active ? 'page' : undefined}>
+                                    {item.icon && <item.icon />}
+                                    <span>{item.title}</span>
+                                </Link>
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    );
+                })}
             </SidebarMenu>
         </SidebarGroup>
     );
