@@ -26,6 +26,12 @@ Iniciar e encerrar impersonation passa por startImpersonation/stopImpersonation 
 ## Textos de UI em português hardcoded
 O frontend é monolíngue pt_BR: escreva textos de UI (páginas React, labels, mensagens) diretamente em português, sem biblioteca de i18n nem chaves JSON.
 
+## Erro de campo é anunciado por role="alert", nunca por aria-live
+Mensagem de erro de formulário só existe DEPOIS da falha, e `aria-live` num nó recém-montado não anuncia — a região precisa preexistir à mudança. Use `InputError` (que já traz `role="alert"`, `data-slot="input-error"` e guarda de string em branco) e não reescreva o `<p>` na tela. Não troque o `role="alert"` por `aria-live` "para ficar menos intrusivo": isso devolve o silêncio. Região polite persistente de nível de formulário é uma evolução separada — ela precisa preexistir de verdade, com slot sempre renderizado, e tem consequências de layout (o gap do `flex-col`) e de `aria-describedby` a decidir antes.
+
+## Wrapper de primitivo FUNDE o ARIA que vem em props, não redeclara
+Componente que faz `{...props}` e depois escreve `aria-*` próprio sempre ganha do que veio de fora — foi assim que o `DateInput` apagava o `aria-invalid` que o `FormField` injeta por `cloneElement`. Mover a declaração para antes do spread NÃO resolve e cria o bug espelhado: o `cloneElement` grava `'aria-invalid': undefined` como chave própria quando não há erro, e esse `undefined` apaga o valor do wrapper. A única forma correta é a fusão, com o de fora tendo precedência e o próprio como fallback: `aria-invalid={props['aria-invalid'] ?? invalid ?? undefined}`. Vale para todo `aria-*` e para `role` em wrapper de primitivo.
+
 ## Vazio-por-filtro e vazio-inicial são estados diferentes, com saídas diferentes
 Listagem vazia porque o filtro não casou nada pede "limpar filtros"; listagem vazia porque não há registro nenhum pede o CTA de criar o primeiro. Use `EmptyState` com a prop `action` e escolha a saída pela condição — não basta trocar o TEXTO e deixar a pessoa sem caminho, que era o caso de `pages/users/index.tsx` ("Limpe os filtros ou tente outro termo" sem botão de limpar, com o `clearFilters` do `use-user-filters` já disponível na mesma tela). Todo estado vazio de listagem sai com uma ação.
 

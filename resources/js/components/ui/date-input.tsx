@@ -45,7 +45,15 @@ export function DateInput({ value, onChange, min, max, invalid, clearable = fals
                 value={value ?? ''}
                 min={min}
                 max={max}
-                aria-invalid={invalid || undefined}
+                // FUSÃO, não redeclaração. O `FormField` injeta `aria-invalid`
+                // por `cloneElement`, e este atributo vinha DEPOIS do
+                // `{...props}` — o próprio ganhava sempre, e o campo dentro de
+                // um formulário com erro ficava válido para o leitor de tela.
+                // Mover a linha para antes do spread reintroduz o bug
+                // espelhado: o `cloneElement` grava `'aria-invalid': undefined`
+                // como chave PRÓPRIA quando não há erro, e esse `undefined`
+                // apagaria o `invalid` daqui.
+                aria-invalid={props['aria-invalid'] ?? invalid ?? undefined}
                 onChange={(event) => onChange(event.target.value || null)}
                 className={cn(
                     // O ícone de calendário do WebKit é ESTILIZADO, não escondido:
