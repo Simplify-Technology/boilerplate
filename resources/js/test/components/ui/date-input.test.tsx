@@ -60,4 +60,34 @@ describe('DateInput', () => {
 
         expect(screen.getByLabelText('Data')).toHaveAttribute('aria-invalid', 'true');
     });
+
+    /*
+     * O `FormField` injeta `aria-invalid` no filho por `cloneElement`, e o
+     * `DateInput` redeclarava o atributo DEPOIS do `{...props}` — o próprio
+     * ganhava sempre, e o campo dentro de um formulário com erro ficava válido
+     * aos olhos do leitor de tela.
+     *
+     * A correção óbvia (mover a linha para antes do spread) reintroduz o bug
+     * espelhado: o `cloneElement` grava `'aria-invalid': undefined` como chave
+     * PRÓPRIA quando não há erro, e esse `undefined` apagaria o `invalid` do
+     * próprio componente. Só a fusão atende aos dois casos, e é por isso que
+     * existem os dois testes abaixo.
+     */
+    it('honours an aria-invalid coming from a parent wrapper', () => {
+        render(<DateInput aria-label="Data" value={null} onChange={vi.fn()} aria-invalid />);
+
+        expect(screen.getByLabelText('Data')).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('keeps its own invalid when the parent passes aria-invalid undefined', () => {
+        render(<DateInput aria-label="Data" value={null} onChange={vi.fn()} invalid aria-invalid={undefined} />);
+
+        expect(screen.getByLabelText('Data')).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    it('stays valid when neither side marks it', () => {
+        render(<DateInput aria-label="Data" value={null} onChange={vi.fn()} />);
+
+        expect(screen.getByLabelText('Data')).not.toHaveAttribute('aria-invalid');
+    });
 });
