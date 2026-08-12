@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **23 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30) · **3 PRs abertos** (#98 navegação/landmark · #100 poda + personificação · #102 busca anunciada)
+- **Situação:** Fase 0 concluída · varredura em andamento (10/70 células) · **23 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30) · **3 PRs abertos** (#98 navegação/landmark · #100 poda + personificação · #102 busca anunciada)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -37,6 +37,13 @@ Toda evidência/veredito desta rodada refere-se ao SHA abaixo. Commits posterior
 - **⚠️ Correção de 2026-08-11 (2ª invocação): a checagem que estava escrita aqui está errada e dá falso alarme.** `git diff origin/main -- ':!docs'` **não** volta mais vazio — não porque o branch de estado toque código, mas porque ele nasceu de `c6982fa` e a `main` já andou 5 fatias à frente; o diff mostra a `main` nova contra o snapshot velho. A checagem correta é contra a merge-base: `git diff $(git merge-base origin/main HEAD)..HEAD --stat -- ':!docs'` — **esta** volta vazia. Não rebase o branch de estado só para satisfazer a checagem antiga.
 - **Consequência para as fatias de código desta rodada:** worktree de fatia precisa de `corepack pnpm install` **antes do primeiro commit**, senão os gates são silenciosamente pulados e o Guardrail 7 vira letra morta. Não é caso de `SKIP_GIT_HOOKS=1` — é o oposto: o skip aqui é o default acidental.
 - Segunda pegadinha do mesmo worktree: `.mise.toml` nasce **não confiado** (`mise ERROR ... are not trusted`), o que quebra qualquer comando antes de chegar ao hook. Resolver com `mise trust` no worktree novo.
+- **⚠️ QUARTA PEGADINHA — TRÊS baselines do lado ALVO, e confundir dois quaisquer inverte a conclusão.** Apanhada na 9ª invocação (2026-08-12) no inventário do cuidari, em duas camadas, e a segunda é a interessante.
+  - **Camada 1 (o que o crítico acusou):** o worktree principal do boilerplate fica com a **branch da fatia corrente** em checkout. Frente que compara lendo o disco (`Read`, `cat`, `find`, `grep`) compara contra código **ainda não mesclado**.
+  - **Camada 2 (o que o crítico ERROU, e é a lição maior):** ele "corrigiu" 12 números medindo contra **`main` local**, que estava 40 arquivos / +1.794 linhas atrás de `origin/main`. Como a branch de fatia **nasce de `origin/main`**, para tudo já mesclado as frentes estavam certas e o crítico não. **11 das 12 correções dele estão erradas** — `.ai/rules` 23 (não 22), `tests/*.php` 66 (não 63), `RateLimiter::for` 4 (não 3), `throttle` em `routes/auth.php` 6 (não 5), `HasRolesAndPermissions` 260 LOC (não 234), `permissionsBeyondOwn()` presente (não "só na branch").
+  - **Inflação real, e só ela:** teste de front, 33 arquivos → 34 e 204 casos → 217, diferença que é exatamente o `toast-config.test.ts` + 13 casos da fatia #102. Nenhuma outra métrica contaminada.
+  - **Regra para os 4 inventários restantes (sorteiopix, ctjuris, ctvitrine, tej):** comparação com o boilerplate sai de `git -C <boilerplate> ls-tree -r origin/main --name-only` e `git -C <boilerplate> show origin/main:<caminho>` — **`origin/main`, com o prefixo `origin/`, e nunca `main` seco nem o disco**. Isto entra no prompt de TODA frente E no do crítico; o inventário do cuidari mostra que frente compara mesmo quando o escopo não pede, e que o crítico erra do mesmo jeito se ninguém disser qual é o ref.
+  - **Lição de método:** verificador com o baseline errado é mais caro que verificador nenhum — ele produz correção com aparência de autoridade. O que salvou aqui foi eu re-executar as contagens dele. **Toda tabela de "números derrubados" que um crítico produzir precisa ter o ref conferido antes de entrar em doc.**
+  - Isto **não é** o mesmo problema do drift do ctvitrine (lá é a fonte que anda; aqui é o alvo). Os dois coexistem e precisam de tratamento separado.
 - **Terceira pegadinha, apanhada na 8ª invocação (2026-08-12): agora o hook EXISTE no worktree de estado e falha por ambiente.** Em algum ponto o `.husky/_` passou a existir ali, então o `pre-push` dispara — e morre em `composer ci:check` com `Rode: cp .env.example .env && php artisan key:generate`, porque o worktree de estado **não tem `.env`**. É o caso de ambiente do Guardrail 7, não gate vermelho. Procedimento usado e a repetir: (1) provar que o branch de estado não toca código com `git diff $(git merge-base origin/main HEAD)..HEAD --stat -- ':!docs'` **vazio**; (2) `SKIP_GIT_HOOKS=1 git push` só naquele push; (3) registrar aqui. **Não** criar `.env` no worktree de estado só para satisfazer o hook — o branch é markdown puro por construção, e um `.env` ali é superfície de segredo sem motivo. Pushes com a válvula: 2026-08-12 (commits de E22+E24 e de E27+E29).
 
 ### Ferramentas
@@ -61,10 +68,10 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 3 | sorteiopix | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 4 | ctjuris | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 5 | ctvitrine | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 6 | cuidari | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 9/70 células (13%) · BACKLOG: **34 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 10/70 células (14%) · BACKLOG: **34 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -647,6 +654,19 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 
 ## Próxima unidade
 
+### Inventário do cuidari — célula 0 ✅ (2026-08-12)
+
+`docs/harvest/v2/cuidari.md` (330 KB, 3.437 linhas). Workflow de 9 agentes em **duas passadas** — 2.05M tokens de subagente, 808 chamadas de ferramenta, ~53 min. Read-only integral; nenhum `.env` aberto; varredura de segredo/PII limpa antes do commit.
+
+**A 1ª passada perdeu a frente 3 (camada de domínio) por erro de conexão da API, e o crítico apanhou sozinho.** Ele mediu o buraco — `app/Services` 38 arquivos / 6.101 LOC (mais que os controllers, que foram enumerados), `app/DataTransferObjects` 25 com **zero menções**, `app/Http/Resources` 30 com 29 não citados, `app/Rules` 3, e as 100 abilities das 16 policies contadas mas nunca lidas: ~8.700 LOC. A frente foi refeita com escopo endurecido e o crítico rodou a 2ª passada sobre o conjunto completo. **Isto valida o crítico como não-opcional pela segunda rodada seguida — e desta vez ele pegou uma falha de INFRAESTRUTURA, não de leitura.**
+
+**Duas lições de método, ambas caras:**
+
+1. **Frente que morre por erro de API não avisa ninguém.** O `parallel()` resolve a thunk como `null` e o workflow segue com 7/8. Sem crítico, a célula teria sido declarada ✅ com a camada de domínio inteira faltando — e as dimensões 1, 2 e 3 do cuidari julgariam RBAC, contrato de serialização e regra de negócio com metade da evidência. Para os 4 inventários restantes: **conferir `frentes_ok === 8` antes de montar o documento**, e refazer a frente perdida via `resumeFromRunId` (o cache replaya as 7 boas de graça).
+2. **Verificador com baseline errado é pior que verificador nenhum** — ver a QUARTA PEGADINHA na seção de traps. O crítico produziu uma tabela de 12 "números derrubados" com aparência de autoridade, e 11 estavam errados. O que salvou foi re-executar as contagens dele antes de gravar. O banner de correções do `cuidari.md` é o **meu**, não o dele; o dele fica preservado no documento com a revogação explícita em cima.
+
+**Achado que atravessa a fronteira e vale para o boilerplate também:** `Password::defaults()` é chamado em 5 lugares do cuidari e **não é definido em lugar nenhum** — política de senha no default do Laravel (`min:8`, sem `uncompromised`) num app com CPF, RG e prontuário. Confirmar se o boilerplate tem o mesmo buraco é candidato natural da dimensão 1.
+
 **Reconciliação da 9ª invocação (2026-08-12):** `main` **inalterada** em `9650ea5`; #98 e #100 seguem abertos e MERGEABLE — primeira invocação da rodada que entra com PR do dono ainda por mesclar. **Segundo drift do ctvitrine:** `89251fc` → `bda5e6b`. O pin segue `53d7d9a`; a instrução de ler por `git show` continua valendo e ficou mais necessária.
 
 ~~**E18+E23+E25**~~ ✅ aplicado — PR [#102](https://github.com/Simplify-Technology/boilerplate/pull/102) aberto. A região viva desceu da página para o `SearchBar` e passou a anunciar o **desfecho** (inclusive "nenhum resultado", o caso em que o silêncio confunde mais); o `<div role="button">` da lupa perdeu o papel falso; erro e aviso viraram `assertive` no `ariaProps`, sucesso e info ficaram `polite` com teste travando os dois sentidos. 17 testes, 6 mutações.
@@ -694,7 +714,28 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 
 1. ~~**E27+E29**~~ ✅ · **E18+E23+E25** (`search-bar.tsx` + `toast-config.ts`; o E23 ficou mais barato agora que o `app-header` morto saiu do caminho) · **E12+E21** (a metade visual espera o F2 — ou entra sem ela e o arquivo é tocado duas vezes) · **F32** (poda barata) · **E28** (`loading`/`aria-busy` no Button — M, e **agora destravado**: o mock de `ResizeObserver` que impedia render de flutuante do Radix foi corrigido na fatia E27+E29) · **F7** (cor de marca — decisão do dono).
 
-**Próxima unidade sugerida:** **E18+E23+E25**. Se a invocação puder ser longa, a alternativa mais rentável é **célula 0 (inventário) do cuidari** — a matriz está em 9/70, cinco projetos não têm inventário, e cuidari + ctvitrine são exatamente o que destrava o F3/F2 (represado desde 2026-08-12). Para o ctvitrine, lembrar do drift: ler por `git show 53d7d9a:<arquivo>`.
+**Próxima unidade sugerida:** **célula 0 (inventário) do ctvitrine** — é o que falta para destravar o F3/F2 (com o cuidari já feito, falta o segundo dos dois L13 + Inertia 3 em produção que a pergunta de abertura da dimensão 6 exige). Atenção dupla nesse: (a) **drift da fonte** — ler por `git -C <ctvitrine> show 53d7d9a:<arquivo>` e `ls-tree -r 53d7d9a`, porque a working tree está em `bda5e6b` e suja; (b) **baseline do alvo** — comparar por `git -C <boilerplate> show origin/main:<arquivo>`, nunca pelo disco nem por `main` seco.
+
+Alternativa se a invocação for curta: **dimensão 1 (Segurança) do cuidari**, que agora tem inventário e cujos ponteiros já estão listados abaixo — inclui a regressão de PII no `share()` e o `Auth::attempt` sem `is_active`, os dois com contraparte já resolvida no boilerplate (direção inversa, vira guard-rail).
+
+### Ponteiros do inventário do cuidari (fatos verificados @ `a7a1170`, ainda SEM veredito)
+
+| # | Fato | Dimensão dona |
+| - | ---- | ------------- |
+| 1 | `LoginRequest.php:31` faz `Auth::attempt($this->only('email','password'))` **sem `is_active`** — `toggle-active` desativa a conta e a pessoa continua logando. O boilerplate já injeta `'is_active' => true` (`LoginRequest.php:36`) | 1 — direção inversa, vira guard-rail |
+| 2 | `HandleInertiaRequests.php:43` publica `'user' => $user` (model inteiro) em toda navegação; `$hidden` só cobre `password`/`remember_token`, então `cpf_cnpj`, `phone`, `mobile`, `user_notes` vazam. O boilerplate já corrigiu com `SHARED_USER_FIELDS` | 1 — direção inversa |
+| 3 | `PatientResource.php:21` faz o gating certo de campo sensível por `viewSensitive`, mas o **`UserResource` do próprio cuidari não aplica o padrão** — CPF/telefone/anotações de todo usuário vão para quem abrir `/users` | 1 — ⭐ a TÉCNICA generaliza |
+| 4 | `configRateLimiting()` **não existe** no cuidari; zero `RateLimiter::for`. `forgot-password` e `reset-password` sem throttle nenhum | 1 — guard-rail |
+| 5 | `Password::defaults()` chamado em 5 pontos, **definido em nenhum** — política de senha no default do Laravel num app com prontuário | 1 — checar se vale para o boilerplate |
+| 6 | 16 policies, 100 abilities, **zero com `before()`** — sem bypass de super-admin, decisão de design forte e não documentada | 1/2 — comparar com os gates do boilerplate |
+| 7 | `app/Services/*OptionsProvider.php` — 4 classes (450 LOC) que montam os options de select do Inertia por módulo; o boilerplate não tem equivalente | 2 — ⭐ candidato |
+| 8 | 25 DTOs em `app/DataTransferObjects/`, 22 `readonly`; boilerplate tem **0**. Elo `FormRequest → DTO → Service` completo | 2 — ⭐ candidato forte |
+| 9 | `MoneyCast` + módulo financeiro (Payable/Receivable/Payment/LedgerEntry/caixa) com schema decimal 12,2 | 2 — **tema multi-fonte "dinheiro"** |
+| 10 | 6 `*TenantIsolationTest.php` + suíte `Foundation` de invariantes | 2 — ⭐ padrão de teste |
+| 11 | `barryvdh/laravel-dompdf` é a **única** dependência de produção a mais que o boilerplate (9 × 8); renderiza 3 templates de PDF (596 linhas), incluindo variante de bobina térmica 80mm | 8 — `[dep-nova]` |
+| 12 | `docs/specs/` com 22 specs numeradas; `app/Enum/Module.php` declara 18 módulos e só 4 têm código — **o "enum inflado" é desenho deliberado**, e sem as specs o leitor conclui o contrário | 8 — ⭐ método de doc |
+| 13 | `stubs/` com 54 arquivos versionados, **byte-idênticos** aos do boilerplate | 8 — nada a colher, registrar para não re-investigar |
+| 14 | 22 fontes `.woff2` self-hosted (Aptos, Merriweather Sans, Montserrat) com `@font-face` próprio; o boilerplate abre `preconnect` para `fonts.bunny.net` | 4/6 — candidato (casa com o F38) |
 
 > **Correção de referência:** a fila antiga citava um "F12" que **não existe** no BACKLOG (`grep F12` → 0 ocorrências). A metade visual do E12+E21 é a linha da tabela "Metades visuais", que depende do **F2**.
 
