@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **22 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15) · **1 PR aberto, MERGEABLE** (#96 diálogo controlado)
+- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **23 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30) · **1 PR aberto** (#98 navegação/landmark)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 9/70 células (13%) · BACKLOG: **27 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 9/70 células (13%) · BACKLOG: **29 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -146,7 +146,8 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **S3** — fix(lgpd): objeto e chave composta no scrubber | [#89](https://github.com/Simplify-Technology/boilerplate/issues/89) | `89-harvest-v2-scrubber-objeto-e-chave-composta` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (416/2046) | [#90](https://github.com/Simplify-Technology/boilerplate/pull/90) | ✅ **MESCLADO** 2026-08-12 |
 | **E6+E20** — fix(a11y): erro anunciado + fusão de ARIA | [#91](https://github.com/Simplify-Technology/boilerplate/issues/91) | `91-harvest-v2-erro-anunciado` | ✅ 9 testes + 5 mutações | ✅ ambos exit 0 (31/212) | [#92](https://github.com/Simplify-Technology/boilerplate/pull/92) | ✅ **MESCLADO** 2026-08-12 |
 | **E14+E15** — fix(ux): estado vazio com saída + metade visual | [#93](https://github.com/Simplify-Technology/boilerplate/issues/93) | `93-harvest-v2-vazio-com-saida` | ✅ 7 testes + 5 mutações | ✅ ambos exit 0 (31/211) | [#94](https://github.com/Simplify-Technology/boilerplate/pull/94) | ✅ **MESCLADO** 2026-08-12 |
-| **E30** — fix(ux): diálogo de excluir conta controlado | [#95](https://github.com/Simplify-Technology/boilerplate/issues/95) | `95-harvest-v2-dialogo-controlado` | ✅ 5 testes + 4 mutações | ✅ ambos exit 0 (31/209) | [#96](https://github.com/Simplify-Technology/boilerplate/pull/96) | **aguardando merge do dono** |
+| **E30** — fix(ux): diálogo de excluir conta controlado | [#95](https://github.com/Simplify-Technology/boilerplate/issues/95) | `95-harvest-v2-dialogo-controlado` | ✅ 5 testes + 4 mutações | ✅ ambos exit 0 (31/209) | [#96](https://github.com/Simplify-Technology/boilerplate/pull/96) | ✅ **MESCLADO** 2026-08-12 20:55 |
+| **E22+E24** — fix(a11y): landmark, `aria-current` e skip-link | [#97](https://github.com/Simplify-Technology/boilerplate/issues/97) | `97-harvest-v2-navegacao-landmark` | ✅ 10 testes + **8 mutações** | ✅ ambos exit 0 (416/2046 · 34/234) | [#98](https://github.com/Simplify-Technology/boilerplate/pull/98) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -643,6 +644,19 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 
 ## Próxima unidade
 
+**Reconciliação da 8ª invocação (2026-08-12):** **#96 (E30) mesclado** — o STATE dava como aberto. `main` em `9650ea5`. Zero PR aberto e zero fatia em andamento na entrada, então Prioridade 1 (fatia pronta) foi a unidade correta.
+
+**⚠️ PRIMEIRO DRIFT DA RODADA — ctvitrine.** A fonte saiu de `53d7d9a` para **`89251fc`** (8 commits, 2026-08-12): copy da landing (razão social/CNPJ no rodapé, badge RECOMENDADO, piso de preço anual, claim "Compra segura" removido), compressão de PNGs, um lote de specs e a remoção de um resíduo de imagem. **Nada estrutural** — não toca middleware, config, migrations nem `lang/`. Os outros 6 seguem idênticos aos pinados.
+
+- **O pin NÃO muda:** ctvitrine continua ancorado em `53d7d9a` (regra da Fase 0). Registrado no RELATORIO.md como "evoluiu durante a rodada".
+- **Consequência operacional para quando a célula 0 do ctvitrine rodar:** a working tree do projeto está em `89251fc` **e suja (10 arquivos)** — ler arquivo do disco lá agora entrega código que **não é** o do SHA da rodada, misturado com trabalho não commitado do dono. O inventário do ctvitrine tem de ler por `git -C <path> show 53d7d9a:<arquivo>` e `git -C <path> ls-tree -r 53d7d9a --name-only`, nunca por Read direto. Isso também é o que mantém o Guardrail 2 (read-only) honesto num projeto com dev ativo.
+
+~~**E22+E24**~~ ✅ aplicado — PR [#98](https://github.com/Simplify-Technology/boilerplate/pull/98) aberto. Landmark nomeado no `SidebarContent`, `aria-current="page"` no item atual do `nav-main`, skip-link como primeiro focável apontando para o `<main>` do `SidebarInset`. `ui/sidebar.tsx` **não** foi tocado — landmark e `id` entram por prop do call-site, e o `id` atravessa `AppContent` (`{...props}`) até o primitivo. 10 testes renderizando a árvore real, 8 mutações, regra nova em `.ai/rules/js.md`.
+
+**Fato novo que a fatia produziu, e que vale para as próximas:** o `<main>` real de toda página autenticada é o do `SidebarInset` (`ui/sidebar.tsx:303-315`) — confirmado em runtime pelo teste, não só por leitura. A correção que o BACKLOG já tinha registrado contra o caçador (que mandava ancorar no `<main>` de `app-content.tsx:14`, o ramo morto) estava certa.
+
+**A cadeia F2/F3 continua represada, e agora com medida.** F2 sozinho exporta utilitários que **reprovam em AA no claro** (`text-warning` 2.15:1, `text-info` 2.77:1, `text-success` 3.30:1); ele só sai junto do F3, e o F3 é decisão fundacional de tokens de estado que espera a dimensão 6 do cuidari e do ctvitrine. Não force nenhum dos dois antes disso.
+
 **Reconciliação da 7ª invocação (2026-08-12):** os TRÊS PRs abertos — **#82 (S2)**, **#86 (S5)** e **#88 (C4)** — foram mesclados pelo dono. `main` em `f43478a`. Os 7 SHAs das fontes seguem idênticos aos pinados: **zero drift** desde a abertura da rodada, 7 invocações atrás.
 
 ~~**S3**~~ ✅ aplicado — PR [#90](https://github.com/Simplify-Technology/boilerplate/pull/90) aberto. **Com isso a dimensão 1 do spinmax está esgotada de fatias aplicáveis:** S1, S2, S3, S4, S5 e C4 saíram; o que resta (S6–S13) é multi-fonte represado, `[proposta-adr]`, risco ALTO ou decisão do dono.
@@ -659,7 +673,9 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 
 **Fila de fatias prontas do BACKLOG (prioridade 1 do protocolo), em ordem sugerida:**
 
-1. Fila de UX/UI pareada da dimensão 5+6: **E12+E21+F12** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
+1. **E27+E29** (poda de código morto + o único caminho vivo de personificar, que é mudo e trava o menu aberto) · **E18+E23+E25** · **E12+E21** (a metade visual espera o F2 — ou entra sem ela e o arquivo é tocado duas vezes) · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
+
+> **Correção de referência:** a fila antiga citava um "F12" que **não existe** no BACKLOG (`grep F12` → 0 ocorrências). A metade visual do E12+E21 é a linha da tabela "Metades visuais", que depende do **F2**.
 
 **Quando a fila de P do spinmax secar, a unidade mais rentável volta a ser varredura** — a matriz está em 9/70 e cinco projetos ainda não têm inventário. Candidato natural: **célula 0 (inventário) do cuidari ou do ctvitrine**, os dois L13 + Inertia 3 em produção, que são exatamente os que destravam o F3 (a decisão fundacional de tokens de estado, represada desde 2026-08-12).
 

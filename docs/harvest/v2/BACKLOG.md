@@ -313,7 +313,11 @@ Fonte: ctfinance @ `b8c6d57`, comparado ao boilerplate `main` @ `9814f46`. **28 
   - Alcance real hoje: os 2 usos (`date-range-filter.tsx:87,96`) não passam por `FormField` — nada quebra em tela; é trava para quando o E7 rodar.
 - Não copiar as classes do ctfinance (`text-destructive` + tokens) — dimensão 6.
 
-### E22 + E24 · `[guard-rail]` navegação: sem landmark, sem `aria-current`, sem skip-link · P · risco baixo · **1 PR**
+### E22 + E24 · ✅ **APLICADO** (PR [#98](https://github.com/Simplify-Technology/boilerplate/pull/98), 2026-08-12) · `[guard-rail]` navegação: sem landmark, sem `aria-current`, sem skip-link · P · risco baixo · **1 PR**
+
+- **Confirmado na aplicação:** as duas correções que esta entrada já trazia contra o caçador bateram. O `<main>` real é mesmo o do `SidebarInset` (verificado em runtime, não só por leitura) — ancorar em `app-content.tsx:14` teria produzido skip-link para id inexistente. E o landmark coube no `SidebarContent` sem tocar em `ui/sidebar.tsx`, por prop do call-site.
+- **Decisão nova, não prevista na entrada:** `aria-current` fica **ausente** quando o item não é o atual, em vez de `"false"` — leitor que anuncia o `false` transformaria a correção em ruído. Dois testes de negação travam isso.
+- **Escopo cortado do que a entrada previa:** o `role="button"` redundante de `page-info.tsx:72` **não** entrou (pertence ao E21, que viaja com o `delete-confirmation-dialog.tsx`).
 
 - **E22:** `nav-main.tsx:57-61` — extrair `const active = isItemActive(item)` e passar `aria-current={active ? 'page' : undefined}` no `<Link>` (o `asChild`/Slot cai no `<a>`); `app-sidebar.tsx:47` ganha `role="navigation"` + `aria-label`. **Não tocar em `ui/sidebar.tsx`** (código shadcn, tem de continuar rastreável ao upstream).
 - **E24:** `id="conteudo"` + `tabIndex={-1}` em `app-sidebar-layout.tsx:18`; `<a href="#conteudo">` escondido antes do `<AppSidebar/>`.
