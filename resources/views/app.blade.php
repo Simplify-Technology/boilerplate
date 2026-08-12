@@ -4,6 +4,9 @@
     <meta charset="utf-8" >
     <meta name="viewport" content="width=device-width, initial-scale=1" >
 
+    {{-- Faz o canvas, as barras de rolagem e os controles nativos seguirem o tema --}}
+    <meta name="color-scheme" content="{{ ($appearance ?? 'system') === 'system' ? 'light dark' : ($appearance ?? 'system') }}" >
+
     {{-- Inline script to detect system dark mode preference and apply it immediately --}}
     <script >
         (function() {
@@ -20,6 +23,14 @@
     </script >
 
     {{-- Inline style to set the HTML background color --}}
+    {{--
+        Os dois valores são literais de propósito. Este bloco existe para pintar
+        o fundo ANTES de o app.css chegar (ele vem pelo @vite lá embaixo), então
+        referenciar um token declarado no app.css o deixa inválido exatamente na
+        janela em que ele deveria valer. O hex escuro espelha
+        `--color-primary-dark` de resources/css/app.css, e um teste trava a
+        sincronia entre os dois.
+    --}}
     <style >
         html {
             background-color: white;
@@ -27,7 +38,7 @@
         }
 
         html.dark {
-            background-color: var(--color-primary-dark);
+            background-color: #0f2a44;
             transition: background-color 0.2s ease;
         }
     </style >
