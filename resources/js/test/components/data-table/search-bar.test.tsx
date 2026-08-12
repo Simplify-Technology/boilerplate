@@ -1,5 +1,6 @@
 import { SearchBar } from '@/components/data-table/search-bar';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import type { ComponentProps } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -42,5 +43,93 @@ describe('SearchBar', () => {
         renderBar({ value: '', isSearching: true });
 
         expect(screen.queryByRole('button', { name: 'Limpar busca' })).not.toBeInTheDocument();
+    });
+});
+
+/*
+ * O slot da lupa se anunciava como `role="button"` sem `tabIndex` e sem
+ * handler de teclado: dizia ao leitor de tela que era um botão e não podia ser
+ * acionado por teclado (4.1.2). A correção NÃO é virar `<button>` — o único
+ * efeito dele é focar o campo que está a três pixels de distância e já é o
+ * próximo na ordem de tabulação. Um botão ali seria uma parada de tab que não
+ * leva a lugar nenhum. O papel falso sai, a afordância de clique fica.
+ */
+describe('SearchBar — nada se anuncia como o que não é', () => {
+    it('exposes no interactive role that the keyboard cannot reach', () => {
+        const { container } = renderBar({ value: 'ana', isSearching: true });
+
+        const fakeWidgets = Array.from(container.querySelectorAll<HTMLElement>('[role="button"], [role="link"], [role="checkbox"]')).filter(
+            (el) => !el.hasAttribute('tabindex') && !['BUTTON', 'A', 'INPUT'].includes(el.tagName),
+        );
+
+        expect(fakeWidgets).toEqual([]);
+    });
+
+    it('hides the decorative icon slot from assistive tech', () => {
+        const { container } = renderBar({ value: '', isSearching: false });
+
+        expect(container.querySelector('[aria-hidden="true"] svg')).not.toBeNull();
+    });
+
+    it('keeps the click-to-focus affordance for the mouse', async () => {
+        const { container } = renderBar({ value: '' });
+
+        await userEvent.click(container.querySelector('[aria-hidden="true"]') as HTMLElement);
+
+        expect(screen.getByRole('textbox', { name: 'Pesquisar' })).toHaveFocus();
+    });
+});
+
+/*
+ * A região viva morava na PÁGINA (`pages/users/index.tsx`), dizia
+ * "Buscando usuários..." e voltava para string vazia ao terminar — quem
+ * depende de leitor de tela ouvia o começo e nunca o desfecho. Ela desce para
+ * cá porque quem já é dono de `isSearching` é este componente; deixá-la na
+ * página garante que a próxima listagem repita o copy-paste (no ctfinance o
+ * mesmo bloco está em 11 telas).
+ *
+ * A região é renderizada SEMPRE, mesmo vazia: `aria-live` num nó recém-montado
+ * não anuncia — é a mudança de conteúdo de uma região preexistente que dispara.
+ */
+describe('SearchBar — a busca anuncia o desfecho, não só o começo', () => {
+    function liveRegion(container: HTMLElement) {
+        return container.querySelector('[aria-live="polite"]');
+    }
+
+    it('keeps the live region mounted even with nothing to say', () => {
+        const { container } = renderBar({ value: '' });
+
+        expect(liveRegion(container)).not.toBeNull();
+        expect(liveRegion(container)).toHaveTextContent('');
+    });
+
+    it('announces that a search is running', () => {
+        const { container } = renderBar({ value: 'ana', isSearching: true });
+
+        expect(liveRegion(container)).toHaveTextContent('Buscando…');
+    });
+
+    it('announces how many results the search found', () => {
+        const { container } = renderBar({ value: 'ana', isSearching: false, resultCount: 12 });
+
+        expect(liveRegion(container)).toHaveTextContent('12 resultados encontrados');
+    });
+
+    it('says one result in the singular', () => {
+        const { container } = renderBar({ value: 'ana', isSearching: false, resultCount: 1 });
+
+        expect(liveRegion(container)).toHaveTextContent('1 resultado encontrado');
+    });
+
+    it('announces the empty outcome instead of falling silent', () => {
+        const { container } = renderBar({ value: 'zzz', isSearching: false, resultCount: 0 });
+
+        expect(liveRegion(container)).toHaveTextContent('Nenhum resultado encontrado');
+    });
+
+    it('stays quiet when nothing was searched for', () => {
+        const { container } = renderBar({ value: '', isSearching: false, resultCount: 40 });
+
+        expect(liveRegion(container)).toHaveTextContent('');
     });
 });

@@ -137,10 +137,6 @@ export default function Index({ users, roles, assignableRoles = [], filters = {}
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title="Usuários" />
-            {/* Aria live region for screen readers */}
-            <div aria-live="polite" aria-atomic="true" className="sr-only">
-                {isSearching ? 'Buscando usuários...' : ''}
-            </div>
             <div className="flex h-full flex-1 flex-col gap-3 p-4 md:gap-4 md:p-6">
                 {/* Data Table with Integrated Filters */}
                 <div className="bg-card border-border/40 overflow-hidden rounded-lg border shadow-sm">
@@ -176,6 +172,7 @@ export default function Index({ users, roles, assignableRoles = [], filters = {}
                                         }}
                                         placeholder="Buscar nome, email ou celular"
                                         isSearching={isSearching}
+                                        resultCount={pagination.total}
                                         ariaLabel="Pesquisar usuários"
                                     />
                                 </div>

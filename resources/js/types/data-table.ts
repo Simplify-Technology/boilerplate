@@ -16,6 +16,8 @@ export type SearchBarProps = {
     placeholder?: string;
     debounceMs?: number;
     isSearching?: boolean;
+    /** Total de resultados da busca corrente. Alimenta a região viva; sem ele, só o "Buscando…" é anunciado. */
+    resultCount?: number;
     ariaLabel?: string;
     className?: string;
 };
