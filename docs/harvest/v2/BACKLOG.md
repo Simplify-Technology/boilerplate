@@ -209,7 +209,7 @@ Não vieram de projeto-fonte, então não têm origem `projeto/path@SHA`. Ficam 
 - A tela do sync **não tem** o campo `can_impersonate_any`; ele só entra pelo caminho avulso (`GrantPermissionRequest`). Ou seja: pelo painel não existe caminho de volta — só re-conceder pelo grant.
 - Conserto candidato: `syncWithPivotValues` preservando o `meta` das linhas que sobrevivem, ou expor a opção na tela do sync. Fatia própria.
 
-### ~~C4~~ ✅ APLICADO · PR [#88](https://github.com/Simplify-Technology/boilerplate/pull/88) · `POST confirm-password` aceita chute de senha sem limite nenhum · P · risco **médio** · **medido em 2026-08-12**
+### ~~C4~~ ✅ APLICADO E MESCLADO · PR [#88](https://github.com/Simplify-Technology/boilerplate/pull/88) · `POST confirm-password` aceita chute de senha sem limite nenhum · P · risco **médio** · **medido em 2026-08-12**
 
 - Verificado durante a fatia #84: `routes/auth.php:58` registra a rota **sem throttle**, e `ConfirmablePasswordController::store()` chama `Auth::guard('web')->validate()` **sem limiter próprio** — ao contrário do `LoginRequest`, que tem o dele. Não há teto de tentativa em lugar nenhum do caminho.
 - **Consequência:** sessão sequestrada (ou máquina destravada) chuta a senha do dono à vontade para abrir as áreas protegidas por `password.confirm`. O login está defendido; a re-confirmação, não — e é o mesmo segredo.
@@ -625,14 +625,14 @@ completos em `spinmax.md § Dimensão 1`.
 - **Lente de atualidade:** `[absorver-modernizado]`.
 - **Correções de fato das lentes:** o `$viewer` do spinmax está em `:24` (não `:25`); os campos sensíveis do boilerplate são `:27-31` (não `:26-31`); o grupo `can:manage_users` vai até `routes/web.php:36`, e o caçador parou em `:30`, deixando de fora `users/{user}/permissions`, que **também** serve `UserResource`.
 
-### ~~S2~~ ✅ APLICADO · PR [#82](https://github.com/Simplify-Technology/boilerplate/pull/82) · `[absorver]` o teto "não conceda um acesso que você mesmo não tem" vale em 1 dos 3 caminhos de concessão · M · risco baixo
+### ~~S2~~ ✅ APLICADO E MESCLADO · PR [#82](https://github.com/Simplify-Technology/boilerplate/pull/82) · `[absorver]` o teto "não conceda um acesso que você mesmo não tem" vale em 1 dos 3 caminhos de concessão · M · risco baixo
 
 - **⚠️ REQUALIFICADO — não é escalada.** O caçador vendeu isto como escada viva (`admin` concede `impersonate_users` e assume conta). As três lentes convergiram em derrubar a exploração, e **eu confirmei no código**: `sync()` passa array de IDs cru, sem pivot, então `meta` fica null e `canImpersonateAny()` é `false`; o manager assim "promovido" só alcança prioridade < 70, que o `admin` **já** alcançava direto trocando a senha (< 90). Ganho líquido de capacidade: **zero**. O dano residual é lavagem de trilha de auditoria, não privilégio. E o caminho que escalaria de verdade já está fechado: `GrantPermissionRequest::authorize()` exige `SUPER_USER`, com teste.
 - **O que sobra, e é real:** `PermissionRole/UpdateController.php:106` **tem** o teto (`array_diff` contra `getAllPermissions()`); `SyncPermissionsController.php:20-25` **não tem** (autoriza por `mutatePermissions` e faz `sync()` sem olhar o conteúdo). O mesmo sistema responde duas coisas diferentes para a mesma pergunta.
 - **Forma a absorver — corrigida pela lente de atualidade, e é melhor que a do spinmax:** o L13 aceita argumentos extras em policy (`Gate::authorize('mutatePermissions', [$user, $names])` → `mutatePermissions(User $actor, User $target, array $names)`), e `Illuminate\Auth\Access\Response::deny($mensagem)` propaga a frase sem `abort()` espalhado. Absorver com essa assinatura, **não** com o `abort(403)` do spinmax.
 - **⚠️ Trap:** a segunda correção proposta (tirar `manage_permissions` do `ADMIN` no seeder) **deixa vermelho um teste verde existente** — `tests/Feature/Policies/UserPolicyCeilingTest.php:146`, `it('allows an admin to mutate the permissions of a manager')`, cujo payload é justamente `MANAGE_PERMISSIONS`. E o seeder é re-executável: derivado que rodasse `db:seed --class=PermissionRoleSeeder` perderia `manage_permissions` de todos os admins sem aviso. **Só a opção de código entra**; a do seeder é decisão de produto do dono.
 
-### S3 · `[guard-rail]` `PiiScrubber` casa chave por igualdade exata e não desce em objeto · M · risco médio
+### ~~S3~~ ✅ APLICADO · PR [#90](https://github.com/Simplify-Technology/boilerplate/pull/90) · `[guard-rail]` `PiiScrubber` casa chave por igualdade exata e não desce em objeto · M · risco médio
 
 - Sobrevive **parcialmente**: a lente mediu que a proposta como escrita é regressão. Escopo reduzido — casar por substring e somar ramo `Arrayable`, sem trocar a fiação (que é `[atual]`).
 
@@ -640,7 +640,7 @@ completos em `spinmax.md § Dimensão 1`.
 
 - Único candidato da célula que sobreviveu **intacto** às três lentes. O limite mora num FormRequest e ninguém prova que morde.
 
-### ~~S5~~ ✅ APLICADO · PR [#86](https://github.com/Simplify-Technology/boilerplate/pull/86) · `[guard-rail]` o teste do `EnsureUserIsActive` não atravessa arquivo de rota · P · risco baixo
+### ~~S5~~ ✅ APLICADO E MESCLADO · PR [#86](https://github.com/Simplify-Technology/boilerplate/pull/86) · `[guard-rail]` o teste do `EnsureUserIsActive` não atravessa arquivo de rota · P · risco baixo
 
 - O boilerplate é **superior** aqui (middleware no `web(append:)`, cobre os 3 arquivos de rota; o spinmax o pendura no grupo de `web.php` e deixa `settings/*` e `auth` descobertos). O guard-rail é contra a regressão: `EnsureUserIsActiveTest` só exercita `/dashboard`, então mover o middleware para o grupo — o jeito "natural" de escrever — mantém o teste verde e reabre o buraco do spinmax. Falta um caso em `route('profile.edit')`.
 

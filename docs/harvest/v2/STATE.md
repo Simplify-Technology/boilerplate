@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **16 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S4) · **3 PRs abertos** (#82 teto de concessão, #86 alcance do usuário inativo, #88 limite do confirm-password)
+- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **19 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4) · **1 PR aberto** (#90 scrubber de PII)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 9/70 células (13%) · BACKLOG: **21 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 9/70 células (13%) · BACKLOG: **22 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -139,10 +139,11 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **F42+F35** — fix: tema fora do React (500 de último recurso + cromo nativo) | [#75](https://github.com/Simplify-Technology/boilerplate/issues/75) | `75-harvest-v2-tema-fora-do-react` | ✅ 17 testes + **9 mutações** | ✅ ambos exit 0 (373/1911 · 30/204) | [#76](https://github.com/Simplify-Technology/boilerplate/pull/76) | **aguardando merge do dono** |
 | **F23** — fix: `<button>` sem `type` + regra `react/button-has-type` | [#77](https://github.com/Simplify-Technology/boilerplate/issues/77) | `77-harvest-v2-button-type` | ✅ lint como gate + 2 mutações | ✅ ambos exit 0 (364/1896 · 30/204) | [#78](https://github.com/Simplify-Technology/boilerplate/pull/78) | ✅ **MESCLADO** 2026-08-12 |
 | **S1** — fix(seguranca): teto de PII no `UserResource` | [#79](https://github.com/Simplify-Technology/boilerplate/issues/79) | `79-harvest-v2-teto-pii-resource` | ✅ 10 testes + 4 mutações | ✅ ambos exit 0 (374/1931 · 30/204) | [#80](https://github.com/Simplify-Technology/boilerplate/pull/80) | ✅ **MESCLADO** 2026-08-12 |
-| **S2** — fix(rbac): teto de concessão nos 3 caminhos de permissão | [#81](https://github.com/Simplify-Technology/boilerplate/issues/81) | `81-harvest-v2-teto-concessao-permissao` | ✅ 12 testes + **7 mutações** | ✅ ambos exit 0 (395/1977 · 30/204) | [#82](https://github.com/Simplify-Technology/boilerplate/pull/82) | **aguardando merge do dono** |
+| **S2** — fix(rbac): teto de concessão nos 3 caminhos de permissão | [#81](https://github.com/Simplify-Technology/boilerplate/issues/81) | `81-harvest-v2-teto-concessao-permissao` | ✅ 12 testes + **7 mutações** | ✅ ambos exit 0 (395/1977 · 30/204) | [#82](https://github.com/Simplify-Technology/boilerplate/pull/82) | ✅ **MESCLADO** 2026-08-12 |
 | **S4** — test(auth): prova que o lockout do login morde | [#83](https://github.com/Simplify-Technology/boilerplate/issues/83) | `83-harvest-v2-lockout-login` | ✅ 7 testes + **7 mutações** | ✅ ambos exit 0 (390/1969) | [#84](https://github.com/Simplify-Technology/boilerplate/pull/84) | ✅ **MESCLADO** 2026-08-12 |
-| **S5** — test(auth): alcance do `EnsureUserIsActive` | [#85](https://github.com/Simplify-Technology/boilerplate/issues/85) | `85-harvest-v2-alcance-usuario-inativo` | ✅ 4 testes + 3 mutações | ✅ ambos exit 0 (394/1984) | [#86](https://github.com/Simplify-Technology/boilerplate/pull/86) | **aguardando merge do dono** |
-| **C4** — fix(auth): limite no `confirm-password` | [#87](https://github.com/Simplify-Technology/boilerplate/issues/87) | `87-harvest-v2-limite-confirm-password` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (395/1982) | [#88](https://github.com/Simplify-Technology/boilerplate/pull/88) | **aguardando merge do dono** |
+| **S5** — test(auth): alcance do `EnsureUserIsActive` | [#85](https://github.com/Simplify-Technology/boilerplate/issues/85) | `85-harvest-v2-alcance-usuario-inativo` | ✅ 4 testes + 3 mutações | ✅ ambos exit 0 (394/1984) | [#86](https://github.com/Simplify-Technology/boilerplate/pull/86) | ✅ **MESCLADO** 2026-08-12 |
+| **C4** — fix(auth): limite no `confirm-password` | [#87](https://github.com/Simplify-Technology/boilerplate/issues/87) | `87-harvest-v2-limite-confirm-password` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (395/1982) | [#88](https://github.com/Simplify-Technology/boilerplate/pull/88) | ✅ **MESCLADO** 2026-08-12 |
+| **S3** — fix(lgpd): objeto e chave composta no scrubber | [#89](https://github.com/Simplify-Technology/boilerplate/issues/89) | `89-harvest-v2-scrubber-objeto-e-chave-composta` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (416/2046) | [#90](https://github.com/Simplify-Technology/boilerplate/pull/90) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -521,7 +522,31 @@ Generalização para o resto da rodada: **teste de teto com duas condições (pe
 
 **Achado de varredura que vale registrar:** o levantamento que produziu o C4 ("quais rotas de auth têm limite") custou um `grep` e achou um buraco vivo. Vale repetir a mesma pergunta mecânica por eixo — quais rotas de escrita têm autorização (foi o A1), quais rotas que conferem segredo têm teto (foi este) — em vez de esperar a dimensão certa chegar no projeto certo.
 
+### S3 — o que entrou (2026-08-12)
+
+`app/Support/Logging/PiiScrubber.php` (ramo `Arrayable` + lista de chaves partida em duas + `user_notes`) + 5 casos em `tests/Feature/LogScrubbingTest.php` + seção em `.ai/rules/support.md`. PR [#90](https://github.com/Simplify-Technology/boilerplate/pull/90).
+
+**Era vazamento vivo, não guard-rail** — o BACKLOG classificava S3 como `[guard-rail]` e a medição mostrou coisa maior: `Log::info('x', ['user' => $user])` gravava nome, `cpf_cnpj` **formatado** e `user_notes` em claro. O objeto atravessava o processor intacto e só o formatter do Monolog o serializava, **depois** das duas camadas — por isso vazava até o CPF, que a camada de padrão pegaria numa string comum.
+
+| Mutação | Resultado |
+| ------- | --------- |
+| Sem o ramo `Arrayable` (o vazamento original) | ⨯ 2 falham |
+| Volta à igualdade exata de chave | ⨯ falha |
+| **Tudo** por substring, inclusive os ambíguos | ⨯ falha |
+| `cep` promovido a substring (come `exception`) | ⨯ falha |
+| Sem `user_notes`/`notes` na lista | ⨯ falha |
+
+**O achado que só a auditoria prévia pegaria: `cep` está dentro de "ex`cep`tion".** Promover `cep` a substring apagaria a classe do erro em TODO log de falha — o scrubber destruiria justamente a informação que ia depurar o incidente. Achado antes de escrever a lista, ao procurar cada termo dentro de palavras comuns de log; `rg` (o**rg**anization, ta**rg**et) e `auth` (**auth**or) vieram junto. Virou regra em `.ai/rules/support.md`: **termo novo de substring se procura dentro de palavra comum antes de entrar.**
+
+**Absorção parcial, de propósito:** a forma do spinmax entrou (duas listas + `Arrayable`), os termos de DOMÍNIO dele não (`customer`, `payer`, `holder`, `recipient` apagariam `customer_id` num boilerplate genérico). A lente já tinha marcado "não generaliza" e a medição confirmou.
+
+**Limite medido e documentado, não consertado:** `Throwable` em `['exception' => $e]` é renderizado pelo formatter, fora do alcance de qualquer processor — testei, vaza e-mail na mensagem. Fica como regra de escrita ("não coloque PII em mensagem de exception"), igual à conclusão da própria origem.
+
 ## Próxima unidade
+
+**Reconciliação da 7ª invocação (2026-08-12):** os TRÊS PRs abertos — **#82 (S2)**, **#86 (S5)** e **#88 (C4)** — foram mesclados pelo dono. `main` em `f43478a`. Os 7 SHAs das fontes seguem idênticos aos pinados: **zero drift** desde a abertura da rodada, 7 invocações atrás.
+
+~~**S3**~~ ✅ aplicado — PR [#90](https://github.com/Simplify-Technology/boilerplate/pull/90) aberto. **Com isso a dimensão 1 do spinmax está esgotada de fatias aplicáveis:** S1, S2, S3, S4, S5 e C4 saíram; o que resta (S6–S13) é multi-fonte represado, `[proposta-adr]`, risco ALTO ou decisão do dono.
 
 **Reconciliação da 6ª invocação (2026-08-12):** **#84 (S4) mesclado**; **#82 (S2) segue aberto**. `main` em `c599f05`. Os 7 SHAs das fontes seguem idênticos aos pinados — **zero drift** desde a abertura da rodada.
 
@@ -535,8 +560,7 @@ Generalização para o resto da rodada: **teste de teto com duas condições (pe
 
 **Fila de fatias prontas do BACKLOG (prioridade 1 do protocolo), em ordem sugerida:**
 
-1. **S3** — `[guard-rail]` `PiiScrubber` casa chave por igualdade exata e não desce em objeto. M, risco médio, escopo já reduzido pela lente (substring + ramo `Arrayable`, sem trocar a fiação).
-2. Fila de UX/UI pareada da dimensão 5+6: **E6+F-input-error** · **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
+1. Fila de UX/UI pareada da dimensão 5+6: **E6+F-input-error** · **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
 
 **Quando a fila de P do spinmax secar, a unidade mais rentável volta a ser varredura** — a matriz está em 9/70 e cinco projetos ainda não têm inventário. Candidato natural: **célula 0 (inventário) do cuidari ou do ctvitrine**, os dois L13 + Inertia 3 em produção, que são exatamente os que destravam o F3 (a decisão fundacional de tokens de estado, represada desde 2026-08-12).
 
