@@ -115,6 +115,34 @@ class UserPolicy
     }
 
     /**
+     * Ver os dados sensíveis de outra conta: CPF/CNPJ, telefones e notas
+     * internas.
+     *
+     * O teto de autoridade desta classe começava em `update()`: `viewAny()` e
+     * `view()` eram `manage_users` puro, sem comparar prioridade. Só que o
+     * `UserResource` devolvia PII sem condicional nenhuma, e `manage_users`
+     * vai para `manager` (70) na matriz do seeder — então o gerente abria
+     * `/users` e lia o CPF, os telefones e as notas internas do administrador
+     * (90) em claro. Mutação estava travada; **leitura** ficou de fora.
+     *
+     * Mesma régua da mutação, para não haver duas respostas para a mesma
+     * pergunta: a si mesmo sempre, `super_user` sempre, e no resto prioridade
+     * estritamente maior — medida no ator REAL, não na persona impersonada.
+     */
+    public function viewSensitive(User $user, User $model): bool
+    {
+        if (!$user->hasPermissionTo('manage_users')) {
+            return false;
+        }
+
+        if ($this->effectiveActor($user)->id === $model->id) {
+            return true;
+        }
+
+        return $this->outranks($user, $model);
+    }
+
+    /**
      * Atribuir/remover o CARGO de outro usuário (rotas `user.assign-role` e
      * `user.revoke-role`). Essas rotas checavam o cargo NOVO contra o ator e
      * nunca o cargo ATUAL do alvo: um gerente (70) rebaixava o administrador
