@@ -21,11 +21,17 @@ final class GrantPermissionController extends Controller
 
     public function __invoke(GrantPermissionRequest $request, User $user): RedirectResponse
     {
-        Gate::authorize('mutatePermissions', $user);
+        /** @var string $permissionName */
+        $permissionName = $request->validated('permission');
+
+        // Hoje o teto é vazio aqui — o `GrantPermissionRequest` só deixa passar
+        // `super_user`, que compõe qualquer conjunto. Vai declarado assim mesmo
+        // para que afrouxar aquele FormRequest não reabra o buraco em silêncio.
+        Gate::authorize('mutatePermissions', [$user, [$permissionName]]);
 
         $this->permissionManagementService->grantPermissionToUser(
             user: $user,
-            permissionName: $request->validated('permission'),
+            permissionName: $permissionName,
             canImpersonateAny: $request->boolean('can_impersonate_any')
         );
 

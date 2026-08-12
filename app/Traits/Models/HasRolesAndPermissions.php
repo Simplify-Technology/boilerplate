@@ -68,6 +68,32 @@ trait HasRolesAndPermissions
             ->unique('id');
     }
 
+    /**
+     * De `$names`, o que este usuário **não** tem — ou seja, o que ele não pode
+     * repassar a ninguém.
+     *
+     * Existe para haver uma resposta só. O teto "você não dá o que você não
+     * tem" morava escrito à mão no `PermissionRole/UpdateController`, e o
+     * caminho de permissões individuais (`sync-permissions`) não o tinha: um
+     * administrador gravava num gerente a `impersonate_users` que o
+     * `PermissionRoleSeeder` lhe nega, enquanto a mesma tentativa pela tela de
+     * Cargos era 403.
+     *
+     * A superfície é cargo + avulsas, lida pelo `hasPermissionTo()` — o mesmo
+     * caminho cacheado que autoriza o resto do app, e não uma segunda leitura
+     * que possa divergir dele.
+     *
+     * @param  list<string> $names
+     * @return list<string>
+     */
+    public function permissionsBeyondOwn(array $names): array
+    {
+        return array_values(array_filter(
+            $names,
+            fn(string $name): bool => !$this->hasPermissionTo($name)
+        ));
+    }
+
     public function assignRole(Roles|string $role): void
     {
         $role = Role::where('name', $role)->firstOrFail();
