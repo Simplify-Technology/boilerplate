@@ -56,20 +56,19 @@ export default function Show({ user }: ShowUserProps) {
                                 <span className="text-muted-foreground/80 text-xs font-medium">• Detalhes</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Link href={route('users.index')}>
-                                    <Button variant="outline" size="sm" className="h-8">
-                                        Voltar
-                                    </Button>
-                                </Link>
-                                <Link href={route('users.edit', user.id)}>
-                                    <Button
-                                        size="sm"
-                                        className="h-8 gap-1.5 bg-cyan-600 text-white transition-all duration-200 ease-in-out hover:scale-105 hover:bg-cyan-700 active:scale-95 dark:bg-cyan-600 dark:text-white dark:shadow-lg dark:hover:bg-cyan-700 dark:hover:shadow-xl"
-                                    >
+                                <Button variant="outline" size="sm" asChild className="h-8">
+                                    <Link href={route('users.index')}>Voltar</Link>
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    asChild
+                                    className="h-8 gap-1.5 bg-cyan-600 text-white transition-all duration-200 ease-in-out hover:scale-105 hover:bg-cyan-700 active:scale-95 dark:bg-cyan-600 dark:text-white dark:shadow-lg dark:hover:bg-cyan-700 dark:hover:shadow-xl"
+                                >
+                                    <Link href={route('users.edit', user.id)}>
                                         <Edit className="h-4 w-4" />
                                         Editar
-                                    </Button>
-                                </Link>
+                                    </Link>
+                                </Button>
                             </div>
                         </div>
                     </div>

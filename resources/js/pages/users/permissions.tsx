@@ -107,18 +107,18 @@ export default function UserPermissions({ user, all_permissions }: UserPermissio
                                 <span className="text-muted-foreground/80 text-xs font-medium">• O que esta pessoa pode fazer</span>
                             </div>
                             <div className="flex items-center gap-2">
-                                <Link href={route('users.index')}>
-                                    <Button variant="outline" size="sm" className="h-8">
+                                <Button variant="outline" size="sm" asChild className="h-8">
+                                    <Link href={route('users.index')}>
                                         <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
                                         Voltar
-                                    </Button>
-                                </Link>
-                                <Link href={route('users.edit', user.id)}>
-                                    <Button size="sm" variant="outline" className="h-8 gap-1.5">
+                                    </Link>
+                                </Button>
+                                <Button size="sm" variant="outline" asChild className="h-8 gap-1.5">
+                                    <Link href={route('users.edit', user.id)}>
                                         <Edit className="h-3.5 w-3.5" />
                                         Editar Usuário
-                                    </Button>
-                                </Link>
+                                    </Link>
+                                </Button>
                             </div>
                         </div>
                     </div>
