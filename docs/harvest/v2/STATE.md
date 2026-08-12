@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (7/70 células) · **12 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22) · **2 PRs abertos** (#76 tema fora do React, #78 type dos botões)
+- **Situação:** Fase 0 concluída · varredura em andamento (7/70 células) · **12 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22) · **1 PR aberto** (#76, tema fora do React)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -110,7 +110,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **F5** — fix: anel de foco invisível no tema claro | [#71](https://github.com/Simplify-Technology/boilerplate/issues/71) | `71-harvest-v2-anel-de-foco` | ✅ 30 testes de estilo + 6 mutações | ✅ ambos exit 0 (364/1896) | [#72](https://github.com/Simplify-Technology/boilerplate/pull/72) | ✅ **MESCLADO** 2026-08-12 |
 | **F22** — fix: `<a><button>` aninhado em 6 links-botão | [#73](https://github.com/Simplify-Technology/boilerplate/issues/73) | `73-harvest-v2-link-botao` | ✅ 8 testes + 3 mutações | ✅ ambos exit 0 (364/1896 · 29/192) | [#74](https://github.com/Simplify-Technology/boilerplate/pull/74) | ✅ **MESCLADO** 2026-08-12 |
 | **F42+F35** — fix: tema fora do React (500 de último recurso + cromo nativo) | [#75](https://github.com/Simplify-Technology/boilerplate/issues/75) | `75-harvest-v2-tema-fora-do-react` | ✅ 17 testes + **9 mutações** | ✅ ambos exit 0 (373/1911 · 30/204) | [#76](https://github.com/Simplify-Technology/boilerplate/pull/76) | **aguardando merge do dono** |
-| **F23** — fix: `<button>` sem `type` + regra `react/button-has-type` | [#77](https://github.com/Simplify-Technology/boilerplate/issues/77) | `77-harvest-v2-button-type` | ✅ lint como gate + 2 mutações | ✅ ambos exit 0 (364/1896 · 30/204) | [#78](https://github.com/Simplify-Technology/boilerplate/pull/78) | **aguardando merge do dono** |
+| **F23** — fix: `<button>` sem `type` + regra `react/button-has-type` | [#77](https://github.com/Simplify-Technology/boilerplate/issues/77) | `77-harvest-v2-button-type` | ✅ lint como gate + 2 mutações | ✅ ambos exit 0 (364/1896 · 30/204) | [#78](https://github.com/Simplify-Technology/boilerplate/pull/78) | ✅ **MESCLADO** 2026-08-12 |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
