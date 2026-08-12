@@ -51,6 +51,11 @@ export default [
             'react/react-in-jsx-scope': 'off',
             'react/prop-types': 'off',
             'react/no-unescaped-entities': 'off',
+            // O default de `<button>` no HTML é `type="submit"`: um botão sem
+            // type declarado submete o formulário que por acaso o envolver. É
+            // latente até alguém reusar o componente dentro de um <form> — e aí
+            // o clique faz duas coisas. A regra cobra o atributo explícito.
+            'react/button-has-type': 'error',
         },
         settings: {
             react: {

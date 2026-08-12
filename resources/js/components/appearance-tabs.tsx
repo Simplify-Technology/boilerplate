@@ -17,6 +17,7 @@ export default function AppearanceToggleTab({ className = '', ...props }: HTMLAt
             {tabs.map(({ value, icon: Icon, label }) => (
                 <button
                     key={value}
+                    type="button"
                     onClick={() => updateAppearance(value)}
                     className={cn(
                         'flex items-center rounded-md px-3.5 py-1.5 transition-colors',

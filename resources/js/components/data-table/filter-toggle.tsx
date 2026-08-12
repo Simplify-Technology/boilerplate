@@ -9,6 +9,7 @@ import { SlidersHorizontal } from 'lucide-react';
 export function FilterToggle({ isOpen, onToggle, label = 'Filtros', className, activeFiltersCount = 0 }: FilterToggleProps) {
     return (
         <button
+            type="button"
             onClick={onToggle}
             className={cn(
                 'flex cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-all',
