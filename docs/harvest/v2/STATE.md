@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (6/70 células) · **8 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17) · **1 PR aberto** (#68, canal de flash nativo)
+- **Situação:** Fase 0 concluída · varredura em andamento (6/70 células) · **8 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17) · **1 PR aberto** (#70, conserto do `@theme`)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 7/70 células (10%) · BACKLOG: **10 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13)**, 1 realocado (A2), **~109 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **74 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 7/70 células (10%) · BACKLOG: **11 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1)**, 1 realocado (A2), **~109 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **74 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -105,7 +105,8 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **D3** — docs: closure em prop de render não adia nada | [#63](https://github.com/Simplify-Technology/boilerplate/issues/63) | `63-harvest-v2-regra-props-lazy` | — (só doc; gate inviável, ver BACKLOG) | ✅ ambos exit 0 | [#64](https://github.com/Simplify-Technology/boilerplate/pull/64) | ✅ **MESCLADO** 2026-08-11 18:56 |
 
 | **E17** — fix: ordenação e page size crus na listagem (500 por URL) | [#65](https://github.com/Simplify-Technology/boilerplate/issues/65) | `65-harvest-v2-normaliza-ordenacao-listagem` | ✅ 41 testes + 4 mutações | ✅ ambos exit 0 (352/1831) | [#66](https://github.com/Simplify-Technology/boilerplate/pull/66) | ✅ **MESCLADO** 2026-08-11 |
-| **E2+E13** — refactor: canal de flash nativo do Inertia 3 | [#67](https://github.com/Simplify-Technology/boilerplate/issues/67) | `67-harvest-v2-flash-nativo` | ✅ 15 testes + 2 mutações | ✅ ambos exit 0 (364/1896) | [#68](https://github.com/Simplify-Technology/boilerplate/pull/68) | **aguardando merge do dono** |
+| **E2+E13** — refactor: canal de flash nativo do Inertia 3 | [#67](https://github.com/Simplify-Technology/boilerplate/issues/67) | `67-harvest-v2-flash-nativo` | ✅ 15 testes + 2 mutações | ✅ ambos exit 0 (364/1896) | [#68](https://github.com/Simplify-Technology/boilerplate/pull/68) | ✅ **MESCLADO** 2026-08-11 |
+| **F1** — fix: colisão de token que matava o dark mode | [#69](https://github.com/Simplify-Technology/boilerplate/issues/69) | `69-harvest-v2-conserta-theme` | ✅ 18 testes + 3 mutações | ✅ ambos exit 0 (364/1896) | [#70](https://github.com/Simplify-Technology/boilerplate/pull/70) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -263,13 +264,35 @@ Quatro fatos medidos:
 
 A dimensão 6 ressuscitou o `eslint-plugin-jsx-a11y` como `[dep-nova]`. A dimensão 5 já o havia **rejeitado** por incompatibilidade dura (o plugin declara peer até ESLint 9; o boilerplate roda 10.8.0) e a célula 6 não refutou esse fato. **A rejeição vale**; a alternativa segue sendo `jest-axe`.
 
+### F1 — o que entrou (2026-08-12)
+
+`resources/css/app.css` + `resources/js/test/styles/theme-tokens.test.ts` (novo) + `.ai/rules/css.md` (novo, não havia glob para `resources/css/**`) + `.ai/rules/index.md` + `tests/Unit/Theme/InlineThemeBackgroundTest.php`. PR [#70](https://github.com/Simplify-Technology/boilerplate/pull/70).
+
+| Mutação | Resultado |
+| ------- | --------- |
+| Recriar `--color-primary: #1f3c57` no `:root` | ⨯ falha |
+| Voltar o `--primary-foreground` do escuro para branco | ⨯ falha (3.13:1) |
+| Igualar o `--primary` do escuro ao do claro | ⨯ 2 falham |
+
+Cinco fatos medidos nesta fatia:
+
+1. **`--color-primary: #1f3c57` tinha ZERO consumidores** — existia só para sombrear a entrada do `@theme`. Foi apagado, não renomeado. A colisão de `--color-accent` tinha 1 consumidor (`.dark { --primary }`), esse sim renomeado.
+2. **`@theme inline` — o mecanismo que a análise recomendava — foi APLICADO E REVERTIDO.** Ele quebra dois consumidores vivos: `lib/toast-config.ts:16` lê `var(--font-sans)` e `app.css:89` usa `var(--color-border, currentColor)` como borda padrão; com `inline` o Tailwind deixa de emitir essas variáveis e as duas caem no fallback em silêncio. Desfazer a colisão já resolve (verificado no artefato), então o `inline` seria raio extra sem ganho. **Corrige o escopo do F1 no BACKLOG.**
+3. **A terceira colisão (Radix) foi CONFIRMADA e deixada de fora.** O artefato tem 3 declarações de `--color-background`, 2 fora de qualquer layer, vindas da folha do Radix. A cura é ordenar layer de folha de terceiro — mecanismo diferente, raio visual grande, e o mesmo `@import` é alvo do **F6**. Os dois viajam juntos.
+4. **Erro meu no meio do caminho, que o build pegou:** o regex do rename atingiu também a entrada `--color-accent` *dentro* do `@theme`, e o Tailwind falhou com `Cannot apply unknown utility class hover:bg-accent`. Lição: rename de token por regex precisa distinguir o bloco `@theme` do `:root`.
+5. **O guard da fatia D4 pegou o rename.** `InlineThemeBackgroundTest` assere que o fundo inline do blade bate com o token do `app.css` e ficou vermelho até as duas pontas serem atualizadas — guard-rail de fatia anterior pagando o próprio custo.
+
+**Dívida registrada como catraca:** `destructive` no escuro dá 3.67:1 e não passa. Não dá para pagar aqui — escurecer para `#e11d48` leva o botão a 4.70 mas derruba `text-destructive` de 3.99 para 3.12, e é ele que o E6 vai usar no `InputError`. O teste impede piorar **e** falha se alguém consertar sem mover o par para a tabela principal. A cura é o **F3**.
+
 ## Próxima unidade
 
-**Fatia F1 — consertar o `@theme`.** É pré-requisito de metade da célula 6 e da metade visual de E6, E12+E21 e E14+E15. Não é fatia de uma linha: a palavra (`@theme inline`) mais a recalibração das duas paletas, mais o guard-rail F4 (nenhum `--color-*` fora do `@theme`; todo `@import` de terceiro em `layer()`), mais reafirmar `--color-background` depois do import do Radix. Risco médio e **muda aparência de verdade** — vale confirmar com o dono antes de mesclar, não antes de abrir.
+~~**Fatia F1**~~ ✅ aplicada — PR #70 aberto, aguardando merge.
 
-Duas fatias P **sem dependência nenhuma** podem ir antes ou em paralelo, se preferir começar barato: **F5** (`--ring` invisível, 1.34:1) e **F22** (`<Link><Button>` produzindo `<a><button>` em 6 pontos).
+**Fatia F5 — `--ring` invisível (1.34:1).** P, risco baixo, sem dependência, e agora com o teste do F1 pronto para receber a asserção do anel. Alternativa igualmente barata: **F22** (`<Link><Button>` produzindo `<a><button>` em 6 pontos), também P e sem dependência.
 
-Fila depois do F1, agora com as metades visuais pareadas: **E6+F-input-error** · **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F7** (cor de marca — decisão do dono).
+**F3 subiu de prioridade:** ele agora tem uma catraca esperando por ele no teste do F1, e destrava a metade visual do E6 (sem o F3, o E6 entra sem a troca de className, senão regride).
+
+Fila com as metades visuais pareadas: **E6+F-input-error** · **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F7** (cor de marca — decisão do dono).
 
 ~~Ordem antiga~~: **E14+E15** (`empty-state.tsx`) · **E21+E12** (`delete-confirmation-dialog.tsx`) · **E30** (`delete-user.tsx`, bug que todo derivado tem) · **E22+E24** (landmark + skip-link) · **E6+E20** (ARIA de campo) · **E23** · **E18** · **E27+E29** (limpeza de código morto).
 
