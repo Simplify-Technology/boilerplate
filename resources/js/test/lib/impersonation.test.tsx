@@ -81,7 +81,8 @@ describe('call sites', () => {
     it('flushes the cache when the banner stops impersonation', async () => {
         render(<ImpersonateBanner active originalUserName="Ana" impersonatedUserName="Bruno" />);
 
-        await userEvent.click(screen.getByRole('link', { name: /clique aqui para sair/i }));
+        // `button`, não `link`: sair da persona é ação, não navegação.
+        await userEvent.click(screen.getByRole('button', { name: /clique aqui para sair/i }));
 
         expect(calls).toEqual(['flushAll', 'delete']);
     });
