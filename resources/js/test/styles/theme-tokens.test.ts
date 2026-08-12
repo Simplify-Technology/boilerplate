@@ -179,3 +179,38 @@ describe('contraste dos pares que viram texto', () => {
         expect(resolveToken('--primary', darkVars)).not.toBe(resolveToken('--primary', new Map()));
     });
 });
+
+describe('contraste do anel de foco', () => {
+    /**
+     * Todos os primitivos desligam o anel nativo do browser (`outline-none`) e
+     * desenham o próprio com `focus-visible:ring-ring`. Quem faz isso assume a
+     * WCAG 2.2 SC 1.4.11: o indicador é componente de interface e precisa de
+     * 3:1 contra as cores adjacentes — o canvas em volta e a borda do campo
+     * que ele contorna.
+     *
+     * `--ring` valia `--brand-cyan-light` nos DOIS temas. No escuro isso dá
+     * 7.93:1 e passa; no claro dá **1.85:1** contra o branco e 1.49:1 contra
+     * `--input`. Ou seja: o tema escuro estava certo por acidente e o claro
+     * não tinha indicador de foco visível.
+     */
+    const MINIMO_NAO_TEXTUAL = 3;
+
+    // Cada anel × as duas superfícies que encostam nele.
+    const pares: Array<[string, string]> = [
+        ['--ring', '--background'],
+        ['--ring', '--input'],
+        ['--sidebar-ring', '--sidebar'],
+        ['--sidebar-ring', '--sidebar-border'],
+    ];
+
+    describe.each([
+        ['claro', new Map<string, string>()],
+        ['escuro', darkVars],
+    ])('tema %s', (_tema, scope) => {
+        it.each(pares)('%s destaca contra %s (3:1)', (ring, surface) => {
+            const ratio = contrast(resolveToken(ring, scope), resolveToken(surface, scope));
+
+            expect(ratio).toBeGreaterThanOrEqual(MINIMO_NAO_TEXTUAL);
+        });
+    });
+});
