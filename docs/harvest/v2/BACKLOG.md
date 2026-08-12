@@ -303,7 +303,7 @@ Fonte: ctfinance @ `b8c6d57`, comparado ao boilerplate `main` @ `9814f46`. **28 
 - Regra em `.ai/rules/js.md`: vazio-por-filtro ≠ vazio-inicial, cada um com sua ação.
 - **Não trazer o corpo Tailwind/tokens do ctfinance** (o do boilerplate ainda importa `@radix-ui/themes`) — é dimensão 6. `data-testid="empty-state"` só junto do teste de regressão, senão nasce peça morta.
 
-### E6 + E20 · `[absorver]` ARIA do campo: erro não anunciado e `aria-invalid` sobrescrito · P · risco baixo · **1 PR**
+### ~~E6 + E20~~ ✅ APLICADO · PR [#92](https://github.com/Simplify-Technology/boilerplate/pull/92) · `[absorver]` ARIA do campo: erro não anunciado e `aria-invalid` sobrescrito · P · risco baixo · **1 PR**
 
 - **E6 — `InputError` não é live region:** `components/input-error.tsx` renderiza `<p>` sem nada; 27 mensagens de erro aparecem em silêncio para leitor de tela.
   - **⚠️ Absorver o problema, REJEITAR o remédio do derivado:** o ctfinance põe `aria-live="polite"` no próprio nó, e **`aria-live` num nó recém-montado não anuncia** — a região precisa preexistir. Escopo correto: (a) `form-field.tsx` renderiza SEMPRE o slot de erro (`<p id={errorId} aria-live="polite">{error ?? ''}</p>`), id estável, sem montar/desmontar; (b) `input-error.tsx` ganha `role="alert"` (é o mecanismo para nó inserido dinamicamente) + `data-slot="input-error"` + guard `message.trim() === ''`.

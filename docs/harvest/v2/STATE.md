@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **19 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4) · **1 PR aberto** (#90 scrubber de PII)
+- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **19 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4) · **2 PRs abertos** (#90 scrubber de PII, #92 erro anunciado)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 9/70 células (13%) · BACKLOG: **22 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 9/70 células (13%) · BACKLOG: **24 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -144,6 +144,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **S5** — test(auth): alcance do `EnsureUserIsActive` | [#85](https://github.com/Simplify-Technology/boilerplate/issues/85) | `85-harvest-v2-alcance-usuario-inativo` | ✅ 4 testes + 3 mutações | ✅ ambos exit 0 (394/1984) | [#86](https://github.com/Simplify-Technology/boilerplate/pull/86) | ✅ **MESCLADO** 2026-08-12 |
 | **C4** — fix(auth): limite no `confirm-password` | [#87](https://github.com/Simplify-Technology/boilerplate/issues/87) | `87-harvest-v2-limite-confirm-password` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (395/1982) | [#88](https://github.com/Simplify-Technology/boilerplate/pull/88) | ✅ **MESCLADO** 2026-08-12 |
 | **S3** — fix(lgpd): objeto e chave composta no scrubber | [#89](https://github.com/Simplify-Technology/boilerplate/issues/89) | `89-harvest-v2-scrubber-objeto-e-chave-composta` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (416/2046) | [#90](https://github.com/Simplify-Technology/boilerplate/pull/90) | **aguardando merge do dono** |
+| **E6+E20** — fix(a11y): erro anunciado + fusão de ARIA | [#91](https://github.com/Simplify-Technology/boilerplate/issues/91) | `91-harvest-v2-erro-anunciado` | ✅ 9 testes + 5 mutações | ✅ ambos exit 0 (31/212) | [#92](https://github.com/Simplify-Technology/boilerplate/pull/92) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -542,6 +543,32 @@ Generalização para o resto da rodada: **teste de teto com duas condições (pe
 
 **Limite medido e documentado, não consertado:** `Throwable` em `['exception' => $e]` é renderizado pelo formatter, fora do alcance de qualquer processor — testei, vaza e-mail na mensagem. Fica como regra de escrita ("não coloque PII em mensagem de exception"), igual à conclusão da própria origem.
 
+### E6+E20 — o que entrou (2026-08-12)
+
+`resources/js/components/input-error.tsx` (`role="alert"` + `data-slot` + guarda de branco) + `ui/date-input.tsx` (fusão de `aria-invalid`) + `test/components/input-error.test.tsx` (novo) + 3 casos em `date-input.test.tsx` + 2 seções em `.ai/rules/js.md`. PR [#92](https://github.com/Simplify-Technology/boilerplate/pull/92). **Primeira fatia de frontend puro da rodada com gate de componente real** (Vitest + Testing Library) — sem depender do `pest-plugin-browser`, que segue `[dep-nova]` represado.
+
+| Mutação | Resultado |
+| ------- | --------- |
+| Sem `role="alert"` (o defeito original) | ⨯ 3 falham |
+| `aria-live="polite"` no lugar (**o remédio do ctfinance**) | ⨯ 3 falham |
+| Sem a guarda de string em branco | ⨯ falha |
+| `DateInput` redeclara depois do spread (o defeito original) | ⨯ falha |
+| `DateInput` só move para antes do spread (**a correção ERRADA**) | ⨯ falha |
+
+**As duas mutações que valem a fatia são as das alternativas plausíveis**, não as do defeito: `aria-live` no lugar de `role="alert"` é o que a origem fez, e mover a declaração para antes do spread é o que qualquer revisor proporia. As duas ficam cobertas por teste — o que impede que a "simplificação" volte num refactor futuro.
+
+### ⚠️ Trap de ferramenta paga aqui: `cd` de invocação anterior vaza para a seguinte
+
+O `git checkout -b 91-...` rodou **no worktree de ESTADO**, porque o `cd` de um comando anterior (a atualização do BACKLOG) tinha deixado o cwd lá. Efeitos: o branch 91 nasceu no worktree errado, a fatia inteira foi commitada em cima do branch do S3 (que tem PR aberto), e o hook de commit-msg prefixou `[89]:` numa mensagem que já dizia `[91]:`. Um `pnpm exec vitest` anterior também rodou no worktree de estado — e disparou `pnpm install` lá.
+
+Consertado sem perder nada: worktree de estado de volta para `50-harvest-v2-rodada`, `git reset --soft HEAD~1` no principal (nunca `--hard`, ver trap do trabalho não commitado do dono), `checkout` do 91 levando o índice, commit e push. **`origin/89` e o PR #90 nunca chegaram a receber o commit intruso** — verificado antes e depois.
+
+**Regras que saem daí:**
+
+- **Todo comando git/pnpm de fatia leva `cd <worktree principal>` explícito**, ou usa `git -C <path>`. Nunca confie no cwd herdado — ele atravessa invocações.
+- **Depois de `checkout -b`, confira `git branch --show-current` no worktree que você acha que está usando**, antes de editar arquivo.
+- Um commit no branch errado se desfaz com `reset --soft` + `checkout`, que carrega o índice para o branch certo. O `--hard` é que é irreversível.
+
 ## Próxima unidade
 
 **Reconciliação da 7ª invocação (2026-08-12):** os TRÊS PRs abertos — **#82 (S2)**, **#86 (S5)** e **#88 (C4)** — foram mesclados pelo dono. `main` em `f43478a`. Os 7 SHAs das fontes seguem idênticos aos pinados: **zero drift** desde a abertura da rodada, 7 invocações atrás.
@@ -560,7 +587,7 @@ Generalização para o resto da rodada: **teste de teto com duas condições (pe
 
 **Fila de fatias prontas do BACKLOG (prioridade 1 do protocolo), em ordem sugerida:**
 
-1. Fila de UX/UI pareada da dimensão 5+6: **E6+F-input-error** · **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
+1. Fila de UX/UI pareada da dimensão 5+6: **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
 
 **Quando a fila de P do spinmax secar, a unidade mais rentável volta a ser varredura** — a matriz está em 9/70 e cinco projetos ainda não têm inventário. Candidato natural: **célula 0 (inventário) do cuidari ou do ctvitrine**, os dois L13 + Inertia 3 em produção, que são exatamente os que destravam o F3 (a decisão fundacional de tokens de estado, represada desde 2026-08-12).
 
