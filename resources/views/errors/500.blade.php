@@ -1,12 +1,33 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+{{--
+    Fallback de último recurso: renderizado no `catch` de bootstrap/app.php,
+    quando o próprio render Inertia falha — tipicamente manifest/build quebrado.
+    Ou seja, é a única página do app que roda SEM o app.css. Como o bloco de
+    estilo inline de app.blade.php, ele carrega literais, e os literais têm de
+    espelhar os tokens; tests/Unit/Theme/InlineThemeBackgroundTest.php cobra a
+    sincronia dos dois arquivos.
+
+    O tema vem da MESMA fonte do resto do app: `$appearance`, publicado por
+    HandleAppearance via View::share (o cookie está fora do encryptCookies).
+    Antes esta página decidia só por `prefers-color-scheme`, então quem tinha
+    escolhido "escuro" com o sistema em claro recebia uma página branca. O modo
+    `system` segue caindo na media query. Sem JS: numa página que existe para o
+    caso de tudo ter quebrado, cada dependência a menos é uma chance a mais de
+    ela aparecer.
+--}}
+@php($theme = in_array($appearance ?? 'system', ['light', 'dark'], true) ? $appearance : 'system')
+    <!DOCTYPE html>
+<html lang="pt-BR" class="{{ $theme }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Erro interno</title>
     <style>
-        :root {
-            color-scheme: light dark;
+        html {
+            color-scheme: light;
+        }
+
+        html.dark {
+            color-scheme: dark;
         }
 
         body {
@@ -20,10 +41,19 @@
             color: #0f2a44;
         }
 
+        html.dark body {
+            background: #0f2a44;
+            color: #ffffff;
+        }
+
         @media (prefers-color-scheme: dark) {
-            body {
-                background: #0f172a;
-                color: #e2e8f0;
+            html.system {
+                color-scheme: dark;
+            }
+
+            html.system body {
+                background: #0f2a44;
+                color: #ffffff;
             }
         }
 

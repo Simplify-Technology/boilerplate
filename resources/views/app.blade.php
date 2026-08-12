@@ -27,18 +27,26 @@
         Os dois valores são literais de propósito. Este bloco existe para pintar
         o fundo ANTES de o app.css chegar (ele vem pelo @vite lá embaixo), então
         referenciar um token declarado no app.css o deixa inválido exatamente na
-        janela em que ele deveria valer. O hex escuro espelha
-        `--color-primary-dark` de resources/css/app.css, e um teste trava a
-        sincronia entre os dois.
+        janela em que ele deveria valer. O hex escuro espelha `--brand-navy-dark`
+        de resources/css/app.css, e um teste trava a sincronia entre os dois.
+
+        O `color-scheme` mora aqui, e não só no <meta> acima, porque ele precisa
+        seguir a CLASSE `.dark` — que é o que muda quando o usuário troca de
+        tema em `use-appearance.tsx`. O <meta> é calculado no servidor e
+        congela: quem alternasse o tema ficava com barra de rolagem e controles
+        nativos do tema anterior até dar reload. Preso à classe, acompanha de
+        graça, sem uma linha de JS e já no primeiro paint.
     --}}
     <style >
         html {
             background-color: white;
+            color-scheme: light;
             transition: background-color 0.2s ease;
         }
 
         html.dark {
             background-color: #0f2a44;
+            color-scheme: dark;
             transition: background-color 0.2s ease;
         }
     </style >

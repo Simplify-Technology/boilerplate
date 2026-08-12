@@ -11,6 +11,7 @@ Before planning or editing, find the row whose globs match the file's path and r
 | app/Events/** | .ai/rules/events.md |
 | resources/css/** | .ai/rules/css.md |
 | resources/js/** | .ai/rules/js.md |
+| resources/views/** | .ai/rules/views.md |
 | app/Listeners/** | .ai/rules/listeners.md |
 | app/Http/Middleware/** | .ai/rules/middleware.md |
 | app/Models/** | .ai/rules/models.md |
