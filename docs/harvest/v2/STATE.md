@@ -55,7 +55,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 
 | # | Projeto | Inv | 1 Seg | 2 Arq | 3 Perf-BE | 4 Front | 5 UX | 6 UI | 7 Copy | 8 Ops | Crítico | Projeto |
 | - | ------- | --- | ----- | ----- | --------- | ------- | ---- | ---- | ------ | ----- | ------- | ------- |
-| 1 | ctfinance | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 1 | ctfinance | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 2 | spinmax | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 3 | sorteiopix | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 4 | ctjuris | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 6/70 células (8,6%) · BACKLOG: **10 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13)**, 1 realocado (A2), **35 aplicáveis** (8 de dim. 1–3 + 27 de dim. 5: E1–E30 menos E17, E2 e E13), 7 adiados, **10 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 7/70 células (10%) · BACKLOG: **10 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13)**, 1 realocado (A2), **~109 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **74 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -249,11 +249,29 @@ Quatro fatos medidos:
 
 **Some junto** toda a deduplicação do hook antigo (Map global, `setInterval` de 5s, refs por componente): ela existia porque o dado morava em props e reaparecia a cada re-render e a cada volta no histórico.
 
+### O que a dimensão 6 mostrou (2026-08-12)
+
+**67 candidatos → 68 vereditos** (um nasceu na verificação), 66 sobreviveram. Célula de maior rendimento da rodada, e a que mais mudou o entendimento do boilerplate.
+
+**O `@theme` do boilerplate está quebrado de três formas, medidas no CSS COMPILADO:** `--color-primary` e `--color-accent` estão declarados duas vezes — uma dentro do `@theme`, outra num `:root` **sem layer**, que vence. `bg-primary`/`text-primary` resolvem para o mesmo hex nos dois temas (`text-primary` no escuro = **1.28:1**) e `--primary` nunca chega a utilitário; o comentário "Buttons/CTAs should be high-contrast in dark mode" descreve efeito morto. E os 6 pares `--color-success/warning/info(-foreground)` nunca foram exportados, então `.text-success` **não existe** no CSS gerado — com call-site vivo em `user-actions-menu.tsx:125`. Achado novo da verificação, pior que os três: `@radix-ui/themes` redeclara `--color-background` sem layer e sequestra `bg-background` no app inteiro, por `app.tsx:7`.
+
+**A lição de método desta célula:** o mecanismo da correção é uma palavra (`@theme inline`), e foi exatamente aí que a verificação pagou — ela mediu que **pós-correção o `bg-primary` no escuro cai de 11.4:1 para 3.13:1 e reprova AA**. Uma "correção de uma linha" teria embarcado regressão de contraste. Três outros candidatos tiveram o remédio derrubado pela mesma razão: o `Alert destructive` "mínimo viável" dá 4.00:1 (ainda reprova), os percentuais de `color-mix` do ctfinance reprovam 3 dos 4 estados na paleta daqui, e o `--ring` precisava de valor novo, não da classe `.focus-ring-brand` do derivado.
+
+**O pareamento com a dimensão 5 valeu.** Nove fatias já decididas ganharam a metade visual no mesmo PR, e quatro pareamentos que o caçador propôs foram **corrigidos** — o mais importante: escopar o CSS do Radix Themes não viaja com o `EmptyState`, porque acoplar risco de cascata de 69 regras a uma reescrita de componente torna a revisão impossível.
+
+### ⚠️ Conflito entre células resolvido a favor da dimensão 5
+
+A dimensão 6 ressuscitou o `eslint-plugin-jsx-a11y` como `[dep-nova]`. A dimensão 5 já o havia **rejeitado** por incompatibilidade dura (o plugin declara peer até ESLint 9; o boilerplate roda 10.8.0) e a célula 6 não refutou esse fato. **A rejeição vale**; a alternativa segue sendo `jest-axe`.
+
 ## Próxima unidade
 
-**Dimensão 6 (UI) do ctfinance** — decisão do dono em 2026-08-11 ("próxima sessão"). A célula está barata: a dimensão 5 já deixou ~14 ponteiros verificados para ela, e **cinco candidatos enfileirados adiam explicitamente a metade visual para a 6** (E14/E15 o corpo do `empty-state`, E6 a className do `InputError`, E16 o desenho do card, E12 o texto default, E18/E23 o `search-bar`). Varrer a 6 antes de aplicá-los evita abrir os mesmos arquivos duas vezes, em dois PRs.
+**Fatia F1 — consertar o `@theme`.** É pré-requisito de metade da célula 6 e da metade visual de E6, E12+E21 e E14+E15. Não é fatia de uma linha: a palavra (`@theme inline`) mais a recalibração das duas paletas, mais o guard-rail F4 (nenhum `--color-*` fora do `@theme`; todo `@import` de terceiro em `layer()`), mais reafirmar `--color-background` depois do import do Radix. Risco médio e **muda aparência de verdade** — vale confirmar com o dono antes de mesclar, não antes de abrir.
 
-Só **depois** da 6, a fila de aplicação: **E14+E15** (`empty-state.tsx`) · **E21+E12** (`delete-confirmation-dialog.tsx`) · **E30** (`delete-user.tsx`, bug que todo derivado tem) · **E22+E24** (landmark + skip-link) · **E6+E20** (ARIA de campo) · **E23** · **E18** · **E27+E29** (limpeza de código morto).
+Duas fatias P **sem dependência nenhuma** podem ir antes ou em paralelo, se preferir começar barato: **F5** (`--ring` invisível, 1.34:1) e **F22** (`<Link><Button>` produzindo `<a><button>` em 6 pontos).
+
+Fila depois do F1, agora com as metades visuais pareadas: **E6+F-input-error** · **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F7** (cor de marca — decisão do dono).
+
+~~Ordem antiga~~: **E14+E15** (`empty-state.tsx`) · **E21+E12** (`delete-confirmation-dialog.tsx`) · **E30** (`delete-user.tsx`, bug que todo derivado tem) · **E22+E24** (landmark + skip-link) · **E6+E20** (ARIA de campo) · **E23** · **E18** · **E27+E29** (limpeza de código morto).
 
 ~~**Fatia E17**~~ ✅ aplicada — PR #66 aberto. Justificativa que valeu e segue valendo para a fila acima: Prioridade 1 do protocolo (fatia de aplicação pronta), e a fila de P deixou de estar seca: a dimensão 5 entregou 20 candidatos P de risco baixo.
 

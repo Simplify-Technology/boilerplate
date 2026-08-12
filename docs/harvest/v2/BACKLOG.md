@@ -474,3 +474,102 @@ A passada extra rendeu uma família que nenhuma das 4 frentes viu: **código mor
 | Achado | Origem | Motivo (lente que derrubou) |
 | ------ | ------ | --------------------------- |
 | Guard-rail contra "interruptor de preferência sem ponto de leitura em produção" | `ctfinance NotificationPreferenceService.php:12-16` — `financial_summary` e `recurring_generated` têm **zero** consumidores (só `lgpd_export_ready` é lido, em `ExportReadyNotification.php:28`) | REFUTAR: o defeito no ctfinance é real e medido, mas **não tem contraparte no boilerplate** — não existe nenhuma preferência persistida em banco lá (a única é o tema, em localStorage/cookie, e ela **é** lida em `use-appearance.tsx:22-23`). RISCO: é a armadilha de vácuo do enunciado — `arch()` sobre `App\Services\*PreferenceService` resolve para camada vazia e passa vacuamente; teste por varredura de árvore nasceria com conjunto vazio e apodreceria em silêncio. E a premissa "o teste só prova que o checkbox aparece" é **falsa**: `NotificationsPreferencesTest.php` é Pest de backend com 6 testes (guest→redirect, defaults, PATCH+releitura, 422 de categoria desconhecida, always-on, e o gate real do `ExportReadyNotification`) e **zero** asserção de checkbox. O buraco correto é "nenhum teste prova EFEITO das 2 órfãs". **Resíduo:** uma frase em `.ai/rules` a ser ATIVADA como teste quando a primeira preferência persistida aterrissar no boilerplate. Fora do escopo desta colheita: vale abrir bug no ctfinance. |
+
+## Aplicáveis agora — ctfinance (dimensão 6 — UI)
+
+Fonte: ctfinance @ `b8c6d57` × boilerplate `main` @ `fb3eb67`. **66 sobreviventes de 67 candidatos + 8 da secagem.** Escopo abaixo é o CORRIGIDO pelas 3 lentes.
+
+> **Esta célula tem cadeia de dependência real.** A ordem abaixo não é sugestão: F1 destrava F2/F3/F9/F10 e a metade visual de E6/E12/E14. Aplicar fora de ordem produz PR que "conserta" cor com token que ainda não existe.
+
+### F1 · `[absorver]` + `[guard-rail]` o `@theme` está quebrado de 3 formas · G · risco **médio** · **PRIMEIRO DA FILA, destrava metade da célula**
+
+- **Defeito 1 — `--color-primary` definido duas vezes:** `app.css:37` no `@theme` (`var(--primary)`) × `app.css:108` num `:root` **sem layer** (`#1f3c57`). Sem layer vence `@layer` — confirmado no CSS **compilado** (posições 11239 dentro de `@layer theme{` × 813686 fora de layer). `bg-primary`/`text-primary`/`hover:bg-primary/90` resolvem para `#1f3c57` **nos dois temas**; `--primary` nunca chega a utilitário. `text-primary` no escuro = **1.28:1**. O comentário `/* Buttons/CTAs should be high-contrast in dark mode */` (`:169`) descreve efeito morto.
+- **Defeito 2 — mesma colisão em `--color-accent`** (`:46` × `:111`): `hover:bg-accent` de todo `Button variant="ghost"`/`outline` pinta `#379bcb` saturado, igual nos dois temas. Alcance real: **59 matches em 39 linhas** (não 84 — aquilo era `grep -o` e incluía 25 `-foreground`, que não são sombreados).
+- **Defeito 3 — [NOVO, nascido na verificação] `@radix-ui/themes` redeclara `--color-background` sem layer** e sequestra `bg-background` no app inteiro. Chega por `app.tsx:7` (`import { Theme }`) — o caçador listou 6 consumidores e omitiu justamente este, que é o que torna a colisão global.
+- **⚠️ O mecanismo é uma palavra, a fatia NÃO é:** `@theme {` → `@theme inline {` (`app.css:14`) conserta a resolução, mas a lente mediu que **pós-correção `bg-primary` + `text-primary-foreground` no escuro cai de 11.4:1 para 3.13:1 e reprova AA**. A fatia é a palavra **+ recalibração das duas paletas + revisão visual**. Sem isso é regressão embarcada.
+- **Higiene na mesma PR:** renomear os literais de paleta base de `app.css:107-112` para fora do namespace (`--brand-navy`, `--brand-cyan`, …) — 4 deles viram utilitário fantasma do Tailwind sem ninguém querer. E reafirmar `--color-background` depois do `@import` da `:5`.
+- **Guard-rail que nasce junto (F4):** teste Vitest lendo `resources/css/app.css` que falha se **qualquer `--color-*` for declarado fora do bloco `@theme`**, mais a asserção de que todo `@import` de folha de terceiro carrega `layer(...)`.
+- **Não copiar do ctfinance:** ele tem a mesma colisão (`app.css:119-126`) e não a resolveu. A prova do mecanismo vem de `app.css:299-311`, onde ele remapeia `--color-cyan-*` no `:root` **de propósito**, por saber que o não-layerizado vence.
+
+### F2 · `[absorver]` os 6 pares `--color-success/warning/info(-foreground)` não estão no `@theme` · P · risco baixo · **viaja com F1**
+
+- **Classe morta com call-site vivo:** no CSS compilado (832 KB) há **0** ocorrências de `.text-success`, `.bg-success`, `.text-warning`, `.text-info`, e **0** de `--color-success`. Controle positivo: `.text-destructive` existe. `users/user-actions-menu.tsx:125` escreve `text-success focus:text-success` e a classe é descartada. Hoje os 6 tokens só são lidos pelo CSS de toast (`app.css:615-654`).
+- **Escopo:** as 6 linhas de export, no molde de `ctfinance app.css:49-54`. **Tem de vir junto do `@theme inline` do F1**, senão o mapeamento herda o bug.
+- **⚠️ Sozinho isso entrega utilitário que reprova em AA no claro:** `text-warning` (#f59e0b sobre branco) **2.15:1**, `text-info` **2.77:1**, `text-success` **3.30:1** — no escuro ficam bons (6.42 / 8.77 / 6.83). Ou vem com o F3, ou os valores claros escurecem antes de virar cor de texto.
+- Adoção que justifica: **159** ocorrências de `(bg|text|border|ring)-(success|warning|info)` em produção no ctfinance (o caçador disse 72 — não reproduz).
+
+### F3 · `[absorver]` trio `--state-{status}-{bg,fg,border}` — separar preenchimento de texto · M · risco médio · **viaja com F1+F2**
+
+- **O problema real:** um token achatado por status faz dois trabalhos incompatíveis. `ui/button.tsx:15` usa `bg-destructive text-white` = **3.67:1** no escuro. Clarear `--destructive` para servir de texto piora o botão; escurecer para servir de botão piora o texto.
+- **Absorver a FORMA** (`ctfinance app.css:185-196` claro, `:281-292` escuro, classes em `:378-400`), **via `@utility`, não `@layer components`**.
+- **⚠️ NÃO copiar os percentuais.** Aritmética refeita ao centésimo: com a fórmula do ctfinance na paleta do boilerplate, **3 dos 4 reprovam** — warning **2.53:1**, info **3.26:1**, success **3.92:1**. Fixar os `fg` como HEX literais derivados de alvo calculado (≥4.5:1 contra o bg do próprio estado; **≥14:1 onde for substituir o emerald atual**, que hoje tem **14.38:1** em `verify-email.tsx` — trocá-lo por soft mal calibrado é regressão).
+
+### F5 · `[guard-rail]` `--ring` é igual nos dois temas e dá 1.34:1: o anel de foco é invisível · P · risco baixo · **independente, o mais barato da célula**
+
+- **Corrigir o VALOR, não absorver a forma.** Dar a `--ring` um par próprio no `.dark` e escolher tons com **≥3:1 contra `--background` E contra `--input`** nos dois temas. Manter `focus-visible:ring-ring/50 ring-[3px]`.
+- **Nada de `.focus-ring-brand`** (a classe do ctfinance). Se quiser `--focus-ring-{width,offset}`, que sejam vars simples no `:root` consumidas pelos primitivos.
+- Correção de método da lente: o caçador compôs `ring-ring/50` em sRGB, mas o CSS compilado usa `color-mix(in oklab, …)`. O hex exato difere; a razão continua em 1.3–1.5, longe de 3:1. Conclusão intacta.
+
+### F9b · `[absorver]` `<Alert variant="destructive">` é texto branco em fundo branco no tema claro · P · risco baixo · **bug visível**
+
+- **⚠️ E o remédio proposto também estava errado:** `bg-destructive/10 text-destructive` dá **4.00:1**, abaixo de AA. A forma correta, que é a do shadcn atual: `border-destructive/30 bg-card text-destructive` — `#e11d48` sobre branco = **4.70:1**.
+- Teste: renderizar a variante e exigir que a className resolvida contenha classe de background.
+- Correção de citação: a variante `destructive` do ctfinance está em `ui/alert.tsx:12-13`, não `:16-17` (`:16-17` é a `warning`).
+
+### F22 · `[absorver]` `<Link><Button>` produz `<a><button>` em 6 pontos · P · risco baixo · **sem dependência, mandar cedo**
+
+- Os 6 viram `<Button asChild><Link/></Button>`, className migra para o `<Button>`, e a asserção "zero `<Link ...><Button`" entra no mesmo PR nascendo verde.
+- **Cuidado que o caçador não citou:** em `pages/users/show.tsx:59,64` e `permissions.tsx:110,116` os botões carregam a string cyan de 190 caracteres — **não limpar a cor aqui** (é o F7), misturar torna o diff ilegível.
+- Melhor precedente do caso difícil (Tooltip + `asChild` + `size="icon"`): `ctfinance users/user-table-row.tsx:92`.
+- Lente: **nenhum fato errado** — os 6 path:linha, os 12 do ctfinance e o `asChild` em 62 linhas, todos verificados.
+
+### Metades visuais que viajam com fatias já decididas na dimensão 5
+
+Foi para isto que a dimensão 6 foi varrida antes de aplicar a fila da 5. Pareamentos **confirmados pelas lentes**:
+
+| Fatia da dim. 5 | Metade visual que entra no MESMO PR | Dependência |
+| --------------- | ----------------------------------- | ----------- |
+| **E6** (`input-error.tsx`) | `text-red-600 dark:text-red-400` → `text-destructive`; é a mesma linha 6, diff de ~10 linhas | ⚠️ `--destructive` no escuro dá **3.99:1** como texto — **se F3 não entrar antes, o E6 regride a acessibilidade**; nesse caso entra sem a troca de className |
+| **E12+E21** (`delete-confirmation-dialog.tsx`) | 35 literais de cor → tokens de estado; levar junto `settings/delete-account-info-dialog.tsx` | depende de `--color-warning` (F2) |
+| **E14+E15** (`empty-state.tsx`) | corpo `@radix-ui/themes` → Tailwind + `<h3>` + ícone em chip com `aria-hidden`; toca 3 arquivos (`role-users-table.tsx:137,141` é call-site) | nenhuma. **NÃO** acoplar o escopo do CSS do Radix (F6) aqui |
+| **E16 fatia A** (piso de toque) | `--radius-control`/`--touch-target-comfort` no `@theme` + `<InfoTrigger>` | ⚠️ o CVA `icon: size-9→size-11` muda **1 call-site vivo** — quase no-op; o valor está no `<InfoTrigger>` e na regra |
+| **E18+E23+E25** (`search-bar.tsx`, `toast-config.ts`) | variantes `toolbar`/`toolbarActive` + `buttonVariants()` como fábrica; botões-ícone reusam `buttonVariants` | mesmo par de arquivos que `filter-toggle.tsx`; se a recalibração de `toolbarActive` depender do F1, corte o escopo |
+| **E28** (`loading`/`aria-busy` no Button) | vencedor visual é o `LoaderCircle` com `data-slot="button-loading-icon"`; `aria-hidden` no ícone | — |
+| **E22** | `aria-current` aparece **1 vez** no repo inteiro, dentro do breadcrumb | — |
+| **E27** | mais **4 layouts órfãos** além do já contado | — |
+| **E29** | banner de personificação: `bg-teal-500` + `text-white` ≈ **2.6:1**, e a saída é `<a href="#">` | — |
+
+### Restante da dimensão 6 — F6–F42
+
+| # | Candidato | Classe | Nota decisiva |
+| - | --------- | ------ | ------------- |
+| F4 | teste de contrato lendo o CSS como texto | guard-rail M | absorver a IDEIA, trocar as asserções: o do ctfinance lista nomes e apodrece. A asserção que vale é "nenhum `--color-*` fora do `@theme`". Nasce com o F1 |
+| F6 | `@radix-ui/themes/styles.css` global: **812–832 KB em toda página**, inclusive as de auth que não usam Radix | guard-rail M | **bloqueado pelo F1 defeito 3**. NÃO viaja com E14+E15 |
+| F7 | cor de marca `cyan-*` hardcoded em **229 literais / 90 linhas / 23 arquivos** — e não é o `--primary` | guard-rail G | **decisão de marca do dono**; isolar para poder ser recusada sem derrubar o resto. Depois do F1 |
+| F17 | **nenhuma página autenticada renderiza `<h1>`**; `--font-title` usado 2× | guard-rail M | resolve com o `SectionHeader`, o único primitivo só-do-ctfinance que generaliza sem dep nova |
+| F18 | `page-header.tsx` monta className por interpolação — gradiente nunca gerado | guard-rail P | morto nos dois projetos; a exclusão vai no PR do `SectionHeader`, sobra só a regra |
+| F19 | foco: 35 `focus-visible:` repetidos nos primitivos × 4 tokens no ctfinance | absorver M | mesmo bloco de tokens do F2 |
+| F20 | **422 utilitários de cor literal em 35 arquivos** de produção — os primitivos estão limpos, os consumidores é que furam | guard-rail M | catraca com contagem decrescente; **depois** dos PRs de cor, senão trava todos |
+| F23 | 3 `<button>` de produção sem `type` | guard-rail P | dobra no PR do `filter-toggle` (`react/button-has-type`) |
+| F24 | camada `ui/` sem fronteira: primitivos importam componente de app, utils de formatação e config de toast | guard-rail M | mesmo arquivo de teste do F4/F20 |
+| F26 | **9 dos 31** primitivos de `ui/` mortos ou vivos só pelo próprio teste | guard-rail M | depois do PR do `SectionHeader` |
+| F27 | duas tabelas convivendo: `ui/table.tsx` (**0 usos**) × `Table` do Radix Themes | **proposta-adr** G | `ui/table.tsx` é o único lugar com estado de linha selecionada |
+| F28 | `Input`/`Select`/`Textarea`: piso de toque e afinação do escuro | absorver P | a metade escura viaja **sozinha e já** |
+| F29 | `Skeleton` inapto: token errado (`bg-primary/10`), sem variantes, **0 call-sites**, 0 teste | absorver P | some junto com o F1 — é a colisão que apaga o skeleton no escuro |
+| F30 | botão não anima o fundo: `transition-[color,box-shadow]` faz todo hover de background estalar | absorver P | mesma CVA do E16 fatia A |
+| F32 | animação de toast é **CSS morto** — `react-hot-toast` 2.6.0 não emite `data-state` nem `data-icon` | guard-rail P | poda autossuficiente; não espera o E18 |
+| F33 | 25 `hover:scale-*`/`active:scale-*` sem sistema | guard-rail P | **represado com D6/D7** — mesmas classNames, mesmos arquivos |
+| F35 | `<meta name="color-scheme">` é calculado no servidor e **nunca atualizado** ao trocar o tema — o cromo nativo fica errado até o reload | guard-rail P | fecha o buraco que o D4 deixou |
+| F14 | `<meta name="theme-color">` por esquema | absorver P | absorver corrigindo o erro do ctfinance |
+| F15 | cor da barra de progresso do Inertia hardcoded fora da paleta | absorver P | carona em qualquer PR que toque `app.tsx` |
+| F37 | identidade: PNG **2084×2120 servido a 40px** dentro de chip preto, ícone do starter kit da Laravel na sidebar, `logo.svg` órfão de 26 KB | absorver M | — |
+| F38 | o `<head>` não declara ícone nenhum: **5 arquivos (126 KB) órfãos** em `public/`, e o `preconnect` para fonts.bunny.net abre TLS com terceiro sem baixar nada | absorver P | — |
+| F41 | o seletor de tema fala **inglês** num produto pt-BR e não anuncia qual opção está escolhida | absorver P | metade é dimensão 7 |
+| F42 | `errors/500.blade.php` pinta fundo escuro **diferente** do canvas do app, e o guard do D4 só olha um dos dois arquivos | guard-rail P | fecha buraco de fatia já mesclada |
+| F34 | `eslint-plugin-jsx-a11y` | `[dep-nova]` | **⚠️ a dimensão 5 já REJEITOU** por incompatibilidade de peer (plugin declara até ESLint 9; o boilerplate roda 10.8.0). Esta célula o ressuscitou sem refutar aquilo — **a rejeição vale**; a alternativa segue sendo `jest-axe` |
+
+### `[rejeitado]` da dimensão 6
+
+| Achado | Motivo |
+| ------ | ------ |
+| `hidden-text`/`hidden-value` como primitivos a absorver | O padrão (mascarar PII em tela) generaliza, mas os dois usam `role="text"`, que **não é role ARIA válido** (extensão só do Safari) — o `aria-label` irmão pode ser ignorado e o mascaramento vira só visual. Sem call-site no boilerplate. Sobrevive só como **regra de uma linha** em `.ai/rules`, junto da regra contra className por interpolação |

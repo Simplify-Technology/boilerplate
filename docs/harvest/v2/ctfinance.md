@@ -404,3 +404,46 @@ Fatos verificados que **não** são UX. Entram como candidatos quando a célula 
 - ctfinance `utils/analytics.ts:18-39` é sink de evento sem vendor (`dataLayer` + `window.analytics` + `CustomEvent`) — ponto de plugue único para GA/PostHog sem acoplar o app; **mas tem 1 call-site só**.
 - ctfinance `tests/Browser/DashboardContextSwitcherBrowserTest.php:103-125` prova, no MESMO caso, que a afordância some da tela **e** que o endpoint recusa (403) — é a prova executável da doutrina "`PermissionsGuard` no React é UX-only" do `CLAUDE.md`. O boilerplate cobre bem só a metade backend (46 asserções de 403 em 19 arquivos) e não tem infra de Pest Browser para pendurar a outra metade.
 - Compatibilidade a anotar se testes browser do ctfinance forem portados: `CategoryDeleteConfirmationBrowserTest.php:130` seleciona `[role="dialog"]`, mas o boilerplate marca `delete-confirmation-dialog.tsx:82` e `ui/confirm-dialog.tsx:50` com `role="alertdialog"` — o seletor não casaria. E `:110-113` seleciona por `button[aria-label="Mais opções para %s"]`, o que transforma `aria-label` em contrato travado por teste.
+
+### Dimensão 6 — UI ✅
+
+Varredura em 4 frentes (tokens/tema · primitivos `ui/` · CVA/ícones/densidade · skeleton/microinteração), **3 lentes adversariais por frente**, secagem única. **67 candidatos caçados → 68 vereditos** (um achado novo nasceu na verificação), **66 sobreviveram, 1 rejeitado**, mais 8 da secagem. É de longe a célula de maior rendimento da rodada.
+
+Os 17 ponteiros que a dimensão 5 deixou entraram como candidatos a julgar. Todos receberam veredito; três tiveram o escopo invertido.
+
+#### O achado que domina a célula: o `@theme` do boilerplate está quebrado de três formas
+
+Medido no CSS **compilado** (`public/build/assets/app-*.css`), não só no fonte:
+
+1. **`--color-primary` está definido duas vezes com valores diferentes** — `app.css:37` dentro do `@theme` (`var(--primary)`) e `app.css:108` num `:root` **sem layer** (`#1f3c57`). Declaração sem layer vence declaração em `@layer`: confirmado no artefato (a primeira sai na posição 11239, dentro de `@layer theme{`; a segunda na 813686, fora de qualquer layer). Resultado: `bg-primary`, `text-primary` e `hover:bg-primary/90` resolvem para **`#1f3c57` nos dois temas**, e `--primary` — que o `.dark` troca por `var(--color-accent)` — **nunca chega a utilitário nenhum**. O comentário `/* Buttons/CTAs should be high-contrast in dark mode */` na `:169` descreve um efeito morto. `text-primary` no escuro dá **1.28:1**.
+2. **Mesma colisão em `--color-accent`** (`:46` × `:111`): `hover:bg-accent` de todo `Button variant="ghost"`/`outline` pinta `#379bcb` saturado em vez do azul pálido do tema, idêntico nos dois. Alcance real medido: **59 matches em 39 linhas** (o caçador disse 84 — era contagem de `grep -o`, e 25 eram `-foreground`, que não é sombreado).
+3. **Os 6 pares `--color-success/warning/info(-foreground)` nunca entraram no `@theme`.** Os tokens `--success`/`--warning`/`--info` existem em `:root` e `.dark`, mas sem o export viram **classe morta**: no CSS compilado de 832 KB há **0 ocorrências** de `.text-success`, `.bg-success`, `.text-warning`, `.text-info`. Controle positivo: `.text-destructive` existe. E há call-site vivo — `users/user-actions-menu.tsx:125` escreve `text-success focus:text-success`, que é descartado.
+
+**Achado novo, nascido na verificação e pior que os três:** `@radix-ui/themes` **redeclara `--color-background` sem layer** e sequestra `bg-background` em todo o app. Chega globalmente por `app.tsx:7` (`import { Theme }`), que é justamente o que impede escopar a folha sem efeito colateral.
+
+**O mecanismo da correção é uma palavra** — `@theme {` → `@theme inline {` (`app.css:14`) — mas a lente mediu o que o caçador não mediu: **pós-correção, `bg-primary` + `text-primary-foreground` no escuro cai de 11.4:1 para 3.13:1 e reprova em AA**. Ou seja, a fatia é a palavra **mais** recalibração das duas paletas. Sem essa medição, a "correção de uma linha" teria embarcado uma regressão de contraste.
+
+**Nada disso se copia do ctfinance:** ele tem a mesma colisão (`app.css:119-126`) e não a resolveu — nele o dano é menor só porque o valor pinado coincide com o do escuro. O que se colheu foi o **diagnóstico**, e a prova do mecanismo veio de um bloco que o ctfinance escreveu **de propósito** (`app.css:299-311`, remapeando `--color-cyan-*` no `:root` justamente por saber que um `:root` não-layerizado vence o `@theme`).
+
+#### Segundo bug visível, independente do primeiro
+
+**`<Alert variant="destructive">` renderiza texto branco em fundo branco no tema claro.** E a lente derrubou também o remédio proposto: `bg-destructive/10 text-destructive` dá **4.00:1**, ainda abaixo de AA. A forma correta, que é a do shadcn atual, é `border-destructive/30 bg-card text-destructive` — `#e11d48` sobre branco dá **4.70:1**.
+
+#### Terceiro: HTML interativo aninhado
+
+`<Link><Button>` produz `<a><button>` em **6 pontos** do boilerplate. O certo é `<Button asChild><Link/></Button>`. O melhor precedente do caso difícil (Tooltip + `asChild` + `size="icon"`) está em `ctfinance users/user-table-row.tsx:92`.
+
+#### O que as lentes corrigiram (amostra)
+
+1. **Os percentuais de `color-mix` do ctfinance não se copiam.** Aritmética refeita ao centésimo: aplicando a fórmula dele à paleta do boilerplate, **3 dos 4 estados reprovam** (warning 2.53:1, info 3.26:1, success 3.92:1). E o emerald inline que hoje está em `verify-email.tsx` tem **14.38:1** — trocá-lo por um `.state-success-soft` mal calibrado é **regressão**.
+2. **`--ring` é idêntico nos dois temas e dá 1.34:1 no claro** — o anel de foco é praticamente invisível. Veredito: **corrigir o valor, não absorver a forma**; nada de classe `.focus-ring-brand`.
+3. **E16 fatia A encolheu.** Subir `icon: size-9 → size-11` no CVA muda **1 call-site vivo** — "é quase no-op, e o ctfinance prova que não resolve". O que vale de fato é o `<InfoTrigger>` + a regra de piso.
+4. **O pareamento com a dimensão 5 foi corrigido em 4 casos.** O mais importante: escopar o CSS do Radix Themes **não** viaja com E14+E15 — "acoplar um risco de cascata de 69 regras a uma reescrita de componente torna a PR irrevisável".
+5. **`react-hot-toast` 2.6.0 não emite `data-state` nem `data-icon`** — a animação de toast do boilerplate é **CSS morto**.
+6. **`ui/table.tsx` tem 0 usos** e convive com a `Table` do `@radix-ui/themes`; é o único lugar com estado de linha selecionada. Virou `[proposta-adr]`.
+
+#### Direção inversa e notas
+
+- O `delete-confirmation-dialog` do ctfinance é **idêntico** ao do boilerplate nas cores literais — ele não resolveu nada ali. A cura é `state-*-soft`, não cópia.
+- `page-header.tsx` monta className por interpolação e **o gradiente nunca é gerado** — bug idêntico nos dois projetos, em componente morto nos dois.
+- `role="text"` (inválido, só existiu no Safari) no ctfinance; `role="button"` redundante sobre `<Button>` no boilerplate. ARIA escrita à mão sem nada checando, dos dois lados.
