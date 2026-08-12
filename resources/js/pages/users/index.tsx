@@ -181,15 +181,16 @@ export default function Index({ users, roles, assignableRoles = [], filters = {}
                                     onToggle={() => setShowFilters(!showFilters)}
                                     activeFiltersCount={activeFiltersCount}
                                 />
-                                <Link href={route('users.create')}>
-                                    <Button
-                                        size="sm"
-                                        className="h-8 gap-1.5 bg-cyan-600 text-white transition-all duration-200 ease-in-out hover:scale-105 hover:bg-cyan-700 active:scale-95 dark:bg-cyan-600 dark:text-white dark:shadow-lg dark:hover:bg-cyan-700 dark:hover:shadow-xl"
-                                    >
+                                <Button
+                                    size="sm"
+                                    asChild
+                                    className="h-8 gap-1.5 bg-cyan-600 text-white transition-all duration-200 ease-in-out hover:scale-105 hover:bg-cyan-700 active:scale-95 dark:bg-cyan-600 dark:text-white dark:shadow-lg dark:hover:bg-cyan-700 dark:hover:shadow-xl"
+                                >
+                                    <Link href={route('users.create')}>
                                         <Plus className="h-4 w-4 transition-transform duration-200" />
                                         Novo Usuário
-                                    </Button>
-                                </Link>
+                                    </Link>
+                                </Button>
                             </div>
                         </div>
                         {/* Advanced Filters Panel - Collapsible */}

@@ -96,24 +96,25 @@ export const UserTableRow = React.memo(
                         {/* Ver Detalhes - Botão visível (ação mais utilizada) */}
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Link href={route('users.show', user.id)}>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        aria-label={`Ver detalhes de ${user.name}`}
-                                        className={cn(
-                                            'h-8 w-8 transition-all duration-200 ease-in-out',
-                                            'hover:bg-muted/60 hover:text-primary hover:scale-105 active:scale-95',
-                                            'dark:hover:bg-muted/40 dark:hover:text-primary',
-                                            '[&_svg]:h-4 [&_svg]:w-4',
-                                            '[&_svg]:text-muted-foreground dark:[&_svg]:text-muted-foreground/70',
-                                            'hover:[&_svg]:text-primary dark:hover:[&_svg]:text-secondary-foreground/80',
-                                            '[&_svg]:transition-all [&_svg]:duration-200 hover:[&_svg]:scale-110',
-                                        )}
-                                    >
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    asChild
+                                    aria-label={`Ver detalhes de ${user.name}`}
+                                    className={cn(
+                                        'h-8 w-8 transition-all duration-200 ease-in-out',
+                                        'hover:bg-muted/60 hover:text-primary hover:scale-105 active:scale-95',
+                                        'dark:hover:bg-muted/40 dark:hover:text-primary',
+                                        '[&_svg]:h-4 [&_svg]:w-4',
+                                        '[&_svg]:text-muted-foreground dark:[&_svg]:text-muted-foreground/70',
+                                        'hover:[&_svg]:text-primary dark:hover:[&_svg]:text-secondary-foreground/80',
+                                        '[&_svg]:transition-all [&_svg]:duration-200 hover:[&_svg]:scale-110',
+                                    )}
+                                >
+                                    <Link href={route('users.show', user.id)}>
                                         <Eye className="h-4 w-4" />
-                                    </Button>
-                                </Link>
+                                    </Link>
+                                </Button>
                             </TooltipTrigger>
                             <TooltipContent>Detalhes</TooltipContent>
                         </Tooltip>
