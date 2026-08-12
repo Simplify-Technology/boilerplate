@@ -452,7 +452,7 @@ Não conflita com ADR vigente — é escolha de arquitetura ainda não registrad
 
 A passada extra rendeu uma família que nenhuma das 4 frentes viu: **código morto herdado do starter kit**, e um bug de diálogo que está em todos os 7 derivados por construção.
 
-### E30 · `[guard-rail]` o erro de senha sobrevive ao Esc e ao X · P · risco baixo · **multi-fonte confirmado**
+### ~~E30~~ ✅ APLICADO · PR [#96](https://github.com/Simplify-Technology/boilerplate/pull/96) · `[guard-rail]` o erro de senha sobrevive ao Esc e ao X · P · risco baixo · **multi-fonte confirmado**
 
 - **Bug vivo:** `components/delete-user.tsx:52` monta `<Dialog>` **não controlado** (sem `open`, sem `onOpenChange`); `closeModal()` (`:26-29`, o único que faz `clearErrors()` + `reset()`) está pendurado **só** no botão Cancelar (`:82-86`). O X (`ui/dialog.tsx:64-68`, sempre renderizado), o Escape e o clique fora não passam por ele. O `useForm` vive **fora** do `<Dialog>`, então não desmonta: quem errou a senha, fechou com Esc e reabriu vê "senha incorreta" sobre um campo vazio, como se a tentativa nova já tivesse sido rejeitada.
 - `grep -rn "clearErrors" resources/js` → **2 linhas, ambas neste arquivo**.

@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **19 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4) · **3 PRs abertos** (#90 scrubber de PII, #92 erro anunciado, #94 estado vazio com saída)
+- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **19 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4) · **4 PRs abertos** (#90 scrubber de PII, #92 erro anunciado, #94 estado vazio com saída, #96 diálogo controlado)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 9/70 células (13%) · BACKLOG: **26 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 9/70 células (13%) · BACKLOG: **27 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -146,6 +146,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **S3** — fix(lgpd): objeto e chave composta no scrubber | [#89](https://github.com/Simplify-Technology/boilerplate/issues/89) | `89-harvest-v2-scrubber-objeto-e-chave-composta` | ✅ 5 testes + 5 mutações | ✅ ambos exit 0 (416/2046) | [#90](https://github.com/Simplify-Technology/boilerplate/pull/90) | **aguardando merge do dono** |
 | **E6+E20** — fix(a11y): erro anunciado + fusão de ARIA | [#91](https://github.com/Simplify-Technology/boilerplate/issues/91) | `91-harvest-v2-erro-anunciado` | ✅ 9 testes + 5 mutações | ✅ ambos exit 0 (31/212) | [#92](https://github.com/Simplify-Technology/boilerplate/pull/92) | **aguardando merge do dono** |
 | **E14+E15** — fix(ux): estado vazio com saída + metade visual | [#93](https://github.com/Simplify-Technology/boilerplate/issues/93) | `93-harvest-v2-vazio-com-saida` | ✅ 7 testes + 5 mutações | ✅ ambos exit 0 (31/211) | [#94](https://github.com/Simplify-Technology/boilerplate/pull/94) | **aguardando merge do dono** |
+| **E30** — fix(ux): diálogo de excluir conta controlado | [#95](https://github.com/Simplify-Technology/boilerplate/issues/95) | `95-harvest-v2-dialogo-controlado` | ✅ 5 testes + 4 mutações | ✅ ambos exit 0 (31/209) | [#96](https://github.com/Simplify-Technology/boilerplate/pull/96) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -596,6 +597,23 @@ Para as próximas invocações: o push do estado precisará do mesmo `SKIP_GIT_H
 
 **Nota de método (3ª mutação mal desenhada da rodada, e a mais instrutiva):** a mutação do ramo de tabela produziu JSX inválido e o vitest devolveu **"no tests"** — não uma falha. As três já vistas erram de formas diferentes (`//` comendo o fecho da chamada no S4; `sprintf` ainda interpolando no S2; build quebrado aqui), mas o sintoma é sempre o mesmo: **sinal diferente do vermelho esperado é sinal a auditar.** Vale como checagem fixa: se a linha de resumo não disser "N failed", a mutação não mediu nada.
 
+### E30 — o que entrou (2026-08-12)
+
+`resources/js/components/delete-user.tsx` (diálogo controlado, funil único) + `test/components/delete-user.test.tsx` (novo, 5 testes) + 1 seção em `.ai/rules/js.md`. PR [#96](https://github.com/Simplify-Technology/boilerplate/pull/96).
+
+| Mutação | Resultado |
+| ------- | --------- |
+| `Dialog` volta a ser não controlado (o defeito original) | ⨯ 3 falham |
+| Controlado, mas sem limpar ao fechar | ⨯ 3 falham |
+| **Limpeza volta para o botão Cancelar** | ⨯ **exatamente 2** (Esc e X) |
+| Limpa o formulário mas não os erros | ⨯ 3 falham |
+
+**A 3ª mutação explica por que o bug sobreviveu tanto tempo:** com a limpeza no Cancelar, o caminho que se testa à mão é justamente o que funciona. Só Esc e X denunciam, e ninguém fecha diálogo de teste com Esc. **Generalização para a fila de UX: em componente com vários caminhos de saída, o teste tem de cobrir os que a mão não usa.**
+
+**Nota sobre o mock:** ele reproduz de propósito a topologia real (estado do `useForm` no COMPONENTE, não dentro do `<Dialog>`) — é isso que faz o erro persistir entre aberturas. Um mock com estado dentro do conteúdo do diálogo passaria verde nos dois lados e não provaria nada. Vale para a fila: mock que não reproduz a topologia do defeito é teste decorativo.
+
+**Detalhe de API confirmado no código:** `onOpenChange` do Radix não dispara quando o `open` muda por código, então o fechamento programático (`onSuccess`) chama o funil explicitamente. Está comentado no arquivo e na regra.
+
 ## Próxima unidade
 
 **Reconciliação da 7ª invocação (2026-08-12):** os TRÊS PRs abertos — **#82 (S2)**, **#86 (S5)** e **#88 (C4)** — foram mesclados pelo dono. `main` em `f43478a`. Os 7 SHAs das fontes seguem idênticos aos pinados: **zero drift** desde a abertura da rodada, 7 invocações atrás.
@@ -614,7 +632,7 @@ Para as próximas invocações: o push do estado precisará do mesmo `SKIP_GIT_H
 
 **Fila de fatias prontas do BACKLOG (prioridade 1 do protocolo), em ordem sugerida:**
 
-1. Fila de UX/UI pareada da dimensão 5+6: **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
+1. Fila de UX/UI pareada da dimensão 5+6: **E12+E21+F12** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
 
 **Quando a fila de P do spinmax secar, a unidade mais rentável volta a ser varredura** — a matriz está em 9/70 e cinco projetos ainda não têm inventário. Candidato natural: **célula 0 (inventário) do cuidari ou do ctvitrine**, os dois L13 + Inertia 3 em produção, que são exatamente os que destravam o F3 (a decisão fundacional de tokens de estado, represada desde 2026-08-12).
 
