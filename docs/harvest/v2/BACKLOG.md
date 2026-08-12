@@ -209,6 +209,13 @@ Não vieram de projeto-fonte, então não têm origem `projeto/path@SHA`. Ficam 
 - A tela do sync **não tem** o campo `can_impersonate_any`; ele só entra pelo caminho avulso (`GrantPermissionRequest`). Ou seja: pelo painel não existe caminho de volta — só re-conceder pelo grant.
 - Conserto candidato: `syncWithPivotValues` preservando o `meta` das linhas que sobrevivem, ou expor a opção na tela do sync. Fatia própria.
 
+### C4 · `POST confirm-password` aceita chute de senha sem limite nenhum · P · risco **médio** · **medido em 2026-08-12**
+
+- Verificado durante a fatia #84: `routes/auth.php:58` registra a rota **sem throttle**, e `ConfirmablePasswordController::store()` chama `Auth::guard('web')->validate()` **sem limiter próprio** — ao contrário do `LoginRequest`, que tem o dele. Não há teto de tentativa em lugar nenhum do caminho.
+- **Consequência:** sessão sequestrada (ou máquina destravada) chuta a senha do dono à vontade para abrir as áreas protegidas por `password.confirm`. O login está defendido; a re-confirmação, não — e é o mesmo segredo.
+- Conserto candidato: limiter nomeado por `user()->id` na rota, ou o mesmo padrão `email|ip` do `LoginRequest` dentro de um FormRequest próprio (o controller hoje usa `Request` cru, contra a convenção da casa). Fatia própria, de dimensão 1.
+- **Não é o mesmo caso do `POST logout`**, que também não tem throttle: lá não há segredo a adivinhar.
+
 ## Adiados / rescopados para prioridade baixa
 
 | # | Candidato | Tipo | Por quê ficou para depois |
@@ -629,7 +636,7 @@ completos em `spinmax.md § Dimensão 1`.
 
 - Sobrevive **parcialmente**: a lente mediu que a proposta como escrita é regressão. Escopo reduzido — casar por substring e somar ramo `Arrayable`, sem trocar a fiação (que é `[atual]`).
 
-### S4 · `[guard-rail]` o lockout do `POST login` não tem teste em nenhum dos dois repositórios · P · risco baixo
+### ~~S4~~ ✅ APLICADO · PR [#84](https://github.com/Simplify-Technology/boilerplate/pull/84) · `[guard-rail]` o lockout do `POST login` não tem teste em nenhum dos dois repositórios · P · risco baixo
 
 - Único candidato da célula que sobreviveu **intacto** às três lentes. O limite mora num FormRequest e ninguém prova que morde.
 

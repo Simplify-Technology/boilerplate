@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **15 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1) · **1 PR aberto** (#82 teto de concessão)
+- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **15 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1) · **2 PRs abertos** (#82 teto de concessão, #84 lockout do login)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 9/70 células (13%) · BACKLOG: **18 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **3 achados internos (C1, C2, C3)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 9/70 células (13%) · BACKLOG: **19 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -140,6 +140,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **F23** — fix: `<button>` sem `type` + regra `react/button-has-type` | [#77](https://github.com/Simplify-Technology/boilerplate/issues/77) | `77-harvest-v2-button-type` | ✅ lint como gate + 2 mutações | ✅ ambos exit 0 (364/1896 · 30/204) | [#78](https://github.com/Simplify-Technology/boilerplate/pull/78) | ✅ **MESCLADO** 2026-08-12 |
 | **S1** — fix(seguranca): teto de PII no `UserResource` | [#79](https://github.com/Simplify-Technology/boilerplate/issues/79) | `79-harvest-v2-teto-pii-resource` | ✅ 10 testes + 4 mutações | ✅ ambos exit 0 (374/1931 · 30/204) | [#80](https://github.com/Simplify-Technology/boilerplate/pull/80) | ✅ **MESCLADO** 2026-08-12 |
 | **S2** — fix(rbac): teto de concessão nos 3 caminhos de permissão | [#81](https://github.com/Simplify-Technology/boilerplate/issues/81) | `81-harvest-v2-teto-concessao-permissao` | ✅ 12 testes + **7 mutações** | ✅ ambos exit 0 (395/1977 · 30/204) | [#82](https://github.com/Simplify-Technology/boilerplate/pull/82) | **aguardando merge do dono** |
+| **S4** — test(auth): prova que o lockout do login morde | [#83](https://github.com/Simplify-Technology/boilerplate/issues/83) | `83-harvest-v2-lockout-login` | ✅ 7 testes + **7 mutações** | ✅ ambos exit 0 (390/1969) | [#84](https://github.com/Simplify-Technology/boilerplate/pull/84) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -464,18 +465,42 @@ Generalização para o resto da rodada: **teste de teto com duas condições (pe
 
 **Dois achados colaterais medidos e registrados no BACKLOG** (C2 e C3), nenhum dos dois entrou na fatia: o catálogo das telas de RBAC não é filtrado pela superfície de quem olha (as duas telas, comportamento anterior a esta fatia), e desmarcar/remarcar `impersonate_users` no sync apaga o `can_impersonate_any` em silêncio. O C3 foi **medido com teste descartável**, e o palpite inicial estava errado nos dois sentidos — sync que MANTÉM a permissão preserva o pivô; só o par remover+re-adicionar perde.
 
+### S4 — o que entrou (2026-08-12)
+
+`tests/Feature/Auth/LoginLockoutTest.php` (novo, 7 testes) + seção nova em `.ai/rules/routes.md`. Zero linha de app tocada — é guard-rail puro. PR [#84](https://github.com/Simplify-Technology/boilerplate/pull/84).
+
+| Mutação no `LoginRequest` | Resultado |
+| ------------------------- | --------- |
+| Sem o `ensureIsNotRateLimited()` | ⨯ 3 falham |
+| Checagem **tarde**, depois do `Auth::attempt()` | ⨯ 3 falham |
+| Chave só por **IP** | ⨯ falha |
+| Chave só por **e-mail** | ⨯ falha |
+| Sem o `RateLimiter::clear()` | ⨯ falha |
+| Limite frouxo (5 → 50) | ⨯ 3 falham |
+| Sem o `event(new Lockout(...))` | ⨯ falha |
+
+**Trap de mutação paga aqui, e é irmã da do F42:** as mutações de chave mataram **7 testes cada** na 1ª passada. O `// MUTACAO` comia o `);` da chamada e virava erro de sintaxe — o arquivo morria inteiro, não a propriedade. Refeitas com `/* */`, matam **exatamente 1** cada. **Regra: mutação com sinal amplo demais para o que ela muda é mutação a auditar, não evidência a comemorar.** A do F42 era o mesmo erro na direção oposta (comentário citando tag enganava o extrator e deixava VERDE).
+
+**Correção de fato feita antes do commit:** eu havia escrito "login é a única rota de autenticação sem throttle". Falso — `POST logout` e `POST confirm-password` também não têm. A afirmação correta, e a que entrou no código e na regra, é "única do grupo `guest`".
+
+**Achado colateral registrado (C4):** `POST confirm-password` não tem throttle de rota **nem** limiter próprio no controller — sessão sequestrada chuta a senha do dono à vontade para abrir as áreas de `password.confirm`. É o mesmo segredo do login, defendido de um lado e não do outro. Fatia própria.
+
 ## Próxima unidade
 
 **Reconciliação da 5ª invocação (2026-08-12):** os DOIS que o STATE dava como abertos — **#76 (F42+F35)** e **#80 (S1)** — já estavam **mesclados**. Corrigido acima antes de executar qualquer unidade. `main` local em `a3cc87e`. Os 7 SHAs das fontes seguem idênticos aos pinados: **zero drift na rodada até agora**. Nota operacional: `gh issue create` foi bloqueado pelo classificador de permissões na primeira tentativa desta sessão e passou na segunda, a pedido do dono — se repetir, é a mesma coisa.
 
 ~~**S2**~~ ✅ aplicado — PR [#82](https://github.com/Simplify-Technology/boilerplate/pull/82) aberto.
 
+~~**S4**~~ ✅ aplicado — PR [#84](https://github.com/Simplify-Technology/boilerplate/pull/84) aberto.
+
 **Fila de fatias prontas do BACKLOG (prioridade 1 do protocolo), em ordem sugerida:**
 
-1. **S4** — `[guard-rail]` o lockout do `POST login` não tem teste em nenhum dos dois repositórios. P, risco baixo, e o **único candidato da célula 1 do spinmax que sobreviveu INTACTO às três lentes**. Backend puro, negação natural.
-2. **S5** — `[guard-rail]` o teste do `EnsureUserIsActive` não atravessa arquivo de rota. P, risco baixo; o boilerplate é superior aqui e o guard-rail é contra a regressão que reabriria o buraco do spinmax.
+1. **S5** — `[guard-rail]` o teste do `EnsureUserIsActive` não atravessa arquivo de rota. P, risco baixo; o boilerplate é superior aqui e o guard-rail é contra a regressão que reabriria o buraco do spinmax. Fecha o trio de segurança do spinmax e é a menor da fila.
+2. **C4** — `POST confirm-password` sem limite nenhum (achado interno desta invocação). P/M, risco médio; é a única lacuna de segurança VIVA conhecida no BACKLOG agora que S1/S2/S4 saíram.
 3. **S3** — `[guard-rail]` `PiiScrubber` casa chave por igualdade exata e não desce em objeto. M, risco médio, escopo já reduzido pela lente (substring + ramo `Arrayable`, sem trocar a fiação).
 4. Fila de UX/UI pareada da dimensão 5+6: **E6+F-input-error** · **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
+
+**Quando a fila de P do spinmax secar, a unidade mais rentável volta a ser varredura** — a matriz está em 9/70 e cinco projetos ainda não têm inventário. Candidato natural: **célula 0 (inventário) do cuidari ou do ctvitrine**, os dois L13 + Inertia 3 em produção, que são exatamente os que destravam o F3 (a decisão fundacional de tokens de estado, represada desde 2026-08-12).
 
 ~~**F1**~~ ✅ PR #70 · ~~**F5**~~ ✅ PR #72 · ~~**F22**~~ ✅ PR #74 — **todos mesclados pelo dono em 2026-08-12**. Reconciliação da 4ª invocação: zero PR aberto, zero fatia em andamento, e os 7 SHAs das fontes seguem idênticos aos pinados (sem drift na rodada).
 
