@@ -47,6 +47,11 @@ export default function Index({ users, roles, assignableRoles = [], filters = {}
 
     const { canDeleteUser, canEdit, canImpersonate, canManagePermissions, canAssignRoles } = useUserPermissions();
 
+    // A condição existia duplicada em título e descrição do estado vazio; ela é
+    // uma pergunta só ("a lista está vazia POR FILTRO?") e decide qual saída
+    // oferecer.
+    const hasActiveFilters = Boolean(filters.search) || filters.role_id !== undefined || filters.is_active !== undefined;
+
     // Pré-calcular flags de permissão uma vez (otimização para evitar chamadas repetidas no map)
     const hasManagePermissions = useMemo(() => canManagePermissions(), [canManagePermissions]);
     const hasAssignRoles = useMemo(() => canAssignRoles(), [canAssignRoles]);
@@ -269,19 +274,37 @@ export default function Index({ users, roles, assignableRoles = [], filters = {}
                                 ) : (
                                     <Table.Row>
                                         <Table.Cell colSpan={6}>
-                                            <EmptyState
-                                                title={
-                                                    filters.search || filters.role_id !== undefined || filters.is_active !== undefined
-                                                        ? 'Nenhum usuário bate com esses filtros'
-                                                        : 'Nenhum usuário cadastrado ainda'
-                                                }
-                                                description={
-                                                    filters.search || filters.role_id !== undefined || filters.is_active !== undefined
-                                                        ? 'Limpe os filtros ou tente outro termo de busca'
-                                                        : 'Clique em "Novo Usuário" para cadastrar o primeiro'
-                                                }
-                                                icon={User2}
-                                            />
+                                            {/*
+                                             * Vazio-por-filtro e vazio-inicial são estados diferentes e
+                                             * pedem saídas diferentes. O texto já distinguia os dois; o
+                                             * que faltava era a ação que ele promete.
+                                             */}
+                                            {hasActiveFilters ? (
+                                                <EmptyState
+                                                    title="Nenhum usuário bate com esses filtros"
+                                                    description="Tente outro termo de busca ou volte à lista completa."
+                                                    icon={User2}
+                                                    action={
+                                                        <Button variant="outline" size="sm" onClick={clearFilters}>
+                                                            Limpar filtros
+                                                        </Button>
+                                                    }
+                                                />
+                                            ) : (
+                                                <EmptyState
+                                                    title="Nenhum usuário cadastrado ainda"
+                                                    description="Cadastre a primeira pessoa para começar a montar a equipe."
+                                                    icon={User2}
+                                                    action={
+                                                        <Button size="sm" asChild>
+                                                            <Link href={route('users.create')}>
+                                                                <Plus className="h-4 w-4" />
+                                                                Novo Usuário
+                                                            </Link>
+                                                        </Button>
+                                                    }
+                                                />
+                                            )}
                                         </Table.Cell>
                                     </Table.Row>
                                 )}

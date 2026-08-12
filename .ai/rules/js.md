@@ -31,3 +31,9 @@ Mensagem de erro de formulário só existe DEPOIS da falha, e `aria-live` num n�
 
 ## Wrapper de primitivo FUNDE o ARIA que vem em props, não redeclara
 Componente que faz `{...props}` e depois escreve `aria-*` próprio sempre ganha do que veio de fora — foi assim que o `DateInput` apagava o `aria-invalid` que o `FormField` injeta por `cloneElement`. Mover a declaração para antes do spread NÃO resolve e cria o bug espelhado: o `cloneElement` grava `'aria-invalid': undefined` como chave própria quando não há erro, e esse `undefined` apaga o valor do wrapper. A única forma correta é a fusão, com o de fora tendo precedência e o próprio como fallback: `aria-invalid={props['aria-invalid'] ?? invalid ?? undefined}`. Vale para todo `aria-*` e para `role` em wrapper de primitivo.
+
+## Vazio-por-filtro e vazio-inicial são estados diferentes, com saídas diferentes
+Listagem vazia porque o filtro não casou nada pede "limpar filtros"; listagem vazia porque não há registro nenhum pede o CTA de criar o primeiro. Use `EmptyState` com a prop `action` e escolha a saída pela condição — não basta trocar o TEXTO e deixar a pessoa sem caminho, que era o caso de `pages/users/index.tsx` ("Limpe os filtros ou tente outro termo" sem botão de limpar, com o `clearFilters` do `use-user-filters` já disponível na mesma tela). Todo estado vazio de listagem sai com uma ação.
+
+## EmptyState não emite linha de tabela
+`EmptyState` renderiza só o conteúdo; quem abre `<Table.Row>`/`<Table.Cell>` é o call-site. O componente já teve um ramo `type="row"` que montava a linha por dentro enquanto o call-site também montava — e o DOM recebia `<tr>` dentro de `<div>` dentro de `<td>`. Ao usar em tabela, abra a célula na tabela e ponha o `EmptyState` dentro dela, sem embrulho extra.
