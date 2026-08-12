@@ -56,3 +56,27 @@ it('redirects back with a flash when the session expires (419)', function() {
         ->assertRedirect(route('login'))
         ->assertInertiaFlash('error');
 });
+
+/*
+ * O 500 em Blade é o fallback do `catch` do respond(): ele só aparece quando o
+ * próprio render Inertia falha, tipicamente com manifest/build quebrado. Como
+ * não há app.css nessa hora, ele carrega o próprio tema — e decidia por
+ * `prefers-color-scheme`, enquanto o app decide por CLASSE, vinda do cookie.
+ * Quem tinha escolhido "escuro" com o sistema em claro recebia página branca.
+ */
+it('paints the last-resort 500 page with the appearance the user chose', function(string $appearance, string $esperado) {
+    $this->view('errors.500', ['appearance' => $appearance])
+        ->assertSee('<html lang="pt-BR" class="' . $esperado . '">', false);
+})->with([
+    'escuro explícito' => ['dark', 'dark'],
+    'claro explícito'  => ['light', 'light'],
+    'segue o sistema'  => ['system', 'system'],
+    'valor inválido'   => ['dark" onload="alert(1)', 'system'],
+]);
+
+it('falls back to system when the appearance never got shared', function() {
+    // O respond() pode disparar ANTES de HandleAppearance rodar (exceção em
+    // provider, por exemplo) — aí $appearance simplesmente não existe na view.
+    $this->view('errors.500')
+        ->assertSee('<html lang="pt-BR" class="system">', false);
+});
