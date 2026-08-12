@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (7/70 células) · **12 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22) · **1 PR aberto** (#76, tema fora do React)
+- **Situação:** Fase 0 concluída · varredura em andamento (7/70 células) · **12 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22) · **2 PRs abertos** (#76 tema fora do React, #78 type dos botões)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 7/70 células (10%) · BACKLOG: **15 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35)**, 1 realocado (A2), **~105 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **70 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 7/70 células (10%) · BACKLOG: **16 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23)**, 1 realocado (A2), **~104 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -110,6 +110,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **F5** — fix: anel de foco invisível no tema claro | [#71](https://github.com/Simplify-Technology/boilerplate/issues/71) | `71-harvest-v2-anel-de-foco` | ✅ 30 testes de estilo + 6 mutações | ✅ ambos exit 0 (364/1896) | [#72](https://github.com/Simplify-Technology/boilerplate/pull/72) | ✅ **MESCLADO** 2026-08-12 |
 | **F22** — fix: `<a><button>` aninhado em 6 links-botão | [#73](https://github.com/Simplify-Technology/boilerplate/issues/73) | `73-harvest-v2-link-botao` | ✅ 8 testes + 3 mutações | ✅ ambos exit 0 (364/1896 · 29/192) | [#74](https://github.com/Simplify-Technology/boilerplate/pull/74) | ✅ **MESCLADO** 2026-08-12 |
 | **F42+F35** — fix: tema fora do React (500 de último recurso + cromo nativo) | [#75](https://github.com/Simplify-Technology/boilerplate/issues/75) | `75-harvest-v2-tema-fora-do-react` | ✅ 17 testes + **9 mutações** | ✅ ambos exit 0 (373/1911 · 30/204) | [#76](https://github.com/Simplify-Technology/boilerplate/pull/76) | **aguardando merge do dono** |
+| **F23** — fix: `<button>` sem `type` + regra `react/button-has-type` | [#77](https://github.com/Simplify-Technology/boilerplate/issues/77) | `77-harvest-v2-button-type` | ✅ lint como gate + 2 mutações | ✅ ambos exit 0 (364/1896 · 30/204) | [#78](https://github.com/Simplify-Technology/boilerplate/pull/78) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -377,6 +378,21 @@ Quatro fatos, e o primeiro é o mais importante da rodada até aqui:
 - **`toContain` do Pest trata o 2º argumento como OUTRO needle, não como mensagem.** Custou dois ciclos vermelhos. Asserção com explicação vai por `expect(str_contains(...))->toBe(true, "…")` / `expect(in_array(...))->toBe(true, "…")`.
 - **Comentário Blade citando uma tag quebra extrator por regex.** O comentário novo do 500 escrevia `<style>` em prosa e o `preg_match` mordeu a citação, devolvendo "CSS" que continha o que o comentário dissesse — e o teste passou verde por isso. O extrator agora remove `{{-- … --}}` antes de procurar a tag.
 
+### F23 — o que entrou (2026-08-12)
+
+3 `<button>` (`appearance-tabs`, `data-table/filter-toggle`, `ui/sidebar` rail) + `react/button-has-type` como `error` no `eslint.config.js`. PR [#78](https://github.com/Simplify-Technology/boilerplate/pull/78).
+
+| Mutação | Resultado |
+| ------- | --------- |
+| Tira o `type` do `filter-toggle` | ⨯ lint aponta arquivo e linha |
+| Desliga a regra e repete a mutação | ✓ passa — prova que é a regra que cobra |
+
+Três notas:
+
+1. **A contagem do candidato (3) estava certa; a minha primeira medição (6) é que estava errada** — grep de linha acha `<button` sem ver o `type=` que vem duas linhas abaixo. Só um scanner que recorta a tag de abertura inteira responde a pergunta.
+2. **Severidade menor que o rótulo sugere: é latente, não bug vivo.** Nenhum dos três vive dentro de `<form>` hoje (`settings/appearance.tsx` e `users/index.tsx` não têm formulário; o rail fica no shell). O valor está na regra, não nos três atributos — registrado assim no PR para não vender conserto que não houve.
+3. **Sem entrada em `.ai/rules`, de propósito.** O ESLint é o teste e falha o gate; prosa em paralelo criaria segunda fonte para o mesmo fato. Primeira fatia da rodada que fecha sem tocar em `.ai/rules`, e o motivo vale como precedente.
+
 ## Próxima unidade
 
 ~~**F1**~~ ✅ PR #70 · ~~**F5**~~ ✅ PR #72 · ~~**F22**~~ ✅ PR #74 — **todos mesclados pelo dono em 2026-08-12**. Reconciliação da 4ª invocação: zero PR aberto, zero fatia em andamento, e os 7 SHAs das fontes seguem idênticos aos pinados (sem drift na rodada).
@@ -385,7 +401,7 @@ Quatro fatos, e o primeiro é o mais importante da rodada até aqui:
 
 **Fatia F3 — trio `--state-{status}-{bg,fg,border}`.** É a próxima unidade grande e a mais destravante: tem catraca esperando no teste do F1 (`destructive` escuro parado em 3.67:1), é pré-requisito da metade visual do E6 (sem ele o `InputError` regride ao trocar de className) e o F2 (os 6 pares `--color-success/warning/info` que nunca foram exportados, com call-site vivo em `user-actions-menu.tsx:125`) viaja junto. M, risco médio. **Não copiar os percentuais do ctfinance** — a aritmética já foi refeita e 3 dos 4 reprovam na paleta daqui; os `fg` entram como HEX literais derivados de alvo calculado.
 
-**Alternativa barata se a unidade tiver de ser curta:** **F32** (animação de toast é CSS morto — `react-hot-toast` 2.6.0 não emite `data-state` nem `data-icon`; poda autossuficiente) ou **F23** (3 `<button>` de produção sem `type`).
+~~**F23**~~ ✅ aplicado — PR [#78](https://github.com/Simplify-Technology/boilerplate/pull/78). **Alternativa barata se a unidade tiver de ser curta:** **F32** (animação de toast é CSS morto — `react-hot-toast` 2.6.0 não emite `data-state` nem `data-icon`; poda autossuficiente).
 
 **F3 segue subindo:** tem catraca esperando no teste do F1 (`destructive` escuro em 3.67:1) e destrava a metade visual do E6. É M/risco médio — a próxima unidade "grande" natural.
 
