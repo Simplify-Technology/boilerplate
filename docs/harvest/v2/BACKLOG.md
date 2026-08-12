@@ -194,6 +194,21 @@ Não vieram de projeto-fonte, então não têm origem `projeto/path@SHA`. Ficam 
 - **Por que não entrou na fatia A6:** é mudança comportamental (adicionar constraint a coluna existente exige decidir o `onDelete` — `set null` casa com o `nullable()` e com o VISITOR como piso de privilégio, mas é decisão, não detalhe). Fatia própria.
 - **Trap anotada:** `permission_role` está com `no action` enquanto `permission_user` está com `cascade` — a assimetria também não tem decisão registrada.
 
+### C2 · o catálogo das telas de RBAC não é filtrado pela superfície de quem olha · P · risco baixo · **medido em 2026-08-12**
+
+- `PermissionCatalogService::forDisplay()` devolve o catálogo inteiro, e as **duas** telas o consomem sem filtro: `User/ShowUserPermissionsController` (permissões avulsas) e `PermissionRole/IndexController` (permissões de cargo). O admin enxerga e marca `impersonate_users` — que ele não tem — e só descobre no save, com 403.
+- Não é bug novo desta fatia: a tela de Cargos já se comportava assim, porque o teto de conteúdo lá é de antes. A fatia #82 apenas estendeu o mesmo comportamento ao caminho individual, e **mitigou** o pior dele — a recusa agora nomeia a permissão que travou (`Permissions::grantDenialMessage()`), em vez de um 403 mudo.
+- **O conserto de UX é filtrar o catálogo** por `permissionsBeyondOwn()` (ou marcar a caixa como desabilitada com o motivo). Fatia própria, de dimensão 5/6 — envolve decidir entre esconder e desabilitar, e esconder tem contra: some a informação de que a permissão existe.
+
+### C3 · desmarcar e remarcar `impersonate_users` no sync apaga o `can_impersonate_any` · P · risco baixo · **medido em 2026-08-12**
+
+- **Medido de primeira mão**, com teste descartável durante a fatia #82 — e o palpite inicial estava errado nos dois sentidos, o que é o motivo de estar aqui como fato e não como suspeita:
+  - sync que **mantém** a permissão já anexada → `canImpersonateAny()` continua `true`. O `sync()` do Eloquent só toca pivô de linha nova; o comentário do `SyncPermissionsController` ("preserva metadados existentes") está **correto** nesse caso.
+  - sync que **remove** e depois re-adiciona → `canImpersonateAny()` volta `false`, em silêncio. A linha nova nasce com `meta` nulo, porque o controller passa IDs crus.
+- **Não é furo de segurança** — a perda é fail-closed (o alvo perde alcance, não ganha). É perda silenciosa de configuração: quem remarcou a caixa acha que recompôs o que havia.
+- A tela do sync **não tem** o campo `can_impersonate_any`; ele só entra pelo caminho avulso (`GrantPermissionRequest`). Ou seja: pelo painel não existe caminho de volta — só re-conceder pelo grant.
+- Conserto candidato: `syncWithPivotValues` preservando o `meta` das linhas que sobrevivem, ou expor a opção na tela do sync. Fatia própria.
+
 ## Adiados / rescopados para prioridade baixa
 
 | # | Candidato | Tipo | Por quê ficou para depois |
@@ -603,7 +618,7 @@ completos em `spinmax.md § Dimensão 1`.
 - **Lente de atualidade:** `[absorver-modernizado]`.
 - **Correções de fato das lentes:** o `$viewer` do spinmax está em `:24` (não `:25`); os campos sensíveis do boilerplate são `:27-31` (não `:26-31`); o grupo `can:manage_users` vai até `routes/web.php:36`, e o caçador parou em `:30`, deixando de fora `users/{user}/permissions`, que **também** serve `UserResource`.
 
-### S2 · `[absorver]` o teto "não conceda um acesso que você mesmo não tem" vale em 1 dos 3 caminhos de concessão · M · risco baixo
+### ~~S2~~ ✅ APLICADO · PR [#82](https://github.com/Simplify-Technology/boilerplate/pull/82) · `[absorver]` o teto "não conceda um acesso que você mesmo não tem" vale em 1 dos 3 caminhos de concessão · M · risco baixo
 
 - **⚠️ REQUALIFICADO — não é escalada.** O caçador vendeu isto como escada viva (`admin` concede `impersonate_users` e assume conta). As três lentes convergiram em derrubar a exploração, e **eu confirmei no código**: `sync()` passa array de IDs cru, sem pivot, então `meta` fica null e `canImpersonateAny()` é `false`; o manager assim "promovido" só alcança prioridade < 70, que o `admin` **já** alcançava direto trocando a senha (< 90). Ganho líquido de capacidade: **zero**. O dano residual é lavagem de trilha de auditoria, não privilégio. E o caminho que escalaria de verdade já está fechado: `GrantPermissionRequest::authorize()` exige `SUPER_USER`, com teste.
 - **O que sobra, e é real:** `PermissionRole/UpdateController.php:106` **tem** o teto (`array_diff` contra `getAllPermissions()`); `SyncPermissionsController.php:20-25` **não tem** (autoriza por `mutatePermissions` e faz `sync()` sem olhar o conteúdo). O mesmo sistema responde duas coisas diferentes para a mesma pergunta.

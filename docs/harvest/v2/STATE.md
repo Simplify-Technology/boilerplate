@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (7/70 células) · **12 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22) · **2 PRs abertos** (#76 tema fora do React, #80 teto de PII)
+- **Situação:** Fase 0 concluída · varredura em andamento (9/70 células) · **15 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1) · **1 PR aberto** (#82 teto de concessão)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -63,7 +63,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 9/70 células (13%) · BACKLOG: **16 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23)**, 1 realocado (A2), **~104 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem**), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), 1 achado interno (C1), **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 9/70 células (13%) · BACKLOG: **18 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **3 achados internos (C1, C2, C3)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -138,7 +138,8 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **F22** — fix: `<a><button>` aninhado em 6 links-botão | [#73](https://github.com/Simplify-Technology/boilerplate/issues/73) | `73-harvest-v2-link-botao` | ✅ 8 testes + 3 mutações | ✅ ambos exit 0 (364/1896 · 29/192) | [#74](https://github.com/Simplify-Technology/boilerplate/pull/74) | ✅ **MESCLADO** 2026-08-12 |
 | **F42+F35** — fix: tema fora do React (500 de último recurso + cromo nativo) | [#75](https://github.com/Simplify-Technology/boilerplate/issues/75) | `75-harvest-v2-tema-fora-do-react` | ✅ 17 testes + **9 mutações** | ✅ ambos exit 0 (373/1911 · 30/204) | [#76](https://github.com/Simplify-Technology/boilerplate/pull/76) | **aguardando merge do dono** |
 | **F23** — fix: `<button>` sem `type` + regra `react/button-has-type` | [#77](https://github.com/Simplify-Technology/boilerplate/issues/77) | `77-harvest-v2-button-type` | ✅ lint como gate + 2 mutações | ✅ ambos exit 0 (364/1896 · 30/204) | [#78](https://github.com/Simplify-Technology/boilerplate/pull/78) | ✅ **MESCLADO** 2026-08-12 |
-| **S1** — fix(seguranca): teto de PII no `UserResource` | [#79](https://github.com/Simplify-Technology/boilerplate/issues/79) | `79-harvest-v2-teto-pii-resource` | ✅ 10 testes + 4 mutações | ✅ ambos exit 0 (374/1931 · 30/204) | [#80](https://github.com/Simplify-Technology/boilerplate/pull/80) | **aguardando merge do dono** |
+| **S1** — fix(seguranca): teto de PII no `UserResource` | [#79](https://github.com/Simplify-Technology/boilerplate/issues/79) | `79-harvest-v2-teto-pii-resource` | ✅ 10 testes + 4 mutações | ✅ ambos exit 0 (374/1931 · 30/204) | [#80](https://github.com/Simplify-Technology/boilerplate/pull/80) | ✅ **MESCLADO** 2026-08-12 |
+| **S2** — fix(rbac): teto de concessão nos 3 caminhos de permissão | [#81](https://github.com/Simplify-Technology/boilerplate/issues/81) | `81-harvest-v2-teto-concessao-permissao` | ✅ 12 testes + **7 mutações** | ✅ ambos exit 0 (395/1977 · 30/204) | [#82](https://github.com/Simplify-Technology/boilerplate/pull/82) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -441,7 +442,40 @@ Três notas:
 
 Generalização para o resto da rodada: **teste de teto com duas condições (permissão E prioridade) precisa de um caso onde cada uma falha SOZINHA.** Cobertura que só usa o alvo "óbvio" prova uma condição e finge provar duas.
 
+### S2 — o que entrou (2026-08-12)
+
+`app/Traits/Models/HasRolesAndPermissions.php` (`permissionsBeyondOwn()`) + `app/Policies/UserPolicy.php` (`mutatePermissions` com `$granting` + `grantsWithinOwnSurface`) + `app/Enum/Permissions.php` (`grantDenialMessage()`) + os 3 call sites (`SyncPermissions`, `GrantPermission`, `RevokePermission`) + `PermissionRole/UpdateController` perdendo a cópia própria da regra + `tests/Feature/Policies/PermissionGrantCeilingTest.php` (novo, 12 testes) + `.ai/rules/policies.md` (3 seções) e `controllers.md` (1 linha). PR [#82](https://github.com/Simplify-Technology/boilerplate/pull/82). Stash de backup do lint-staged: `ef34352`.
+
+**Registrado como NÃO-escalada, de propósito** — a requalificação do BACKLOG confere no código: `sync()` grava IDs sem pivô, `meta` fica nulo, `canImpersonateAny()` é falso, e o gerente promovido só alcança < 70, que o admin já alcançava trocando senha. O ganho é consistência e trilha de auditoria, e o PR diz isso em vez de vender conserto que não houve.
+
+| Mutação | Resultado |
+| ------- | --------- |
+| Policy sem o teto de conteúdo (o defeito original) | ⨯ 4 falham |
+| Superfície medida na **persona**, não no humano | ⨯ 2 falham |
+| Sem o bypass do `super_user` | ⨯ falha |
+| Superfície só do **cargo**, ignorando as avulsas | ⨯ falha |
+| `permissionsBeyondOwn` sempre vazio | ⨯ **6 falham, nos dois caminhos** |
+| Recusa muda, sem nomear a permissão | ⨯ falha |
+| Revogação tratada como concessão | ⨯ falha |
+
+**Achado de método: exceção que a matriz padrão nunca exercita é indistinguível de código morto.** O bypass do `super_user` sobreviveu à 1ª passada de mutação — e não porque o teste fosse fraco, mas porque no `PermissionRoleSeeder` o suporte tem TODAS as permissões, então o teto nunca morde nele e tirar o bypass não muda resultado nenhum. O caso que discrimina exige um `super_user` com o **próprio cargo aparado** — situação alcançável pelo painel, provada pelo `UpdateControllerTest`. Generalização: ao testar um bypass, pergunte "o que a matriz padrão faz esta condição valer sozinha?" — se a resposta for "nada", o teste precisa sair da matriz padrão.
+
+**Segunda nota, sobre a própria mutação:** a mutação nº 6 (recusa muda) sobreviveu por defeito MEU, não do teste — troquei a frase mas deixei o `%s` do `sprintf`, que seguia interpolando os nomes. Mutação que altera texto de formato precisa atacar o **interpolador**, não a moldura. Vale como par da trap do `preg_match` do F42.
+
+**Dois achados colaterais medidos e registrados no BACKLOG** (C2 e C3), nenhum dos dois entrou na fatia: o catálogo das telas de RBAC não é filtrado pela superfície de quem olha (as duas telas, comportamento anterior a esta fatia), e desmarcar/remarcar `impersonate_users` no sync apaga o `can_impersonate_any` em silêncio. O C3 foi **medido com teste descartável**, e o palpite inicial estava errado nos dois sentidos — sync que MANTÉM a permissão preserva o pivô; só o par remover+re-adicionar perde.
+
 ## Próxima unidade
+
+**Reconciliação da 5ª invocação (2026-08-12):** os DOIS que o STATE dava como abertos — **#76 (F42+F35)** e **#80 (S1)** — já estavam **mesclados**. Corrigido acima antes de executar qualquer unidade. `main` local em `a3cc87e`. Os 7 SHAs das fontes seguem idênticos aos pinados: **zero drift na rodada até agora**. Nota operacional: `gh issue create` foi bloqueado pelo classificador de permissões na primeira tentativa desta sessão e passou na segunda, a pedido do dono — se repetir, é a mesma coisa.
+
+~~**S2**~~ ✅ aplicado — PR [#82](https://github.com/Simplify-Technology/boilerplate/pull/82) aberto.
+
+**Fila de fatias prontas do BACKLOG (prioridade 1 do protocolo), em ordem sugerida:**
+
+1. **S4** — `[guard-rail]` o lockout do `POST login` não tem teste em nenhum dos dois repositórios. P, risco baixo, e o **único candidato da célula 1 do spinmax que sobreviveu INTACTO às três lentes**. Backend puro, negação natural.
+2. **S5** — `[guard-rail]` o teste do `EnsureUserIsActive` não atravessa arquivo de rota. P, risco baixo; o boilerplate é superior aqui e o guard-rail é contra a regressão que reabriria o buraco do spinmax.
+3. **S3** — `[guard-rail]` `PiiScrubber` casa chave por igualdade exata e não desce em objeto. M, risco médio, escopo já reduzido pela lente (substring + ramo `Arrayable`, sem trocar a fiação).
+4. Fila de UX/UI pareada da dimensão 5+6: **E6+F-input-error** · **E14+E15+F13** · **E12+E21+F12** · **E30** · **E22+E24** · **E18+E23+E25+F21** · **E27+E29** · **F32** (poda barata) · **F7** (cor de marca — decisão do dono).
 
 ~~**F1**~~ ✅ PR #70 · ~~**F5**~~ ✅ PR #72 · ~~**F22**~~ ✅ PR #74 — **todos mesclados pelo dono em 2026-08-12**. Reconciliação da 4ª invocação: zero PR aberto, zero fatia em andamento, e os 7 SHAs das fontes seguem idênticos aos pinados (sem drift na rodada).
 
