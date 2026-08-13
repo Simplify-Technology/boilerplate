@@ -104,13 +104,14 @@ export function UserActionsMenu({
                 {shouldShowRolesSeparator && <DropdownMenuSeparator />}
 
                 {hasImpersonateItem && (
-                    <DropdownMenuItem
-                        onClick={(e) => {
-                            e.preventDefault();
-                            onImpersonate?.(user);
-                        }}
-                        className="cursor-pointer"
-                    >
+                    /*
+                     * Sem `preventDefault`: o Radix compõe o `onClick` do item
+                     * com o `handleSelect` dele usando `checkForDefaultPrevented`,
+                     * então cancelar o evento deixava o dropdown ABERTO por cima
+                     * da navegação que a personificação acabara de iniciar —
+                     * único item do menu a se comportar assim.
+                     */
+                    <DropdownMenuItem onClick={() => onImpersonate?.(user)} className="cursor-pointer">
                         <UserCog className="mr-2 h-4 w-4" />
                         Personificar
                     </DropdownMenuItem>
