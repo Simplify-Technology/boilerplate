@@ -14,10 +14,39 @@ export function SearchBar({
     onClear,
     placeholder = 'Buscar...',
     isSearching = false,
+    resultCount,
     ariaLabel = 'Pesquisar',
     className,
 }: SearchBarProps) {
     const containerRef = React.useRef<HTMLDivElement>(null);
+
+    /*
+     * O desfecho da busca, não só o começo. A região vivia na página e dizia
+     * "Buscando..." enquanto `isSearching`, voltando a string vazia ao
+     * terminar — quem depende de leitor de tela ouvia a busca começar e nunca
+     * ficava sabendo se veio resultado. Ela desce para cá porque quem já é
+     * dono de `isSearching` é este componente; na página, a próxima listagem
+     * repetiria o copy-paste (no ctfinance o mesmo bloco está em 11 telas).
+     *
+     * Silêncio deliberado quando não se buscou nada: sem `value`, não há
+     * desfecho a anunciar. E `resultCount` é opcional porque a contagem não
+     * existe no hook de filtros — ela vem das props da página.
+     */
+    const searchStatus = React.useMemo(() => {
+        if (isSearching) {
+            return 'Buscando…';
+        }
+
+        if (!value || resultCount === undefined) {
+            return '';
+        }
+
+        if (resultCount === 0) {
+            return 'Nenhum resultado encontrado.';
+        }
+
+        return `${resultCount.toLocaleString('pt-BR')} ${resultCount === 1 ? 'resultado encontrado' : 'resultados encontrados'}.`;
+    }, [isSearching, value, resultCount]);
 
     const focusInput = React.useCallback((e?: React.MouseEvent) => {
         if (e) {
@@ -41,6 +70,14 @@ export function SearchBar({
 
     return (
         <div ref={containerRef} className={cn('relative flex-1 sm:w-64', className)}>
+            {/*
+             * Renderizada SEMPRE, mesmo vazia: `aria-live` num nó recém-montado
+             * não anuncia nada — é a mudança de conteúdo de uma região que já
+             * existia que dispara o anúncio.
+             */}
+            <div aria-live="polite" aria-atomic="true" className="sr-only">
+                {searchStatus}
+            </div>
             <Input
                 id="search"
                 type="text"
@@ -60,7 +97,15 @@ export function SearchBar({
              * faria o X piscar a cada tecla, o que é pior do que não ter
              * indicador. Aqui o slot já é fixo e o conteúdo só alterna.
              */}
-            <div className="absolute top-1/2 left-3 -translate-y-1/2 cursor-pointer" onClick={focusInput} role="button" aria-label="Focar busca">
+            {/*
+             * Sem `role="button"`: o slot dizia ser botão para o leitor de
+             * tela e não tinha `tabIndex` nem handler de teclado (4.1.2).
+             * Virar `<button>` de verdade também é errado aqui — o único
+             * efeito dele é focar o campo que está ao lado e já é o próximo
+             * na ordem de tabulação, então seria uma parada de tab que não
+             * leva a lugar nenhum. O papel falso sai, o clique de mouse fica.
+             */}
+            <div className="absolute top-1/2 left-3 -translate-y-1/2 cursor-pointer" onClick={focusInput} aria-hidden="true">
                 {isSearching ? (
                     <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" data-testid="search-spinner" />
                 ) : (

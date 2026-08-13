@@ -41,9 +41,16 @@ export const toastSuccessOptions: ToastOptions = {
 
 /**
  * Configurações específicas para toasts de erro
+ *
+ * `ariaProps` sobrescreve o default da lib (`role: 'status'`,
+ * `aria-live: 'polite'`, em `react-hot-toast@2.6.0`), que enfileira o anúncio
+ * atrás do que estiver sendo lido. Falha de operação interrompe; sucesso e
+ * info continuam `polite` de propósito — assertive em tudo treina a pessoa a
+ * ignorar o canal inteiro.
  */
 export const toastErrorOptions: ToastOptions = {
     className: 'toast-error',
+    ariaProps: { role: 'alert', 'aria-live': 'assertive' },
     style: {
         background: 'var(--card)',
         color: 'var(--foreground)',
@@ -59,10 +66,14 @@ export const toastErrorOptions: ToastOptions = {
 
 /**
  * Configurações específicas para toasts de aviso
+ *
+ * Assertive pelo mesmo motivo do erro: aviso que chega depois de a pessoa já
+ * ter seguido em frente não é aviso.
  */
 export const toastWarningOptions: ToastOptions = {
     icon: '⚠️',
     className: 'toast-warning',
+    ariaProps: { role: 'alert', 'aria-live': 'assertive' },
     style: {
         background: 'var(--card)',
         color: 'var(--foreground)',
