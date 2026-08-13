@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (10/70 células) · **26 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25) · **1 PR aberto** (#104 diálogo destrutivo)
+- **Situação:** Fase 0 concluída · varredura em andamento (10/70 células) · **27 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12) · **1 PR aberto** (#106 botão em envio)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -71,11 +71,11 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 10/70 células (14%) · BACKLOG: **36 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25, E21, E12)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 10/70 células (14%) · BACKLOG: **37 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25, E21, E12, E28)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
-**Baseline de gates em `main` com as 4 fatias mescladas combinadas** (medido 2026-08-11, primeira vez que rodaram juntas): `composer ci:check` 311 testes / 1678 asserções, `corepack pnpm ci:check` 25 arquivos / 158 testes. Ambos exit 0.
+**Baseline de gates.** Em `main` com as 4 primeiras fatias (2026-08-11): `composer ci:check` 311 testes / 1678 asserções, `corepack pnpm ci:check` 25 arquivos / 158 testes. **Com 27 fatias mescladas + a branch da #106 (2026-08-13):** back **416 testes / 2046 asserções**, front **37 arquivos / 274 testes**. Ambos exit 0 nas duas medições.
 
 ### Inventário do spinmax — célula 0 ✅ (2026-08-12)
 
@@ -680,6 +680,17 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 1. **Frente que morre por erro de API não avisa ninguém.** O `parallel()` resolve a thunk como `null` e o workflow segue com 7/8. Sem crítico, a célula teria sido declarada ✅ com a camada de domínio inteira faltando — e as dimensões 1, 2 e 3 do cuidari julgariam RBAC, contrato de serialização e regra de negócio com metade da evidência. Para os 4 inventários restantes: **conferir `frentes_ok === 8` antes de montar o documento**, e refazer a frente perdida via `resumeFromRunId` (o cache replaya as 7 boas de graça).
 2. **Verificador com baseline errado é pior que verificador nenhum** — ver a QUARTA PEGADINHA na seção de traps. O crítico produziu uma tabela de 12 "números derrubados" com aparência de autoridade, e 11 estavam errados. O que salvou foi re-executar as contagens dele antes de gravar. O banner de correções do `cuidari.md` é o **meu**, não o dele; o dele fica preservado no documento com a revogação explícita em cima.
 
+**Reconciliação da 11ª invocação (2026-08-13):** **#104 (E21+E12) mesclado** — o STATE dava como aberto. `main` em `028dd78`. Zero PR aberto e zero fatia em andamento na entrada, então Prioridade 1 (fatia pronta) foi de novo a unidade correta. Os 7 SHAs das fontes seguem nos pinados (o drift do ctvitrine continua sendo o único da rodada, e o pin não muda).
+
+~~**E28**~~ ✅ aplicado — PR [#106](https://github.com/Simplify-Technology/boilerplate/pull/106) aberto. `loading`/`loadingText`/`aria-busy` no `ui/button.tsx`, `busy → loading` no CTA do `ui/confirm-dialog.tsx`, `asChild` redundante fora do `delete-user.tsx`. 20 testes novos (13 no `Button.test.tsx`, incluindo os 2 que travam a divergência do `asChild`), 6 mutações. Gates: 416/2046 no back, 37 arquivos/274 testes no front.
+
+**A lição desta fatia é sobre o EXPERIMENTO de mutação, não sobre o código.** Duas das 6 mutações "sobreviveram" e as duas eram falso negativo do meu próprio script:
+
+1. A regex `s/disabled=\{isDisabled \|\| undefined\}/.../` casou **`aria-disabled`** primeiro (é superstring do alvo) e mutou a linha errada — o teste passou porque a mutação que eu queria nunca chegou a existir. **Toda mutação por regex precisa ser conferida com `grep` na linha mutada antes de se ler o resultado.** Mutação que "sobrevive" é hipótese a investigar, nunca conclusão. Refeita com âncora de início de linha, ela mata.
+2. A remoção do `aria-hidden` do ícone sobreviveu de verdade — e a investigação achou o motivo: `lucide-react@1.28.0` já injeta `aria-hidden` em ícone sem prop de a11y (`dist/cjs/lucide-react.js:92`). A linha da origem era redundante. **Absorvi removendo-a**, mantendo o teste como guarda do resultado. É a quarta vez na rodada que o escopo certo é MENOR que o da origem — e a primeira em que quem apontou o excesso foi a mutação, não a lente.
+
+**Consequência de método para o resto da rodada:** o par "mutação sobreviveu" tem exatamente duas leituras — teste fraco ou linha morta — e as duas exigem ação. Nenhuma delas é "seguir em frente".
+
 **Achado que atravessa a fronteira e vale para o boilerplate também:** `Password::defaults()` é chamado em 5 lugares do cuidari e **não é definido em lugar nenhum** — política de senha no default do Laravel (`min:8`, sem `uncompromised`) num app com CPF, RG e prontuário. Confirmar se o boilerplate tem o mesmo buraco é candidato natural da dimensão 1.
 
 **Reconciliação da 9ª invocação (2026-08-12):** `main` **inalterada** em `9650ea5`; #98 e #100 seguem abertos e MERGEABLE — primeira invocação da rodada que entra com PR do dono ainda por mesclar. **Segundo drift do ctvitrine:** `89251fc` → `bda5e6b`. O pin segue `53d7d9a`; a instrução de ler por `git show` continua valendo e ficou mais necessária.
@@ -727,7 +738,9 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 
 **Fila de fatias prontas do BACKLOG (prioridade 1 do protocolo), em ordem sugerida:**
 
-1. ~~**E27+E29**~~ ✅ · **E18+E23+E25** (`search-bar.tsx` + `toast-config.ts`; o E23 ficou mais barato agora que o `app-header` morto saiu do caminho) · **E12+E21** (a metade visual espera o F2 — ou entra sem ela e o arquivo é tocado duas vezes) · **F32** (poda barata) · **E28** (`loading`/`aria-busy` no Button — M, e **agora destravado**: o mock de `ResizeObserver` que impedia render de flutuante do Radix foi corrigido na fatia E27+E29) · **F7** (cor de marca — decisão do dono).
+1. ~~**E27+E29**~~ ✅ · ~~**E18+E23+E25**~~ ✅ · ~~**E12+E21**~~ ✅ (a metade visual segue esperando o F2) · ~~**E28**~~ ✅ · **F32** (poda barata — CSS morto de animação de toast; **única fatia P autossuficiente que sobrou**) · **E26** (guarda do Cmd/Ctrl+B dentro de campo de texto — P, e o `ui/sidebar.tsx` já foi tocado antes) · **F7** (cor de marca — decisão do dono).
+
+> **A fila de fatias P prontas está quase seca.** Sobraram F32 e E26, as duas pequenas. Tudo o mais aplicável ou espera o F2/F3 (represados na dimensão 6 do cuidari/ctvitrine), ou é `[dep-nova]`, ou é decisão do dono. **A partir daqui varredura volta a ser a unidade mais rentável** — a matriz está em 10/70 e quatro projetos ainda não têm inventário.
 
 **Próxima unidade sugerida:** **célula 0 (inventário) do ctvitrine** — é o que falta para destravar o F3/F2 (com o cuidari já feito, falta o segundo dos dois L13 + Inertia 3 em produção que a pergunta de abertura da dimensão 6 exige). Atenção dupla nesse: (a) **drift da fonte** — ler por `git -C <ctvitrine> show 53d7d9a:<arquivo>` e `ls-tree -r 53d7d9a`, porque a working tree está em `bda5e6b` e suja; (b) **baseline do alvo** — comparar por `git -C <boilerplate> show origin/main:<arquivo>`, nunca pelo disco nem por `main` seco.
 
