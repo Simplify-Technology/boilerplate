@@ -44,7 +44,13 @@ export function AppSidebar() {
                 </SidebarMenu>
             </SidebarHeader>
 
-            <SidebarContent>
+            {/*
+             * O landmark entra por prop do call-site: `ui/sidebar.tsx` é código
+             * shadcn e tem de continuar rastreável ao upstream. Fica no
+             * `SidebarContent` — e não no `<Sidebar>` inteiro — para não
+             * embrulhar o menu da conta no rodapé, que não é navegação.
+             */}
+            <SidebarContent role="navigation" aria-label="Navegação principal">
                 <NavMain items={mainNavItems} />
             </SidebarContent>
 
