@@ -47,18 +47,18 @@ const sources = applicationSourceFiles().map((path) => ({
 }));
 
 /**
- * `ui/navigation-menu.tsx` usa um terceiro idioma, ainda mais fraco:
- * `ring-ring/10 dark:ring-ring/20` como brilho e `outline-ring/50` de 1px
- * carregando o contraste. Ele fica de fora desta fatia porque é **código
- * morto**: nada importa `layouts/app/app-header-layout.tsx`, que é o único
- * consumidor de `components/app-header.tsx`, que é o único de
- * `navigation-menu`. A cadeia inteira é órfã e pertence à limpeza de código
- * morto, não a uma correção de acessibilidade.
+ * A lista existiu por uma fatia só. `ui/navigation-menu.tsx` usava um terceiro
+ * idioma de foco, ainda mais fraco (`ring-ring/10 dark:ring-ring/20` como
+ * brilho e `outline-ring/50` de 1px carregando o contraste), e ficou de fora
+ * da correção por ser **código morto**: a cadeia
+ * `app-header-layout` → `app-header` → `navigation-menu` era órfã inteira.
  *
- * A entrada abaixo é verificada nos dois sentidos: some quando o arquivo for
- * apagado ou corrigido, e o teste avisa em vez de apodrecer em silêncio.
+ * A poda de código morto apagou os três arquivos, então a lista esvaziou —
+ * exatamente como a asserção de "entrada obsoleta" abaixo previa. Ela fica
+ * aqui, vazia, porque o mecanismo (isentar um arquivo e ser cobrado a remover
+ * a isenção) é o que impede a próxima exceção de virar permanente.
  */
-const MORTOS_CONHECIDOS = ['components/ui/navigation-menu.tsx'];
+const MORTOS_CONHECIDOS: string[] = [];
 
 describe('anel de foco em opacidade cheia', () => {
     it('enxerga a árvore do front e acha quem desenha anel de foco', () => {

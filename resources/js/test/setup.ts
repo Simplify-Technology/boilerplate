@@ -36,9 +36,19 @@ if (typeof window !== 'undefined') {
     });
 }
 
-// Mock do ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-    observe: vi.fn(),
-    unobserve: vi.fn(),
-    disconnect: vi.fn(),
-}));
+/*
+ * Mock do ResizeObserver — precisa ser CONSTRUTÍVEL.
+ *
+ * A forma anterior era `vi.fn().mockImplementation(() => ({...}))`, e a
+ * implementação era uma arrow function: `new ResizeObserver(...)` estourava
+ * "is not a constructor". Nenhum teste tinha percebido porque nenhum
+ * renderizava elemento flutuante; o primeiro que renderizou um dropdown do
+ * Radix (que passa por `@floating-ui/dom` → `autoUpdate`) caiu aqui.
+ */
+class ResizeObserverMock {
+    observe = vi.fn();
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+}
+
+global.ResizeObserver = ResizeObserverMock;
