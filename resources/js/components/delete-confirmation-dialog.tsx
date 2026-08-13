@@ -30,7 +30,12 @@ export type DeleteConfirmationDialogProps = {
     onOpenChange: (open: boolean) => void;
     onConfirm: () => void;
     title: string;
-    description?: string;
+    /**
+     * Obrigatória: o `role="alertdialog"` exige descrição acessível pela APG, e
+     * o irmão `ui/confirm-dialog.tsx` já cobra o mesmo. Não trocar por fallback
+     * genérico — isso reabre o caminho da descrição vaga que o tipo fecha.
+     */
+    description: string;
     itemName?: string;
     itemType?: string;
     itemTypeLabel?: string; // Custom label for item type (e.g., "Usuário" instead of "Usuário a ser excluído")
@@ -42,6 +47,14 @@ export type DeleteConfirmationDialogProps = {
     cancelText?: string;
     processing?: boolean;
     variant?: 'danger' | 'warning';
+    /**
+     * Sobrescreve o parágrafo de consequência ("Atenção: ..."). O default
+     * descreve exclusão permanente sem lixeira, que é o comportamento do
+     * boilerplate; quem tiver soft delete, retenção ou cobrança em curso passa
+     * o texto certo aqui. Conteúdo **inline** — o nó é renderizado dentro de um
+     * `<p>`.
+     */
+    confirmationNote?: ReactNode;
 };
 
 export function DeleteConfirmationDialog({
@@ -61,6 +74,7 @@ export function DeleteConfirmationDialog({
     cancelText = 'Cancelar',
     processing = false,
     variant = 'danger',
+    confirmationNote,
 }: DeleteConfirmationDialogProps) {
     const variantConfig = {
         danger: {
@@ -87,7 +101,7 @@ export function DeleteConfirmationDialog({
                         </div>
                         <span>{title}</span>
                     </DialogTitle>
-                    {description && <DialogDescription className="pt-2 text-base">{description}</DialogDescription>}
+                    <DialogDescription className="pt-2 text-base">{description}</DialogDescription>
                 </DialogHeader>
 
                 <Separator />
@@ -193,9 +207,10 @@ export function DeleteConfirmationDialog({
                     >
                         <p className={cn('text-sm', variant === 'danger' ? 'text-foreground' : 'text-orange-900 dark:text-orange-50/90')}>
                             <span className="font-semibold">Atenção:</span>{' '}
-                            {variant === 'danger'
-                                ? 'Esta ação não pode ser desfeita. Todos os dados relacionados serão permanentemente removidos.'
-                                : 'Esta ação afetará o acesso do usuário ao sistema. Certifique-se de que o usuário possui outras permissões ou que você pretende atribuir um novo cargo posteriormente.'}
+                            {confirmationNote ??
+                                (variant === 'danger'
+                                    ? 'Esta ação não pode ser desfeita. Todos os dados relacionados serão permanentemente removidos.'
+                                    : 'Esta ação afetará o acesso do usuário ao sistema. Certifique-se de que o usuário possui outras permissões ou que você pretende atribuir um novo cargo posteriormente.')}
                         </p>
                     </div>
                 </div>
