@@ -16,3 +16,6 @@ Os primitivos desligam o anel nativo do browser (`outline-none`) e desenham o pr
 
 ## Folha de terceiro entra em layer
 `@import` de CSS de biblioteca traz declarações fora de layer, que vencem o `@theme`. Hoje `@radix-ui/themes/styles.css` redeclara `--color-background` e sequestra `bg-background` no app inteiro — dívida registrada, ainda não paga. Ao acrescentar folha de terceiro, importe em `layer(...)` com a ordem declarada, ou reafirme explicitamente os tokens que ela pisa.
+
+## Estilo de toast que a API da lib expressa não vira CSS
+`react-hot-toast@2.6.0` emite **um** atributo de dado no DOM — `data-rht-toaster` — e anima entrada e saída por style inline derivado de `t.visible`. Seletor de CSS mirando `[data-state]` (isso é Radix) ou `[data-icon]` não casa nada e apodrece em silêncio, que foi o destino de 6 regras e 2 `@keyframes` em `app.css`. Cor de ícone é `iconTheme`, duração é `duration`, posição é `position`, severidade de anúncio é `ariaProps` — tudo em `lib/toast-config.ts`, travado por `resources/js/test/lib/toast-config.test.ts`. As classes `toast-custom`/`toast-success`/… existem só para o que o `toastOptions` não alcança (hoje, a borda esquerda por variante e o ajuste de sombra no escuro). Antes de escrever CSS contra markup de terceiro, confirme no `dist/` da lib que o gancho existe.

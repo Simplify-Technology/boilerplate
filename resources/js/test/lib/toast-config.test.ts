@@ -34,3 +34,24 @@ describe('ariaProps dos toasts', () => {
         expect(toastInfoOptions.ariaProps).toBeUndefined();
     });
 });
+
+/*
+ * A cor do ícone é `iconTheme`, e este é o único canal que funciona.
+ *
+ * `app.css` teve por meses 4 blocos `.toast-{variante} [class*='toast-icon'],
+ * [data-icon]` tentando o mesmo por CSS. Nenhum casava: o único atributo de
+ * dado que a lib emite no DOM é `data-rht-toaster`, e classe com `toast-icon`
+ * não existe em lugar nenhum do projeto. Foram apagados; estas asserções
+ * existem para que a próxima pessoa que quiser trocar a cor do ícone encontre
+ * o canal certo em vez de reescrever o CSS morto.
+ */
+describe('iconTheme dos toasts', () => {
+    it.each([
+        ['success', toastSuccessOptions, 'var(--success)'],
+        ['error', toastErrorOptions, 'var(--destructive)'],
+        ['warning', toastWarningOptions, 'var(--warning)'],
+        ['info', toastInfoOptions, 'var(--info)'],
+    ])('colors the %s icon through iconTheme, not through CSS', (_nome, options, cor) => {
+        expect(options.iconTheme?.primary).toBe(cor);
+    });
+});

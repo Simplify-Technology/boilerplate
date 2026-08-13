@@ -622,15 +622,19 @@ ul li span.text-sm {
     transition: all 0.2s ease-in-out !important;
 }
 
+/*
+ * A cor do ÍCONE de cada variante não mora aqui: quem a define é o
+ * `iconTheme` de `lib/toast-config.ts`, que é a API do react-hot-toast para
+ * isso. Existiam aqui 4 blocos `[class*='toast-icon'], [data-icon]` tentando
+ * o mesmo por CSS — e nenhum casava nada: a lib emite um único atributo de
+ * dado no DOM (`data-rht-toaster`), e classe com `toast-icon` não existe em
+ * lugar nenhum do projeto.
+ */
+
 /* Success toast */
 .toast-success {
     border-left: 4px solid var(--success) !important;
     background: var(--card) !important;
-}
-
-.toast-success [class*='toast-icon'],
-.toast-success [data-icon] {
-    color: var(--success) !important;
 }
 
 /* Error toast */
@@ -639,31 +643,16 @@ ul li span.text-sm {
     background: var(--card) !important;
 }
 
-.toast-error [class*='toast-icon'],
-.toast-error [data-icon] {
-    color: var(--destructive) !important;
-}
-
 /* Warning toast */
 .toast-warning {
     border-left: 4px solid var(--warning) !important;
     background: var(--card) !important;
 }
 
-.toast-warning [class*='toast-icon'],
-.toast-warning [data-icon] {
-    color: var(--warning) !important;
-}
-
 /* Info toast */
 .toast-info {
     border-left: 4px solid var(--info) !important;
     background: var(--card) !important;
-}
-
-.toast-info [class*='toast-icon'],
-.toast-info [data-icon] {
-    color: var(--info) !important;
 }
 
 /* Dark mode adjustments */
@@ -681,33 +670,12 @@ ul li span.text-sm {
     background: var(--card) !important;
 }
 
-/* Animation improvements */
-.toast-custom[data-state='entering'] {
-    animation: slideInRight 0.3s ease-out;
-}
-
-.toast-custom[data-state='exiting'] {
-    animation: slideOutRight 0.2s ease-in;
-}
-
-@keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOutRight {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
+/*
+ * Não há bloco de animação aqui de propósito. Existia um par
+ * `.toast-custom[data-state='entering'|'exiting']` com duas `@keyframes`
+ * próprias, e ele nunca rodou: `data-state` é atributo do Radix, não do
+ * react-hot-toast. A entrada e a saída que se vê na tela são as da própria
+ * lib, aplicadas por style inline a partir de `t.visible`. Não há classe nem
+ * atributo alternando entre entrar e sair para um seletor de CSS ancorar:
+ * mexer nessa animação é pelo `toastOptions` de `lib/toast-config.ts`.
+ */
