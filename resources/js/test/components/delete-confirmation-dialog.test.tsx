@@ -26,6 +26,24 @@ describe('DeleteConfirmationDialog', () => {
         expect(dialog).toHaveAccessibleDescription(baseProps.description);
     });
 
+    /**
+     * `description: string` obrigatória não impede `''` — TypeScript aceita
+     * string vazia, e um render condicional (`{description && <...>}`) some com
+     * o nó nesse caso, deixando o `aria-describedby` do Radix apontando para um
+     * id inexistente. Este é o único caso em que a diferença entre render
+     * condicional e incondicional é observável, então é ele que trava a metade
+     * que o tipo não cobre.
+     */
+    it('mantém o nó de descrição no DOM mesmo com descrição vazia', () => {
+        render(<DeleteConfirmationDialog {...baseProps} description="" />);
+
+        const dialog = screen.getByRole('alertdialog');
+        const describedBy = dialog.getAttribute('aria-describedby');
+
+        expect(describedBy).toBeTruthy();
+        expect(document.getElementById(describedBy!)).toBeInTheDocument();
+    });
+
     it('mantém a descrição ligada ao diálogo na variante de aviso', () => {
         render(<DeleteConfirmationDialog {...baseProps} variant="warning" description="Ao remover o cargo, o acesso muda." />);
 
