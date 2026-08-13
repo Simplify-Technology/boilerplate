@@ -57,11 +57,17 @@ export function ConfirmDialog({
                     <Button type="button" variant="outline" onClick={onCancel} disabled={busy} autoFocus data-testid="confirm-dialog-cancel">
                         {cancelLabel}
                     </Button>
+                    {/*
+                     * `busy` entra como `loading` (não como `disabled`) só no
+                     * CTA: é ele que dispara a ação, então é dele o
+                     * `aria-busy` e o indicador. O Cancelar fica desabilitado
+                     * e mudo — ele não está ocupado, só indisponível.
+                     */}
                     <Button
                         type="button"
                         variant={destructive ? 'destructive' : 'default'}
                         onClick={onConfirm}
-                        disabled={busy}
+                        loading={busy}
                         data-testid="confirm-dialog-confirm"
                     >
                         {confirmLabel}

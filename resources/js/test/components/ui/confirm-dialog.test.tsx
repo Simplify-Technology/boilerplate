@@ -54,6 +54,27 @@ describe('ConfirmDialog', () => {
         expect(screen.getByTestId('confirm-dialog-cancel')).toBeDisabled();
     });
 
+    it('marks only the CTA as busy, with the indicator', () => {
+        // Quem está ocupado é o botão que disparou a ação. O Cancelar fica
+        // indisponível, e anunciá-lo como ocupado seria ruído.
+        render(<ConfirmDialog {...baseProps} busy />);
+
+        const confirm = screen.getByTestId('confirm-dialog-confirm');
+
+        expect(confirm).toHaveAttribute('aria-busy', 'true');
+        expect(confirm.querySelector('[data-slot="button-loading-icon"]')).toBeInTheDocument();
+        expect(screen.getByTestId('confirm-dialog-cancel')).not.toHaveAttribute('aria-busy');
+    });
+
+    it('leaves the CTA idle when not busy', () => {
+        render(<ConfirmDialog {...baseProps} />);
+
+        const confirm = screen.getByTestId('confirm-dialog-confirm');
+
+        expect(confirm).not.toHaveAttribute('aria-busy');
+        expect(confirm).toBeEnabled();
+    });
+
     it('paints the CTA as destructive when asked to', () => {
         render(<ConfirmDialog {...baseProps} destructive />);
 

@@ -1,9 +1,16 @@
 import DeleteUser from '@/components/delete-user';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const ERRO = 'A senha informada está incorreta.';
+
+/*
+ * `processing` é o único estado do `useForm` que o teste precisa dirigir de
+ * fora — `vi.hoisted` porque a fábrica do `vi.mock` sobe para o topo do
+ * arquivo e não enxergaria um `const` comum.
+ */
+const form = vi.hoisted(() => ({ processing: false }));
 
 /*
  * O `useForm` do Inertia vive FORA do `<Dialog>` e por isso não desmonta
@@ -27,7 +34,7 @@ vi.mock('@inertiajs/react', async () => {
                     opts?.onError?.();
                     opts?.onFinish?.();
                 },
-                processing: false,
+                processing: form.processing,
                 reset: () => setData({ password: '' }),
                 errors,
                 clearErrors: () => setErrors({}),
@@ -43,6 +50,10 @@ async function abrirEErrarASenha(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('DeleteUser', () => {
+    afterEach(() => {
+        form.processing = false;
+    });
+
     it('shows the password error after a failed attempt', async () => {
         const user = userEvent.setup();
         render(<DeleteUser />);
@@ -103,5 +114,40 @@ describe('DeleteUser', () => {
         await user.click(screen.getByRole('button', { name: 'Excluir Conta' }));
 
         expect(screen.getByPlaceholderText('Senha')).toHaveValue('');
+    });
+
+    /*
+     * O botão de envio era `<Button asChild><button type="submit">`, e o
+     * embrulho custava o indicador: sob `asChild` o Slot clona um filho só,
+     * então o `Button` não tem onde injetar o spinner. Como o `type` é prop
+     * nativa, o `asChild` não comprava nada em troca.
+     */
+    it('marks the submit button as busy while the deletion is in flight', async () => {
+        form.processing = true;
+
+        const user = userEvent.setup();
+        render(<DeleteUser />);
+
+        await user.click(screen.getByRole('button', { name: 'Excluir Conta' }));
+
+        const submit = screen.getByRole('button', { name: /Excluir Conta$/ });
+
+        expect(submit).toHaveAttribute('type', 'submit');
+        expect(submit).toHaveAttribute('aria-busy', 'true');
+        expect(submit).toBeDisabled();
+        expect(submit.querySelector('[data-slot="button-loading-icon"]')).toBeInTheDocument();
+    });
+
+    it('leaves the submit button idle when nothing is in flight', async () => {
+        const user = userEvent.setup();
+        render(<DeleteUser />);
+
+        await user.click(screen.getByRole('button', { name: 'Excluir Conta' }));
+
+        const submit = screen.getByRole('button', { name: /Excluir Conta$/ });
+
+        expect(submit).toHaveAttribute('type', 'submit');
+        expect(submit).not.toHaveAttribute('aria-busy');
+        expect(submit).toBeEnabled();
     });
 });

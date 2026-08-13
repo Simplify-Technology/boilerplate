@@ -104,8 +104,15 @@ export default function DeleteUser() {
                                     <Button variant="secondary">Cancelar</Button>
                                 </DialogClose>
 
-                                <Button variant="destructive" disabled={processing} asChild>
-                                    <button type="submit">Excluir Conta</button>
+                                {/*
+                                 * Sem `asChild`: ele existia só para trocar o
+                                 * `type` do botão, que é prop nativa e cabe
+                                 * direto. O embrulho custava o indicador de
+                                 * envio — sob `asChild` o Slot clona um filho
+                                 * só e o `Button` não pode injetar o spinner.
+                                 */}
+                                <Button type="submit" variant="destructive" loading={processing}>
+                                    Excluir Conta
                                 </Button>
                             </DialogFooter>
                         </form>
