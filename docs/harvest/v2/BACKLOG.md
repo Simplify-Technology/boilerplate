@@ -324,7 +324,12 @@ Fonte: ctfinance @ `b8c6d57`, comparado ao boilerplate `main` @ `9814f46`. **28 
   - **⚠️ Fato do caçador invertido:** ele mandou ancorar no `<main>` de `app-content.tsx:14` — esse é o ramo `variant="header"`, alcançável só pelo layout morto. O `<main>` de toda página autenticada é o de `ui/sidebar.tsx:304` (`SidebarInset`), via `app-layout.tsx:1` → `app-sidebar-layout.tsx:18` → `app-content.tsx:10`. Seguir o caçador daria um skip-link apontando para id inexistente. Verificado que `AppContent` repassa `{...props}` nos dois ramos e `SidebarInset` espalha em `:311` — um único call site cobre tudo sem tocar no primitivo.
 - Correções menores de contagem do caçador: são **5** linhas de `<nav|role=navigation` (não 6); `<ul>` em `sidebar.tsx:451` (não 449); `<li>` em `:462` (não 460).
 
-### E21 + E12 · `[guard-rail]` + `[absorver]` diálogo destrutivo · P · risco baixo · **1 PR, 1 arquivo**
+### E21 + E12 · ✅ **APLICADO** (PR [#104](https://github.com/Simplify-Technology/boilerplate/pull/104), 2026-08-13) · `[guard-rail]` + `[absorver]` diálogo destrutivo · P · risco baixo · **1 PR, 1 arquivo**
+
+- **Divergiu da origem de propósito:** o ctfinance mantém `description?` opcional com fallback genérico; aqui a prop é **obrigatória e sem fallback**. O fallback reabre o caminho da descrição vaga que o tipo fecha.
+- **⚠️ Esta entrada era internamente inconsistente e a parte errada não foi executada.** Ela prescrevia remover o `role="button"` de `page-info.tsx:72` **e**, três linhas abaixo, declarava `PageHeader` com 0 call sites. `PageHeader` é o único caminho até o `PageInfo`, então a cadeia toda é morta — o atributo redundante ficou fora e a poda dos dois arquivos foi roteada para a sequência do #100.
+- **`w-full sm:w-auto` no rodapé:** segue roteado para D14 (represado por `pest-plugin-browser`).
+- **A metade visual (35 literais de cor → tokens de estado) NÃO entrou** — segue dependendo do F2, e o arquivo será tocado uma segunda vez quando o F3/F2 saírem, como a fila já previa.
 
 - **E21:** `delete-confirmation-dialog.tsx:33` — tornar `description` **obrigatória** no tipo, espelhando `ui/confirm-dialog.tsx:6`, e render incondicional em `:90` (alertdialog exige descrição pela APG; os 2 call sites já passam, custo zero). Remover o `role="button"` redundante em `page-info.tsx:72`.
   - **⚠️ Fato do caçador errado:** "é o que dispara o warning do Radix" — `@radix-ui/react-dialog@1.1.23` **não tem esse warning** (`grep -n "warn"` no dist → 0 linhas). O argumento se sustenta em ARIA, sem ruído de console.
