@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (10/70 células) · **27 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12) · **1 PR aberto** (#106 botão em envio)
+- **Situação:** Fase 0 concluída · varredura em andamento (10/70 células) · **27 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12) · **2 PRs abertos** (#106 botão em envio · #108 poda do CSS de toast)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -71,7 +71,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 10/70 células (14%) · BACKLOG: **37 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25, E21, E12, E28)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 10/70 células (14%) · BACKLOG: **38 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25, E21, E12, E28, F32)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -684,7 +684,13 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 
 ~~**E28**~~ ✅ aplicado — PR [#106](https://github.com/Simplify-Technology/boilerplate/pull/106) aberto. `loading`/`loadingText`/`aria-busy` no `ui/button.tsx`, `busy → loading` no CTA do `ui/confirm-dialog.tsx`, `asChild` redundante fora do `delete-user.tsx`. 20 testes novos (13 no `Button.test.tsx`, incluindo os 2 que travam a divergência do `asChild`), 6 mutações. Gates: 416/2046 no back, 37 arquivos/274 testes no front.
 
-**A lição desta fatia é sobre o EXPERIMENTO de mutação, não sobre o código.** Duas das 6 mutações "sobreviveram" e as duas eram falso negativo do meu próprio script:
+~~**F32**~~ ✅ aplicado — PR [#108](https://github.com/Simplify-Technology/boilerplate/pull/108) aberto. Segunda unidade da mesma invocação, e a mais barata da rodada até agora. Saíram de `app.css` 4 blocos `[class*='toast-icon'], [data-icon]`, o par `[data-state='entering'|'exiting']` e as 2 `@keyframes` que só eles usavam. 4 asserções novas travando o `iconTheme` (o canal que de fato funciona), regra em `.ai/rules/css.md`, CSS do bundle 824,70 → 824,00 kB.
+
+**O que a verificação mudou no escopo, e é o padrão da rodada de novo:** o BACKLOG registrava o F32 como uma linha de tabela ("animação de toast é CSS morto"), sem entrada detalhada. A checagem no `dist/` da lib mostrou que o buraco era **maior** que o registrado — os 4 blocos de ícone estavam mortos pelo mesmo motivo e ninguém tinha contado — e ao mesmo tempo que a intenção deles **já estava viva** pela API certa (`iconTheme`, nas 4 variantes de `lib/toast-config.ts`). Sem essa segunda metade, a poda teria parecido perda de recurso em vez de remoção de duplicata morta.
+
+**Fato corrigido durante a escrita, que vale como aviso:** meu primeiro comentário no CSS dizia que a lib "troca uma classe entre os dois estados". É falso — ela aplica `animation:` por **style inline** derivado de `t.visible` (verificado no `dist/index.js`). Comentário errado dentro do arquivo é exatamente o tipo de desinformação que a fatia estava removendo; corrigido antes do commit. Guardrail 5 vale para o comentário, não só para a regra.
+
+**A lição da fatia E28 é sobre o EXPERIMENTO de mutação, não sobre o código.** Duas das 6 mutações "sobreviveram" e as duas eram falso negativo do meu próprio script:
 
 1. A regex `s/disabled=\{isDisabled \|\| undefined\}/.../` casou **`aria-disabled`** primeiro (é superstring do alvo) e mutou a linha errada — o teste passou porque a mutação que eu queria nunca chegou a existir. **Toda mutação por regex precisa ser conferida com `grep` na linha mutada antes de se ler o resultado.** Mutação que "sobrevive" é hipótese a investigar, nunca conclusão. Refeita com âncora de início de linha, ela mata.
 2. A remoção do `aria-hidden` do ícone sobreviveu de verdade — e a investigação achou o motivo: `lucide-react@1.28.0` já injeta `aria-hidden` em ícone sem prop de a11y (`dist/cjs/lucide-react.js:92`). A linha da origem era redundante. **Absorvi removendo-a**, mantendo o teste como guarda do resultado. É a quarta vez na rodada que o escopo certo é MENOR que o da origem — e a primeira em que quem apontou o excesso foi a mutação, não a lente.
@@ -738,9 +744,9 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 
 **Fila de fatias prontas do BACKLOG (prioridade 1 do protocolo), em ordem sugerida:**
 
-1. ~~**E27+E29**~~ ✅ · ~~**E18+E23+E25**~~ ✅ · ~~**E12+E21**~~ ✅ (a metade visual segue esperando o F2) · ~~**E28**~~ ✅ · **F32** (poda barata — CSS morto de animação de toast; **única fatia P autossuficiente que sobrou**) · **E26** (guarda do Cmd/Ctrl+B dentro de campo de texto — P, e o `ui/sidebar.tsx` já foi tocado antes) · **F7** (cor de marca — decisão do dono).
+1. ~~**E27+E29**~~ ✅ · ~~**E18+E23+E25**~~ ✅ · ~~**E12+E21**~~ ✅ (a metade visual segue esperando o F2) · ~~**E28**~~ ✅ · ~~**F32**~~ ✅ · **E26** (guarda do Cmd/Ctrl+B dentro de campo de texto — P, e o `ui/sidebar.tsx` já foi tocado antes) · **F7** (cor de marca — decisão do dono).
 
-> **A fila de fatias P prontas está quase seca.** Sobraram F32 e E26, as duas pequenas. Tudo o mais aplicável ou espera o F2/F3 (represados na dimensão 6 do cuidari/ctvitrine), ou é `[dep-nova]`, ou é decisão do dono. **A partir daqui varredura volta a ser a unidade mais rentável** — a matriz está em 10/70 e quatro projetos ainda não têm inventário.
+> **A fila de fatias P prontas SECOU.** Sobrou o **E26** (P, autossuficiente) e o **F7** (decisão do dono). Todo o resto aplicável ou espera o F2/F3 — represados na dimensão 6 do cuidari e do ctvitrine —, ou é `[dep-nova]` sem aprovação. **A partir daqui varredura é a unidade mais rentável, sem competição:** a matriz está em 10/70 e quatro projetos ainda não têm inventário. Fazer o E26 antes do inventário do ctvitrine seria escolher a última fatia pequena em vez do que destrava as grandes.
 
 **Próxima unidade sugerida:** **célula 0 (inventário) do ctvitrine** — é o que falta para destravar o F3/F2 (com o cuidari já feito, falta o segundo dos dois L13 + Inertia 3 em produção que a pergunta de abertura da dimensão 6 exige). Atenção dupla nesse: (a) **drift da fonte** — ler por `git -C <ctvitrine> show 53d7d9a:<arquivo>` e `ls-tree -r 53d7d9a`, porque a working tree está em `bda5e6b` e suja; (b) **baseline do alvo** — comparar por `git -C <boilerplate> show origin/main:<arquivo>`, nunca pelo disco nem por `main` seco.
 

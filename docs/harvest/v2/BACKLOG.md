@@ -614,7 +614,7 @@ Foi para isto que a dimensão 6 foi varrida antes de aplicar a fila da 5. Paream
 | F28 | `Input`/`Select`/`Textarea`: piso de toque e afinação do escuro | absorver P | a metade escura viaja **sozinha e já** |
 | F29 | `Skeleton` inapto: token errado (`bg-primary/10`), sem variantes, **0 call-sites**, 0 teste | absorver P | some junto com o F1 — é a colisão que apaga o skeleton no escuro |
 | F30 | botão não anima o fundo: `transition-[color,box-shadow]` faz todo hover de background estalar | absorver P | mesma CVA do E16 fatia A |
-| F32 | animação de toast é **CSS morto** — `react-hot-toast` 2.6.0 não emite `data-state` nem `data-icon` | guard-rail P | poda autossuficiente; não espera o E18 |
+| ~~F32~~ ✅ **APLICADO** (PR [#108](https://github.com/Simplify-Technology/boilerplate/pull/108), 2026-08-13) | animação de toast é **CSS morto** — `react-hot-toast` 2.6.0 não emite `data-state` nem `data-icon` (só `data-rht-toaster`) | guard-rail P | escopo saiu MAIOR que o registrado: além do par `[data-state]` + 2 `@keyframes`, os **4 blocos `[class*='toast-icon'], [data-icon]`** estavam mortos pelo mesmo motivo. A intenção deles já vivia no `iconTheme` das 4 variantes de `lib/toast-config.ts`, agora travado por 4 asserções |
 | F33 | 25 `hover:scale-*`/`active:scale-*` sem sistema | guard-rail P | **represado com D6/D7** — mesmas classNames, mesmos arquivos |
 | F35 | `<meta name="color-scheme">` é calculado no servidor e **nunca atualizado** ao trocar o tema — o cromo nativo fica errado até o reload | guard-rail P | fecha o buraco que o D4 deixou |
 | F14 | `<meta name="theme-color">` por esquema | absorver P | absorver corrigindo o erro do ctfinance |
