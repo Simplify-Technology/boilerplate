@@ -1,6 +1,7 @@
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
+import { LoaderCircle } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -34,24 +35,68 @@ const buttonVariants = cva(
   }
 )
 
+/**
+ * `loading` cobre o estado de envio inteiro: desabilita, anuncia `aria-busy`
+ * e mostra o indicador. Antes disto, `disabled={processing}` deixava o botão
+ * só esmaecido — mudo para leitor de tela, que não tem como saber se o clique
+ * pegou.
+ *
+ * Divergência deliberada da origem (ctfinance `ui/button.tsx:60,82`): lá,
+ * sob `asChild`, o `disabled` real é suprimido e sobra só `aria-disabled`.
+ * Aqui não: `aria-disabled` é anúncio, não impedimento, e o único call site
+ * destrutivo com `asChild` era o "Excluir Conta" — que voltaria a aceitar
+ * clique durante o envio.
+ */
 function Button({
   className,
   variant,
   size,
   asChild = false,
+  loading = false,
+  loadingText,
+  disabled,
+  children,
   ...props
 }: React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & {
     asChild?: boolean
+    loading?: boolean
+    /** Substitui o rótulo enquanto envia. Sem ele, o rótulo original fica. */
+    loadingText?: string
   }) {
   const Comp = asChild ? Slot : "button"
+  const isDisabled = disabled || loading
+
+  /*
+   * O Slot clona um único filho — injetar o indicador aqui daria dois nós e
+   * quebraria o call site. Sob `asChild`, quem monta o conteúdo é ele.
+   */
+  const showsIndicator = loading && !asChild
 
   return (
     <Comp
       data-slot="button"
+      aria-busy={loading || undefined}
+      aria-disabled={isDisabled || undefined}
       className={cn(buttonVariants({ variant, size, className }))}
+      disabled={isDisabled || undefined}
       {...props}
-    />
+    >
+      {showsIndicator ? (
+        <>
+          {/*
+            * Sem `aria-hidden` escrito: o lucide-react já o injeta quando o
+            * ícone não recebe prop de a11y própria. Quem garante o resultado
+            * é o teste, não esta linha — o rótulo do botão já diz tudo, e um
+            * ícone anunciado por cima dele seria eco.
+            */}
+          <LoaderCircle data-slot="button-loading-icon" className="size-4 animate-spin" />
+          {loadingText ?? children}
+        </>
+      ) : (
+        children
+      )}
+    </Comp>
   )
 }
 
