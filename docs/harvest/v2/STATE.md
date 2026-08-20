@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (10/70 células) · **27 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12) · **2 PRs abertos** (#106 botão em envio · #108 poda do CSS de toast)
+- **Situação:** Fase 0 concluída · varredura em andamento (10/70 células) · **30 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12, E28, F32) · **1 PR aberto** ([#112](https://github.com/Simplify-Technology/boilerplate/pull/112) — E26, guarda do atalho da sidebar)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -75,7 +75,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
-**Baseline de gates.** Em `main` com as 4 primeiras fatias (2026-08-11): `composer ci:check` 311 testes / 1678 asserções, `corepack pnpm ci:check` 25 arquivos / 158 testes. **Com 27 fatias mescladas + a branch da #106 (2026-08-13):** back **416 testes / 2046 asserções**, front **37 arquivos / 274 testes**. Ambos exit 0 nas duas medições.
+**Baseline de gates.** Em `main` com as 4 primeiras fatias (2026-08-11): `composer ci:check` 311 testes / 1678 asserções, `corepack pnpm ci:check` 25 arquivos / 158 testes. **Com 30 fatias mescladas + a branch da #112 (2026-08-20):** back **416 testes / 2046 asserções**, front **39 arquivos / 297 testes**. Ambos exit 0 nas três medições. O back não anda desde 2026-08-12 porque as últimas seis fatias foram todas de frontend.
 
 ### Inventário do spinmax — célula 0 ✅ (2026-08-12)
 
@@ -158,7 +158,10 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **E22+E24** — fix(a11y): landmark, `aria-current` e skip-link | [#97](https://github.com/Simplify-Technology/boilerplate/issues/97) | `97-harvest-v2-navegacao-landmark` | ✅ 10 testes + **8 mutações** | ✅ ambos exit 0 (416/2046 · 34/234) | [#98](https://github.com/Simplify-Technology/boilerplate/pull/98) | ✅ **MESCLADO** 2026-08-12 |
 | **E27+E29** — fix(ux): poda de código morto + caminho vivo de personificar | [#99](https://github.com/Simplify-Technology/boilerplate/issues/99) | `99-harvest-v2-poda-e-personificacao` | ✅ 5 testes + **8 mutações** | ✅ ambos exit 0 (416/2046 · 34/229) | [#100](https://github.com/Simplify-Technology/boilerplate/pull/100) | ✅ **MESCLADO** 2026-08-13 |
 | **E18+E23+E25** — fix(a11y): busca anuncia o desfecho + severidade de toast | [#101](https://github.com/Simplify-Technology/boilerplate/issues/101) | `101-harvest-v2-busca-anunciada` | ✅ 17 testes + **6 mutações** | ✅ ambos exit 0 (416/2046 · 34/237) | [#102](https://github.com/Simplify-Technology/boilerplate/pull/102) | ✅ **MESCLADO** 2026-08-13 |
-| **E21+E12** — fix(a11y): diálogo destrutivo (descrição obrigatória + nota sobrescrevível) | [#103](https://github.com/Simplify-Technology/boilerplate/issues/103) | `103-harvest-v2-dialogo-destrutivo` | ✅ 10 testes + **6 mutações** | ✅ ambos exit 0 (416/2046 · 37/262) | [#104](https://github.com/Simplify-Technology/boilerplate/pull/104) | **aguardando merge do dono** |
+| **E21+E12** — fix(a11y): diálogo destrutivo (descrição obrigatória + nota sobrescrevível) | [#103](https://github.com/Simplify-Technology/boilerplate/issues/103) | `103-harvest-v2-dialogo-destrutivo` | ✅ 10 testes + **6 mutações** | ✅ ambos exit 0 (416/2046 · 37/262) | [#104](https://github.com/Simplify-Technology/boilerplate/pull/104) | ✅ **MESCLADO** 2026-08-13 |
+| **E28** — fix(a11y): estado de envio no Button (`loading`/`aria-busy`) | [#105](https://github.com/Simplify-Technology/boilerplate/issues/105) | `105-harvest-v2-botao-em-envio` | ✅ (ver invocação 11) | ✅ ambos exit 0 | [#106](https://github.com/Simplify-Technology/boilerplate/pull/106) | ✅ **MESCLADO** 2026-08-17 |
+| **F32** — fix(ui): poda do CSS morto de toast | [#107](https://github.com/Simplify-Technology/boilerplate/issues/107) | `107-harvest-v2-poda-css-toast` | ✅ (ver invocação 11) | ✅ ambos exit 0 | [#108](https://github.com/Simplify-Technology/boilerplate/pull/108) | ✅ **MESCLADO** 2026-08-17 |
+| **E26** — fix(a11y): guarda do atalho global + atalho exposto | [#111](https://github.com/Simplify-Technology/boilerplate/issues/111) | `111-harvest-v2-guarda-atalho-sidebar` | ✅ 19 testes + **9 mutações** | ✅ ambos exit 0 (416/2046 · 39/297) | [#112](https://github.com/Simplify-Technology/boilerplate/pull/112) | **aguardando merge do dono** |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -655,6 +658,24 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 
 ## Próxima unidade
 
+**Reconciliação da 12ª invocação (2026-08-20).** Sete dias sem invocação; a rodada voltou com passivo de merge inteiramente resolvido pelo dono.
+
+- **Os TRÊS que o STATE dava como abertos foram mesclados:** #104 (E21+E12), #106 (E28) e #108 (F32), todos em 2026-08-17. Corrigido na tabela de fatias **antes** de executar qualquer unidade. `origin/main` em `2965f8c`.
+- **Duas PRs de dependabot entraram sozinhas na `main`:** #109 (`actions-minor-patch`) e #110 (`npm-minor-patch`) — `lucide-react` 1.28→1.31, `vite` 8.2.0→8.2.1, `@testing-library/jest-dom` 7.0.0→7.0.1, `@types/node` 26.1.2→26.2.0, `eslint` 10.8.0→10.8.1. **Consequência para o levantamento de deps (prioridade 3 do protocolo): o patch/minor de npm está em dia sem fatia nossa;** o que sobra para a primeira fatia de deps é o lado do composer e o pin `typescript ^6.0.3 → ~6.0.3` do PLAYBOOK §4.
+- **Drift em DUAS fontes, e é o quarto do ctvitrine:** ctvitrine em **`c62438a`** (era `734acac`, antes `bda5e6b`, antes `89251fc`; pin `53d7d9a`) e spinmax em **`5864ea7`** (era `e4ec01e` = o pin). Os outros 5 seguem idênticos aos pinados. O pin da rodada não muda: ler por `git -C <fonte> show <SHA-pinado>:<arquivo>`.
+- **O worktree principal seguia na branch `107-...` já mesclada**, com trabalho não commitado do dono em `docs/migration/PLAYBOOK.md` e `docs/migration/projects/transitado-em-julgado.md` (+ `.claude/commands/` não rastreado). Conferido que `origin/main` **não** tocou nenhum desses caminhos antes de trocar de branch, então o `git switch -c` carregou o WIP sem conflito. **Nada do dono foi commitado** — o `git add` desta fatia é explícito por caminho, nunca `git add -A`.
+
+~~**E26**~~ ✅ aplicado — PR [#112](https://github.com/Simplify-Technology/boilerplate/pull/112) aberto. **A fila de fatias P do BACKLOG está agora VAZIA de verdade:** sobra só o **F7** (cor de marca, decisão do dono) e o que espera F2/F3.
+
+**Três fatos que esta fatia produziu:**
+
+1. **O jsdom não implementa `isContentEditable`** — a propriedade fica `false` sempre. A guarda escrita "certa" (só a propriedade, que é a correta no browser porque é **herdada** e cobre o nó interno onde o caret pousa) passava no browser e era **inexercitável** no gate. A forma final checa a propriedade **e** `closest('[contenteditable]:not([contenteditable="false"])')`, que cobre a mesma hierarquia pelo atributo. Descoberto pelo teste falhando, não por leitura. **Regra que nasce daí, e vale para toda fatia de a11y adiante:** quando o guard-rail depende de API de DOM, conferir se o jsdom a implementa **antes** de declarar o teste como prova — a mutação 3 desta fatia é exatamente essa medição.
+2. **A absorção não era de código, e o BACKLOG já sabia.** `ctfinance ui/sidebar.tsx` é **byte-idêntico** ao daqui e igualmente sem guarda. O ativo colhido do derivado foi a **comparação** — é o quarto caso da rodada em que ler o derivado ao lado do boilerplate revelou defeito de casa em vez de código a portar (os três primeiros estão registrados em "O que a dimensão 4 ensinou"). A forma da dica de atalho (tooltip) veio de `dashboard/balance-visibility-toggle.tsx:58,77`, e é a única linha de fato colhida.
+3. **A trap do zsh sem word-splitting mordeu de novo, e silenciosamente.** A bateria de mutações rodava `vitest run $T` com `T` guardando dois caminhos; o zsh passa isso como **um argumento só**, o vitest não casa arquivo nenhum, e o `grep` da linha de resultado volta vazio — cinco mutações "sem saída" que pareciam problema de captura. Já está registrado em "Trap de ambiente: zsh não faz word-splitting" (fatia F42+F35) e reapareceu mesmo assim. **Em script de mutação, escrever os caminhos por extenso.**
+
+**Próxima unidade sugerida:** **célula 0 (inventário) do ctvitrine** — inalterada desde a 11ª invocação e agora sem competição nenhuma: a fila de P secou, o patch/minor de npm veio pronto do dependabot, e a matriz segue em **10/70** com quatro projetos sem inventário. É o que destrava o F3/F2 (a dimensão 6 exige os dois L13 + Inertia 3 em produção; o cuidari já está feito). Atenção dupla: (a) **drift da fonte** — ler por `git -C <ctvitrine> show 53d7d9a:<arquivo>` e `ls-tree -r 53d7d9a`, porque a working tree está em `c62438a` e suja; (b) **baseline do alvo** — comparar por `git -C <boilerplate> show origin/main:<arquivo>`, nunca pelo disco nem por `main` seco.
+
+
 **Reconciliação da 10ª invocação (2026-08-13):** os TRÊS que o STATE dava como abertos — **#98 (E22+E24)**, **#100 (E27+E29)** e **#102 (E18+E23+E25)** — foram **mesclados** pelo dono (12/08 23:41, 13/08 01:02, 13/08 13:02). Corrigido na tabela de fatias antes de executar qualquer unidade. `origin/main` em `54f9b13` (o `main` local estava em `8b0381b`, atrás). **Zero PR aberto, zero fatia em andamento** ⇒ Prioridade 1 do protocolo (fatia pronta do BACKLOG) é a unidade correta, e é o momento ideal para uma fatia de frontend: sem outro PR aberto, não há a colisão de append em `.ai/rules/js.md`.
 
 **Terceiro drift do ctvitrine:** working tree em **`734acac`** (era `bda5e6b`, antes `89251fc`). O pin da rodada segue `53d7d9a`; ler por `git show 53d7d9a:<arquivo>` continua obrigatório. Os outros 6 seguem idênticos aos pinados.
@@ -744,7 +765,7 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 
 **Fila de fatias prontas do BACKLOG (prioridade 1 do protocolo), em ordem sugerida:**
 
-1. ~~**E27+E29**~~ ✅ · ~~**E18+E23+E25**~~ ✅ · ~~**E12+E21**~~ ✅ (a metade visual segue esperando o F2) · ~~**E28**~~ ✅ · ~~**F32**~~ ✅ · **E26** (guarda do Cmd/Ctrl+B dentro de campo de texto — P, e o `ui/sidebar.tsx` já foi tocado antes) · **F7** (cor de marca — decisão do dono).
+1. ~~**E27+E29**~~ ✅ · ~~**E18+E23+E25**~~ ✅ · ~~**E12+E21**~~ ✅ (a metade visual segue esperando o F2) · ~~**E28**~~ ✅ · ~~**F32**~~ ✅ · ~~**E26**~~ ✅ (PR #112) · **F7** (cor de marca — decisão do dono, único que sobrou).
 
 > **A fila de fatias P prontas SECOU.** Sobrou o **E26** (P, autossuficiente) e o **F7** (decisão do dono). Todo o resto aplicável ou espera o F2/F3 — represados na dimensão 6 do cuidari e do ctvitrine —, ou é `[dep-nova]` sem aprovação. **A partir daqui varredura é a unidade mais rentável, sem competição:** a matriz está em 10/70 e quatro projetos ainda não têm inventário. Fazer o E26 antes do inventário do ctvitrine seria escolher a última fatia pequena em vez do que destrava as grandes.
 
