@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (11/70 células) · **30 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12, E28, F32) · **1 PR aberto** ([#112](https://github.com/Simplify-Technology/boilerplate/pull/112) — E26, guarda do atalho da sidebar)
+- **Situação:** Fase 0 concluída · varredura em andamento (11/70 células) · **31 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12, E28, F32, E26) · **zero PR aberto**
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -161,7 +161,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **E21+E12** — fix(a11y): diálogo destrutivo (descrição obrigatória + nota sobrescrevível) | [#103](https://github.com/Simplify-Technology/boilerplate/issues/103) | `103-harvest-v2-dialogo-destrutivo` | ✅ 10 testes + **6 mutações** | ✅ ambos exit 0 (416/2046 · 37/262) | [#104](https://github.com/Simplify-Technology/boilerplate/pull/104) | ✅ **MESCLADO** 2026-08-13 |
 | **E28** — fix(a11y): estado de envio no Button (`loading`/`aria-busy`) | [#105](https://github.com/Simplify-Technology/boilerplate/issues/105) | `105-harvest-v2-botao-em-envio` | ✅ (ver invocação 11) | ✅ ambos exit 0 | [#106](https://github.com/Simplify-Technology/boilerplate/pull/106) | ✅ **MESCLADO** 2026-08-17 |
 | **F32** — fix(ui): poda do CSS morto de toast | [#107](https://github.com/Simplify-Technology/boilerplate/issues/107) | `107-harvest-v2-poda-css-toast` | ✅ (ver invocação 11) | ✅ ambos exit 0 | [#108](https://github.com/Simplify-Technology/boilerplate/pull/108) | ✅ **MESCLADO** 2026-08-17 |
-| **E26** — fix(a11y): guarda do atalho global + atalho exposto | [#111](https://github.com/Simplify-Technology/boilerplate/issues/111) | `111-harvest-v2-guarda-atalho-sidebar` | ✅ 19 testes + **9 mutações** | ✅ ambos exit 0 (416/2046 · 39/297) | [#112](https://github.com/Simplify-Technology/boilerplate/pull/112) | **aguardando merge do dono** |
+| **E26** — fix(a11y): guarda do atalho global + atalho exposto | [#111](https://github.com/Simplify-Technology/boilerplate/issues/111) | `111-harvest-v2-guarda-atalho-sidebar` | ✅ 19 testes + **9 mutações** | ✅ ambos exit 0 (416/2046 · 39/297) | [#112](https://github.com/Simplify-Technology/boilerplate/pull/112) | ✅ **MESCLADO** 2026-08-21 00:04 UTC |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -657,6 +657,13 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 **Repetiu na mesma tarde, como previsto.** Mesclado o #94, o #96 conflitou de novo no mesmo arquivo — agora contra as duas seções do `EmptyState`. Mesma resolução pelos estágios do índice, mesmo resultado (3 linhas acrescentadas, zero removida), gates verdes na árvore mesclada (33 arquivos / 224 testes). **O `rerere` NÃO ajudou**: ele casa o conflito exato, e cada merge novo traz um lado diferente. O custo real é um merge de `main` por PR por leva — o que confirma a leitura de que isto é estrutural e não vale tentar evitar com truque de ferramenta.
 
 ## Próxima unidade
+
+**Reconciliação da 13ª invocação (2026-08-20, noite).** Feita ANTES de qualquer ação, com a unidade 3 ainda em voo.
+
+- **PR #112 (E26) foi MESCLADO** pelo dono às 00:04 UTC de 21/08 — `origin/main` avançou de `2965f8c` para `beb848e`. A rodada volta a **zero PR aberto**; 31 fatias mescladas.
+- **Quinto drift do spinmax/ctvitrine:** spinmax em **`9fd04be`** (era `5864ea7`, pin `e4ec01e`); ctvitrine segue em `c62438a` (pin `53d7d9a`). Os outros 5 idênticos aos pinados. Pin inalterado — os commits novos das fontes ficam para a próxima harvest, registrados no RELATORIO como "evoluiu durante a rodada".
+- **⚠️ Consequência do merge para a unidade 3, e é preciso anotar:** os 17 agentes da dimensão 6 mediram o alvo contra `origin/main` = **`2965f8c`**, que era o ref correto no momento em que rodaram. O merge do #112 (que toca `ui/sidebar.tsx`, `lib/keyboard.ts` e `.ai/rules/js.md`) aterrissou **durante** a execução. Qualquer candidato da célula que fale de `ui/sidebar.tsx`, de atalho de teclado ou da regra de `js.md` precisa ser re-conferido contra `beb848e` antes de virar fatia. É o mesmo gênero da "quarta pegadinha" (baselines do lado alvo), com uma camada nova: **o alvo pode andar no meio de uma célula longa.** Para as células grandes seguintes, anotar o SHA do alvo no início E no fim da execução.
+
 
 **Reconciliação da 12ª invocação (2026-08-20).** Sete dias sem invocação; a rodada voltou com passivo de merge inteiramente resolvido pelo dono.
 
