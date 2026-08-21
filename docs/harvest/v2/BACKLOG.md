@@ -696,3 +696,98 @@ completos em `spinmax.md § Dimensão 1`.
 | Enumeração no reset de senha | REFUTAR: **"o candidato com mais fato errado da célula"**; 2 das 3 recomendações caem |
 | `validateCsrfTokens(except:)` como padrão | REFUTAR: derrubar por ora — sem superfície de integração no boilerplate |
 | Literal `user:{id}:permissions` escrito à mão | premissa "uma convenção só" é falsa neste repositório |
+
+---
+
+## Aplicáveis agora — ctvitrine (dimensão 6 — UI)
+
+Fonte: ctvitrine @ `53d7d9a` × boilerplate `origin/main` @ **`beb848e`** (o alvo andou no meio da célula — a 1ª passada mediu `2965f8c`). **45 candidatos · 30 sobreviventes · 15 derrubados.** Escopo abaixo é o CORRIGIDO pelas 3 lentes. As afirmações capazes de inverter decisão foram re-medidas por mim e reproduzem (ver o cabeçalho da célula em `ctvitrine.md`).
+
+> **Marco da rodada:** pela primeira vez em 6 células, **dois candidatos passaram pelas 3 lentes sem redução de escopo** (V6F-4, V6T14) e um saiu **ampliado** (V6D-11, de 9 para 15 infratores). O padrão "nenhum passa intacto" valeu para 4 células seguidas e quebrou aqui.
+
+### ⭐ A linha de comparação do F3 — tema multi-fonte "tokens de estado", resolvida
+
+Esta é a resposta que represava o F3 desde 2026-08-12. **Fontes concorrentes → vencedor → porquê:**
+
+| Fonte | Como resolve tokens de estado | Números medidos | Veredito |
+| ----- | ----------------------------- | --------------- | -------- |
+| **ctfinance** | trio `--state-{status}-{bg,fg,border}` — separa preenchimento de texto | percentuais de `color-mix` reprovam **3 de 4** na paleta daqui (2.53 / 3.26 / 3.92) | **vence a FORMA** — é a única resposta ao problema real |
+| **ctvitrine** | `--brand` injetado por `style` no wrapper + `color-mix(in oklab, base, white N%)`, 5 pontos de injeção / 33 call-sites | degenerou em **8 percentuais distintos** (`white_55/65/70/85/88/90/93/94%`), sem piso de contraste | **vence a TÉCNICA** — espaço perceptual, e o único que roda contra base desconhecida em produção |
+| **cuidari** | mesmos seis literais **ainda no prefixo `--color-*`** | colisão de token **viva** | perde — é o estado que o F1 curou aqui |
+| **boilerplate** | `theme-tokens.test.ts` (216 linhas) com tabela de pares e dívida datada | `DIVIDA_DESTRUCTIVE_ESCURO = 3.67` + catraca `toBeLessThan(4.5)` "se passou, o F3 chegou" | **vence o GUARD-RAIL** — o único dos quatro que mede contraste |
+
+**Recomendação consolidada: o F3 canoniza o DESENHO do ctfinance dentro do MÉTODO do boilerplate, com a técnica do ctvitrine — e não copia valor de ninguém.**
+
+1. **Forma do ctfinance**, exportada por `@utility`. **Ressalva nova, achada pela lente de risco e ausente da cadeia original do BACKLOG:** `@utility` emite dentro de `@layer utilities`, a camada mais fraca deste arquivo — que perde para os **46 `!important` fora de layer** e para os 812 KB do Radix não-layerizado. **O F3 depende do F1 estar DECIDIDO, não só enfileirado.**
+2. **Valores calculados aqui, nunca copiados** — 3 dos 4 percentuais do ctfinance reprovam na paleta daqui.
+3. **Guard-rail é o daqui, estendido**: acrescentar linhas à tabela de pares de `theme-tokens.test.ts`, **não** escrever um `design-tokens-contract.test.ts` novo no molde do ctfinance.
+4. **São TRÊS pares a medir, não dois** (esta célula achou o terceiro): *fill × rótulo* (4.5:1) · *texto × canvas* (6.42/8.77/6.83 no escuro) · **objeto gráfico × superfície do toast (3:1, SC 1.4.11)** — hoje com dois canais vivos reprovando (borda `warning` **2.15:1**, `info` **2.77:1** no claro; `iconTheme` de `success` **2.28:1** no escuro) e um terceiro canal **fora de qualquer token**: `toast.promise` com disco `#61d345` a **1.92:1** no card claro, em 6 call-sites.
+5. **Técnica do ctvitrine, consolidada em 3 níveis nomeados** — `color-mix(in oklab, …)` já é o idioma do Tailwind 4.3 instalado (**159 ocorrências no CSS compilado do alvo**, emitidas pelo framework), contra o único `color-mix(in srgb)` que o boilerplate escreveu à mão (`app.css:366`).
+6. **Preservar o que já está bom:** o par emerald das telas de auth está em **14.38:1** (e o `AlertDescription` em 7.03:1), em **três** páginas (`forgot-password.tsx:30`, `login.tsx:44`, `verify-email.tsx:25`) — trocá-lo por um `state-success-soft` mal calibrado é regressão.
+
+**Em uma palavra:** copiar o ctfinance inteiro embarca 3 reprovações de AA; escrever do zero joga fora o único trio bem desenhado da família; e fazer qualquer um dos dois sem contar o `toast.promise` deixa o pior contraste da casa exatamente onde ele está.
+
+### ⭐ Fatia recomendada ANTES do F1 — V6T13 + V6T14 + V6S-1 (uma fatia só)
+
+Mesma família (tokens de estado × os canais que os consomem), os três **P**, os três executando política **já escrita e já furada** (`.ai/rules/css.md:12` manda acrescentar a linha na tabela do teste no mesmo commit do token). Separá-los faz o V6T13 travar contraste de tokens que o V6T14 vai apagar, e deixa o V6S-1 travando um canal que o V6T13 acabou de justificar.
+
+- **V6T14 · `[guard-rail]`** — `iconTheme` de `warning` e `info` é config **morta**, e a morte é dupla: `react-hot-toast` 2.6.0 não emite disco para `type:'blank'`, e não há tipo `warning`/`info` na lib. Mesma família da PR #108 (poda de CSS de toast) — e **o teste que a #108 escreveu trava as duas**. Passou pelas 3 lentes **ampliado**: a lente de risco achou a **terceira** cópia da afirmação falsa, em `.ai/rules/css.md:20-21`.
+- **V6T13 · `[guard-rail]`** — o ctvitrine acerta **6 de 6** contas de contraste em comentário, **sem um único teste**. É o argumento mais limpo a favor do artefato que o boilerplate já tem; a fatia estende a tabela de pares.
+- **V6S-1 · `[guard-rail]`** — `toast.promise` escapa de **tudo**: cor, `iconTheme`, `ariaProps` e duração. São 6 call-sites (`assign-role-user.tsx:47`, `use-permission-actions.ts:31,64,97`, `use-settings-actions.ts:20,59`) que anulam, em silêncio, a decisão de severidade documentada e testada na PR #102. Pior contraste da casa: **1.92:1**.
+
+### Os 30 sobreviventes — priorizados
+
+| ID | Título curto | Classe | Tam. | Risco | Nota da lente |
+| -- | ------------ | ------ | ---- | ----- | ------------- |
+| **V6T14** | `iconTheme` de warning/info é config morta (3 cópias da afirmação falsa) | `[guard-rail]` | P | baixo | **passou sem redução — ampliado** |
+| **V6S-1** | `toast.promise` escapa de cor/ARIA/duração — 6 call-sites, 1.92:1 | `[guard-rail]` | P | baixo | escopo ordenado por mim |
+| **V6T13** | 6 contas de contraste certas e zero teste — estende a tabela de pares | `[guard-rail]` | P | baixo | — |
+| **V6F-4** | 79 KB de fonte duplicada por artefato de Finder vivem no `origin/main` **daqui** | `[absorver]` | P | baixo | **passou intacto — o mais limpo da rodada** |
+| **V6D-11** | follow-up do E28: 3 idiomas de spinner, regra sem trava | `[guard-rail]` | P | baixo | **ampliado de 9 para 15 infratores** |
+| **V6P-1** | `SidebarInset` sem `min-w-0` — risco latente, não bug vivo | `[absorver]` | P | baixo | severidade corrigida pelo caçador |
+| **V6T4** | `.font-title` emitida 2× e a de fora de layer vence — `--font-*` órfãos | `[guard-rail]` | M | médio | manchete corrigida (2 órfãos, não 3) + regressão em `error-page.tsx:35` |
+| **V6T2** | token declarado sem consumidor — asserção simétrica no teste | `[guard-rail]` | P | baixo | pode nascer vermelho aqui: **não medido no alvo** |
+| **V6T12** | `--brand` + `color-mix(in oklab)` — a arquitetura que o F3 procura | `[absorver forma]` | M | médio | **insumo do F3** |
+| **V6T11** | correção de fato: as "34 `@font-face`" do inventário são **23** | correção | — | — | 11 matches estavam numa URL da MDN em comentário |
+| **V6T10** | `preconnect` para `fonts.bunny.net` que nunca baixa nada — nos dois | `[absorver]` | P | baixo | mesmo gênero do F32 |
+| **V6D-3** | o mesmo `preconnect`, do lado da blade | `[absorver]` | P | baixo | par do V6T10 |
+| **V6D-2** / **V6F-1** | a blade raiz **não linka favicon nenhum**, e 6 ícones versionados não são referenciados | `[absorver]` | P | baixo | par confirmado pelos dois caçadores |
+| **V6D-5** | `--success`/`--warning`/`--info`: exportá-los como estão entrega par a **2.15:1** | `[guard-rail]` | P | baixo | **trava o F2** |
+| **V6D-4** | 44 `<img>` sem `width`/`height`; servidor comprime upload e serve 6,7 MiB cru | `[guard-rail]` | P | baixo | — |
+| **V6D-6** | `page-header`/`page-info`: subárvore morta cuja prop monta classe por interpolação | `[guard-rail]` | P | baixo | resolve a inconsistência do E21 |
+| **V6D-8** | quarto estado do assíncrono: "está demorando mais que o normal" | `[absorver]` | M | médio | — |
+| **V6P-4** | entrada por chips — primitivo genérico ausente aqui | `[absorver]` | M | médio | com o bug de closure já pago documentado na fonte |
+| **V6P-5** | ícone de marca: 2 SVGs inline **sem atributo de a11y** | `[guard-rail]` | P | baixo | metade (b) |
+| **V6P-6** | `appearance-tabs`: seletor sem papel/estado ARIA, em inglês | `[guard-rail]` | P | baixo | **defeito daqui** |
+| **V6P-2** | resíduo da poda: dep npm com zero importadores + componente morto | `[guard-rail]` | P | baixo | não traz código da fonte |
+| **V6P-9** | evidência de que `ui/table` dá conta — a regra daqui manda o contrário | `[proposta-adr]` | — | — | anexo a proposta já aberta |
+| **V6S-2** | resíduo que a #108 não varreu: 28 linhas de CSS de scrollbar, 1 seletor morto | `[absorver]` | P | baixo | byte a byte nos dois |
+| **V6S-4** | `SheetHeader` FORA do `SheetContent`: 2 frases `sr-only` permanentes no corpo | `[guard-rail]` | P | baixo | medido na lib Radix instalada |
+| **V6F-3** | a guarda de tema daqui pega o defeito da fonte — e **não viaja no playbook** | `[guard-rail]` | P | baixo | insumo do rollout |
+| **V6F-2** | `.env.example` liga o SSR e nenhum caminho sobe servidor SSR | `[guard-rail]` | P | baixo | **reescrito**: o "502" não existe (fallback client-side) |
+| **V6F-5** | `AppShell` semeia sidebar do `localStorage`; o cookie que o primitivo grava não é lido | `[guard-rail]` | P | baixo | **reescrito**: sem mismatch (é `createRoot`, não `hydrateRoot`) |
+| **V6F-6** (metade) | `env(safe-area-inset-*)` sem `viewport-fit=cover` resolve a `0px` — **só apagar** | `[absorver]` | P | baixo | metade "ativar" derrubada |
+| **V6F-7** (metade) | `variant="header"` morto nos dois repositórios — **só a poda** | `[absorver]` | P | baixo | metade "família pública" derrubada |
+| **V6D-9** | duas famílias de layout por enum: **mecanismo portável, costura com a blade não** | `[absorver parcial]` | M | médio | — |
+
+### `[rejeitado]` da dimensão 6 — motivo em uma linha, para não se re-descobrir
+
+| ID | Motivo (lente que derrubou) |
+| -- | --------------------------- |
+| V6T1 | `InlineThemeBackgroundTest.php:135-142` já proíbe `var(--` nos dois blades; a regra proposta é mais fraca e o path de `css.md` nem casaria um blade |
+| V6T3 | Resultado nulo bem medido: as três fontes já concordam no namespace |
+| V6T5 | É o F1 Defeito 3, já no BACKLOG **e** já em `.ai/rules/css.md:18`; a asserção nova nasceria vermelha |
+| V6T6 | Autoderrubado — censo de `!important` é classificação, não candidatura |
+| V6T7 | Curado pela PR #72 (`--brand-cyan-dark: #2a7ba2`); backport para derivado é playbook |
+| V6T8 | Autoderrubado — 4.68:1 e 7.93:1 são ambos AA; é escolha de marca |
+| V6T9 | O F14 já enfileira `theme-color` **por esquema**, resolvendo a pergunta em aberto |
+| V6P-3 | Upload não existe em nenhuma das duas pontas do alvo; o primitivo fixaria política de upload pelo front |
+| V6P-7 | Premissa falsa — o contrato de região viva **tem** dois testes (`search-bar.test.tsx:99`, `input-error.test.tsx`) |
+| V6P-8 | Duplicado: o `ui/color-picker` do ctfinance é a versão melhor do mesmo item |
+| V6D-1 | Contagem errada (10 `Skeleton`, não 14) e regra sem consumidor |
+| V6D-7 | Mecanismo central inexistente no alvo: `Inertia::always` → 0 linhas, e `flash` não é prop (é o canal nativo do Inertia 3) |
+| V6D-9 (metade blade) | `options()`/`label()` já são regra em `.ai/rules/enum.md`; `withViewData` é irrelevante aqui |
+| V6D-10 | Terceira confirmação do **E16** — evidência anexa, não candidato |
+| V6F-6 (metade "ativar") | Sem página pública que justifique, e sidebar/overlays são `fixed` |
+| V6F-7 (metade "família pública") | Layout sem call-site recria o código morto que a poda anterior removeu |
+| V6S-3 | Já registrado (`ctfinance.md:151` + linha de i18n com 3 fontes); vira medição anexa |

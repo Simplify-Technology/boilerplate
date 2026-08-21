@@ -3902,3 +3902,3948 @@ Conferi com comando próprio e **estava certo** — não vale re-investigar:
 - **CSS**: `app.css` 721 linhas / 52 `!important` / 40 tokens no `@theme` / 2 `@keyframes`; `_fonts.css` 218 linhas / 34 `@font-face`; `var(--palette-primary)` e `var(--palette-accent)` com **zero** uso; `app.blade.php:114` de fato usa `background-color: var(--palette-primary-dark)` no bloco pré-paint (o bug apontado pela F6 é real).
 - **F8 tree-wide**: 1053 × 719, **478 caminhos compartilhados, 306 blobs idênticos, 172 divergentes**; os 3 espelhos de skills (`.github`/`.cursor`/`.agents`) colapsam 87 linhas em **29** pares (hash, caminho) — idênticos entre si; 54/54 stubs e 4/4 hooks do husky com blob idêntico ao boilerplate; `.codex/skills` da fonte com 3 arquivos defasados (o `.codex` do boilerplate carrega o mesmo blob `813e62f6…` dos outros três espelhos da fonte — só a cópia `.codex` da fonte está velha).
 - **Testes (F7)**: 708 casos Pest + 13 métodos PHPUnit; `phpunit.xml` com testsuite única `Feature` e as 4 `<env>` de baseline `VITRINE_*=off`; 18 comandos distintos exercitados via `artisan(` e **`ai-image:usage` é o único dos 19 nunca invocado**; a soma por diretório da tabela §8 fecha em 708.
+
+
+---
+
+# Dimensão 6 (UI) — célula ✅ 2026-08-20
+
+- **Fonte:** ctvitrine @ `53d7d9a` · **Alvo:** boilerplate @ `origin/main`
+- **⚠️ O ALVO ANDOU NO MEIO DA CÉLULA.** A 1ª passada mediu contra `2965f8c`; a retomada mediu contra **`beb848e`** (o merge do PR #112 aterrissou durante a execução, tocando `ui/sidebar.tsx`, `lib/keyboard.ts` e `.ai/rules/js.md`). O caçador 1 detectou isso sozinho e marcou as duas conclusões que se invertem contra o ref novo. Trap registrada no STATE.
+- **Custo:** 17 agentes (4 caçadores × 3 lentes + secagem), **duas passadas** — a 1ª perdeu 10 dos 17 por sleep da máquina (3,81M tokens, 1.132 chamadas, 4h23), a retomada por `resumeFromRunId` fechou 17/17 com 0 erros (2,82M tokens, 784 chamadas, 58 min). **Total da célula: ~6,6M tokens de subagente.**
+- **Placar:** **45 candidatos · 30 sobrevivem · 15 derrubados.** Pela primeira vez na rodada, **dois passaram pelas 3 lentes sem redução de escopo** (V6F-4 e V6T14) e um saiu **ampliado** (V6D-11).
+- **Fact-check meu, antes de qualquer coisa entrar no BACKLOG.** Re-medi as afirmações capazes de inverter decisão e **todas reproduzem**: os 6 call-sites de `toast.promise`; os defaults `#61d345`/`#ff4b4b`/`#616161` da lib instalada; `DIVIDA_DESTRUCTIVE_ESCURO = 3.67` com a catraca "se passou de 4.5, o F3 chegou" (`theme-tokens.test.ts:161-167`); a dupla emissão de `.font-title` no CSS compilado (byte 44.554 dentro de `@layer utilities{`, que abre em 16.742, × byte 815.278 **fora de qualquer layer**, com `!important`); os 46 `!important` do `app.css`; as 159 ocorrências de `color-mix(in oklab` emitidas pelo próprio Tailwind 4.3; e o **14.38:1** do par emerald — o único número que a secagem marcou como não medido e que invertia decisão.
+- **Uma correção minha ao texto dos agentes:** o par emerald não está só em `verify-email.tsx`. É o mesmo bloco `<Alert>` em **três** páginas de auth (`forgot-password.tsx:30`, `login.tsx:44`, `verify-email.tsx:25`), e o `AlertDescription` usa `text-emerald-900/90` sobre `bg-emerald-50` = **7.03:1**. Quem escrever o F3 mexe em 3 arquivos, não 1, e tem dois pares a preservar, não um.
+
+
+---
+
+## Caçador 1 — tokens, tema, paleta, dark mode, tipografia, contraste
+
+# Caçador 1 — tokens, tema, paleta, dark mode, tipografia, contraste (ctvitrine @ `53d7d9a` × boilerplate @ `origin/main` = `beb848e`)
+
+> Aviso de baseline: `origin/main` avançou desde o inventário. O banner do `ctvitrine.md` fixa `2965f8c`; hoje `origin/main` = **`beb848e`** e já contém as PRs #108 (poda do CSS de toast), #72 (anel de foco) e #112. **Duas conclusões desta frente se invertem contra o ref novo** — estão marcadas. Uma contagem do próprio inventário é derrubada abaixo (V6T11).
+
+---
+
+### V6T1 · O bloco pré-paint do ctvitrine referencia um token que ainda não existe naquele instante — e o boilerplate já curou isso com literal + teste
+
+- **Evidência:** `resources/views/app.blade.php:113-116@53d7d9a`
+  ```
+  html.dark {
+      background-color: var(--palette-primary-dark);
+      transition: background-color 0.2s ease;
+  }
+  ```
+  O token nasce em `resources/css/app.css:111@53d7d9a` (`--palette-primary-dark: #0f2a44;`), e o `app.css` só entra pelo `@vite(...)` de `app.blade.php:142` — **28 linhas depois** do `<style>`. Na janela em que o bloco existe para valer, `var()` não resolve, a declaração é inválida em computed-value time e `background-color` cai para `transparent`.
+- **Estado do boilerplate hoje:** **já corrigido, e melhor do que eu proporia.** `resources/views/app.blade.php:40-52@origin/main` usa hex literal (`background-color: #0f2a44;`) com comentário que descreve exatamente o mecanismo (`:26-39`), acrescenta `color-scheme: light|dark` preso à **classe** `.dark` (não ao `<meta>`, que congela no servidor — fecha o F35), e a sincronia hex↔token é travada por `tests/Unit/Theme/InlineThemeBackgroundTest.php` (medido: `git grep -ln 0f2a44 origin/main` → 4 arquivos, um deles o teste).
+- **O que absorver / o que travar:** nada a absorver do ctvitrine. O que sai daqui é **(b)**: a regra que o boilerplate escreveu em comentário precisa virar `.ai/rules` de CSS, porque o defeito reapareceu em derivado depois de curado aqui. Texto da regra: *"bloco `<style>` inline no `<head>` só usa literais; qualquer `var(--x)` cujo `--x` seja declarado numa folha carregada depois é inválido justamente na janela em que o bloco existe."*
+- **Adaptação necessária:** nenhuma no boilerplate. Para o rollout dos derivados (playbook), isso é uma fatia de 4 linhas + o teste.
+- **Risco · esforço:** P / P.
+- **Honestidade sobre severidade:** em **produção** o `@vite` emite o CSS como `<link>` render-blocking, então o token já existe no primeiro paint e o `var()` quebrado fica latente. A janela real é `composer dev` (Vite injeta CSS por JS) e o caso de folha lenta/falha. Vender isso como "flash branco em produção" seria falso — o `ctfinance.md:244` já registrou essa correção de severidade e ela vale igual aqui.
+- **Multi-fonte?** Sim. cuidari tem o mesmo genoma de defeito de tema (`cuidari.md:2561`), e o ctfinance foi onde a severidade foi calibrada.
+
+---
+
+### V6T2 · `--palette-primary` e `--palette-accent` têm ZERO consumidor — confirmado, e o hex de um deles é o cadáver da colisão do F1
+
+- **Evidência:** `resources/css/app.css:111-116@53d7d9a` declara seis literais de paleta. Medido com `git grep -o -- '--palette-<nome>' 53d7d9a` (fora do próprio `app.css`) e com a lista integral de `var(--palette` na árvore:
+
+  | token | valor | `var()` que o consomem |
+  |---|---|---|
+  | `--palette-primary-dark` | `#0f2a44` | 21 |
+  | `--palette-primary` | `#1f3c57` | **0** |
+  | `--palette-primary-darker` | `#2c485e` | 5 |
+  | `--palette-accent-light` | `#8ac7e5` | 12 |
+  | `--palette-accent` | `#379bcb` | **0** |
+  | `--palette-muted-light` | `#e6e7e8` | 4 |
+
+  Os dois órfãos são exatamente `#1f3c57` e `#379bcb` — **os dois hexes da colisão `--color-primary`/`--color-accent` que o F1 documentou** (`BACKLOG.md:531-532`).
+- **Estado do boilerplate hoje:** os mesmos dois hexes existem, renomeados e **com consumidor**: `--brand-cyan: #379bcb` é usado em `app.css:179` (`--primary` do escuro) e `app.css:115` (base do `--brand-cyan-dark`). `#1f3c57` **não existe mais** no boilerplate — medido: `git grep -c 1f3c57 origin/main` → 0 linhas.
+- **O que absorver / o que travar:** **(b)**, um teste. `theme-tokens.test.ts` já proíbe `--color-*` fora do `@theme`; falta a asserção simétrica: *todo token declarado em `:root` tem pelo menos um `var()` que o leia*. É uma varredura de texto de ~8 linhas no arquivo que o teste já lê.
+- **Adaptação necessária:** o boilerplate hoje passaria? **Não medi token a token no boilerplate** — medi só os seis do ctvitrine. Quem escrever a fatia tem de rodar a varredura antes de decidir se ela nasce verde ou com allowlist.
+- **Risco · esforço:** P / P.
+- **A lição, que é o ativo:** token órfão não é sujeira inerte. `--palette-primary: #1f3c57` sobreviveu à cura da colisão porque **ninguém apagou o valor, só mudaram o prefixo** — e um valor sem consumidor é um convite a alguém reconectar o fio errado. Órfão é dívida de manutenção com aparência de documentação.
+- **Multi-fonte?** Sim — cuidari (`cuidari.md:2548-2556`) tem os mesmos seis literais **ainda no prefixo `--color-*`**, ou seja, com a colisão viva.
+
+---
+
+### V6T3 · O ctvitrine acertou o namespace de token que o cuidari errou — e isso mostra onde a guarda do boilerplate ainda não chega
+
+- **Evidência:** `resources/css/app.css:111-116@53d7d9a` usa o prefixo `--palette-*`. Medido: `git show 53d7d9a:resources/css/app.css | awk 'NR>74' | grep -E '^\s*--color-'` → **0 linhas**. Nenhum `--color-*` fora do `@theme` em todo o `app.css` do ctvitrine.
+- **Estado do boilerplate hoje:** mesma higiene, prefixo `--brand-*` (`app.css:107-116@origin/main`), travada por `resources/js/test/styles/theme-tokens.test.ts:102-110`.
+- **O que absorver / o que travar:** nada a absorver — **as três fontes já concordam** (ctvitrine por `--palette-*`, boilerplate por `--brand-*`; só o cuidari discorda). O ativo é negativo e é o V6T4/V6T5: a guarda existente cobre **token**, e os dois furos vivos do boilerplate são em **classe** e em **folha de terceiro**.
+- **Risco · esforço:** —
+- **Multi-fonte?** cuidari é o contraexemplo (`cuidari.md:2548`); ctfinance tem a colisão e **não** a resolveu (`BACKLOG.md:536`).
+
+---
+
+### V6T4 · `[guard-rail]` No boilerplate, `.font-title` é emitida DUAS vezes e a de fora de layer com `!important` vence — os três tokens `--font-*` do `@theme` são funcionalmente órfãos
+
+Este é o achado mais forte da frente e é **defeito do boilerplate**, revelado por ler os dois lado a lado.
+
+- **Evidência (ctvitrine, o sintoma que denuncia):** `resources/css/app.css:514-523@53d7d9a` —
+  ```
+  /* As regras de tipografia acima são do admin e carimbam h1/h2/h3 com Montserrat
+     e p/footer com Merriweather/Aptos — várias com !important, que vence qualquer
+     utilitário do Tailwind. […] título e preço PRECISAM da display serif, então a
+     regra é reafirmada aqui. */
+  [data-vitrine='boutique'] .font-boutique {
+      font-family: var(--font-boutique) !important;
+  }
+  ```
+  Ou seja: o projeto declarou `--font-boutique` no `@theme` (`:25`), usou `font-boutique` em 15 lugares do markup (medido), e **precisou escrever um `!important` extra para desfazer o próprio `!important`**. O comentário é a confissão assinada.
+- **Evidência (boilerplate, o defeito medido no artefato compilado):** `public/build/assets/app-BKlgUCP1.css` (824.001 B, build do dia, working tree em `30fe0eb`, que É ancestral de `origin/main`) — `.font-title{` aparece em **duas** posições:
+
+  | byte | dentro de | declaração |
+  |---|---|---|
+  | 44.554 | `@layer utilities{` (abre em 16.742) | `.font-title{font-family:var(--font-title)}` |
+  | 815.278 | **fora de qualquer layer** (último `@layer` abre em 16.742) | `.font-title{font-family:Montserrat,sans-serif!important}` |
+
+  A segunda vem de `resources/css/app.css:450-452@origin/main`. Declaração sem layer vence declaração em `@layer` — **é o mecanismo exato do F1**, agora no namespace de *classe* em vez de *token*. E ainda leva `!important` por cima.
+- **Consequência medida:** `--font-title` (`app.css:19@origin/main`) tem **zero** efeito observável: seu único consumidor é a utilitária sombreada. `--font-subtitle` (`app.css:21`) é pior — medido `git grep -n 'var(--font-subtitle)\|font-subtitle' origin/main -- resources` → **1 linha, que é a própria declaração**. Zero consumidor, e `.font-subtitle{` não aparece no CSS compilado (0 ocorrências). `font-title` é usada 2× no markup do boilerplate e **19×** no do ctvitrine.
+- **Estado do boilerplate hoje:** `theme-tokens.test.ts:102-110` proíbe `--color-*` fora do `@theme` e **não vê nada disto** — a guarda é sobre nomes de token, e a colisão aqui é sobre nomes de classe.
+- **O que absorver / o que travar:** **(b)**, dois movimentos:
+  1. Apagar `.font-title` de `app.css:450-452` (a utilitária do Tailwind já entrega o mesmo valor pelo token) e decidir o destino de `--font-subtitle` — ou ganha consumidor, ou sai.
+  2. **Estender a guarda:** teste que, para cada `--font-*` / `--radius-*` / `--color-*` declarado no `@theme`, falha se o arquivo declarar à mão uma classe com o nome da utilitária correspondente (`.font-title`, `.radius-lg`, …). Hoje o teste lê o `app.css` como texto e já tem o extrator de blocos e de declarações — o incremento é uma regex sobre `foraDoTheme`.
+- **Adaptação necessária:** cuidado com `.font-sans`: medido, também sai duas vezes (byte 16.548 dentro de `@layer base{`, com `!important`; byte 44.514 dentro de `@layer utilities{`, sem). As duas estão **em layer**, e quem vence é o `!important` do base. O valor final é o mesmo stack, então não há bug visível — mas a allowlist do teste precisa tratá-la explicitamente, com o porquê escrito, senão a fatia nasce vermelha por um caso que não é defeito.
+- **Risco · esforço:** P de risco (o valor final não muda: `var(--font-title)` resolve para `'Montserrat', sans-serif`, idêntico ao literal) · M de esforço (o teste é o trabalho).
+- **Multi-fonte?** Sim, e é o que dá confiança: **ctvitrine documentou o custo por escrito** (`app.css:514-520`) e ainda assim não removeu a causa; o boilerplate tem 21 das mesmas 22 regras `!important` de tipografia. Não medi ctfinance nem cuidari para esta classe específica.
+
+---
+
+### V6T5 · `[guard-rail]` `@import '@radix-ui/themes/styles.css'` sem `layer()` — o Radix redeclara `--color-background` fora de layer e sequestra `bg-background` no app inteiro (medido em bytes)
+
+- **Evidência (ctvitrine):** `resources/css/app.css:5@53d7d9a` → `@import '@radix-ui/themes/styles.css';` — sem `layer(...)`. Idêntico ao boilerplate.
+- **Evidência (boilerplate, medida no compilado):** `--color-background:` aparece em 3 posições de `public/build/assets/app-BKlgUCP1.css`, e o arquivo tem **5** `@layer`, todos abrindo antes do byte 16.742:
+
+  | byte | seletor | valor | em layer? |
+  |---|---|---|---|
+  | 11.010 | `:root,:host` | `var(--background)` | sim — `@layer theme{` (5.429) |
+  | 227.969 | `:where(.radix-themes)` | `white` | **não** |
+  | 232.573 | `:is(.dark,.dark-theme),… :where(.radix-themes:not(.light,.light-theme))` | `var(--gray-1)` | **não** |
+
+  E o app inteiro está dentro do wrapper: `resources/js/app.tsx:7,27-39@origin/main` (`import { Theme }` … `<Theme>…</Theme>`). O `:where()` zera a especificidade, mas **fora de layer vence layer** independentemente de especificidade — então `bg-background`/`text-background` resolvem pelo Radix, não pelo `@theme`, em toda a árvore.
+- **Estado do boilerplate hoje:** conhecido como **F1 Defeito 3** (`BACKLOG.md:534`), ainda **não aplicado** (`@theme` segue sem `inline`, `app.css:14@origin/main`). O que eu acrescento é a prova em byte offset no artefato atual e um ponto novo: **`theme-tokens.test.ts` lê só `resources/css/app.css`** (`:20`), portanto passa verde com o sequestro vivo. A guarda que existe dá sensação de cobertura que ela não tem.
+- **O que absorver / o que travar:** **(b)**. O `BACKLOG.md:535` já prescreve *"asserção de que todo `@import` de folha de terceiro carrega `layer(...)`"* — medido, **não foi implementada**: `git grep -n 'layer(' origin/main -- resources/js/test resources/css` → 0 linhas. Essa asserção é 3 linhas e pode entrar **antes** do F1 inteiro, como catraca.
+- **Adaptação necessária:** a asserção nasce **vermelha** (o import atual não tem `layer()`). Ou entra junto com a correção do import, ou entra com um `expect.fail` documentado como dívida — não com allowlist muda.
+- **Risco · esforço:** M / P a asserção; G se acoplada ao F1 completo.
+- **Multi-fonte?** ctvitrine tem o import idêntico e o mesmo wrapper (`resources/js/app.tsx:5,24-36@53d7d9a`); cuidari usa `@radix-ui/themes` em 29 arquivos (`cuidari.md:115`).
+
+---
+
+### V6T6 · Anatomia dos `!important`: contra o que eles lutam — e por que 24 dos 46 do boilerplate são uma tentativa de estilizar por CSS o que a lib expõe por prop
+
+- **Evidência (ctvitrine):** `git show 53d7d9a:resources/css/app.css | grep -c '!important'` → **52**. Uma delas (`:516`) está **dentro de comentário**, então são **51 declarações**. Distribuição por linha, classificada por bloco:
+
+  | frente | linhas | nº |
+  |---|---|---|
+  | tipografia (vencer `@radix-ui/themes` + as próprias utilitárias) | 102, 233, 242, 250, 266, 267, 288, 304, 317, 389, 410, 428, 445, 450, 465, 471, 476, 486, 493, 500, 508, **522** | **22** |
+  | toast (vencer o CSS-in-JS do `react-hot-toast`) | 616–689 | **28** |
+  | iOS auto-zoom | 603 | **1** |
+
+- **Estado do boilerplate hoje:** `git show origin/main:resources/css/app.css | grep -c '!important'` → **46**, nenhuma em comentário: **21** tipografia + **24** toast + **1** iOS. A diferença é exata e explicável: −1 tipografia (o ctvitrine tem a regra extra `[data-vitrine='boutique'] .font-boutique` do V6T4) e −4 toast (as 4 linhas `color: var(--x) !important` dos blocos de ícone, apagadas pela PR #108).
+- **O que absorver / o que travar:** nada a absorver. O diagnóstico é: **os `!important` não são estilo, são sintoma de duas fronteiras mal desenhadas.** Os 21–22 de tipografia existem porque o projeto decidiu carimbar família por seletor de elemento (`h1`, `p`, `footer`, `.text-muted-foreground`) em vez de por token/utilitária — e aí precisa vencer o próprio Tailwind. Os 24–28 de toast existem porque se tentou estilizar por CSS uma lib que estiliza por `style` inline.
+- **Adaptação necessária:** o caminho de saída da metade tipográfica é o V6T4 (token vira autoridade, utilitária vira consumidora, os seletores de elemento encolhem para o `@layer base`). Não é fatia P.
+- **Risco · esforço:** G — mexer nos 21 seletores de tipografia muda a aparência de tudo. **Não recomendo como fatia isolada**; recomendo o V6T4 (2 regras) como primeiro corte.
+- **Multi-fonte?** ctfinance tem `app.css` com 1.072 linhas e resolve tipografia por token (`ctfinance.md:147`) — é o único dos quatro que não paga esse pedágio. Não medi o `!important` dele.
+
+---
+
+### V6T7 · `--ring` do ctvitrine é o mesmo nos dois temas e dá 1.85:1 no claro — o defeito que a PR #72 curou aqui, vivo em dois derivados
+
+- **Evidência:** `resources/css/app.css:143@53d7d9a` → `--ring: var(--palette-accent-light);` (claro) e `:194` → `--ring: var(--palette-accent-light);` (escuro). Mesmo `#8ac7e5` nos dois.
+- **Contraste medido** (script próprio, fórmula WCAG 2.x, valores batendo ao centésimo com os do teste do boilerplate):
+
+  | par | ratio | SC 1.4.11 (3:1) |
+  |---|---|---|
+  | `#8ac7e5` vs `--background` `white` | **1.85:1** | reprova |
+  | `#8ac7e5` vs `--input` `#e6e7e8` | **1.49:1** | reprova |
+  | `#8ac7e5` vs `--background` `#0f2a44` (escuro) | 7.93:1 | passa |
+  | `#8ac7e5` vs `--input` `#2c485e` (escuro) | 5.18:1 | passa |
+
+- **Estado do boilerplate hoje:** **corrigido**. `app.css:115@origin/main` (`--brand-cyan-dark: #2a7ba2`, o `--brand-cyan` na mesma matiz/saturação com L 50,6%→40%), `app.css:146` (`--ring` claro) e `:162` (`--sidebar-ring`). Medido: 4.72:1 vs branco e 3.81:1 vs `--input`. Travado por `theme-tokens.test.ts:183-215` (4 pares × 2 temas).
+- **O que absorver / o que travar:** nada a absorver — é **backport** para os derivados, item de playbook, não de harvest.
+- **Convergência que vale registrar:** o ctvitrine chegou **ao mesmo hex `#2a7ba2`**, por conta própria e por outro caminho — `app/Models/SiteSetting.php:28@53d7d9a`, `DEFAULT_PRIMARY_COLOR = '#2a7ba2'`, com o comentário *"Azul Simplify (#379bcb) escurecido na mesma tonalidade até passar AA: 4,7:1 com texto branco (o original ficava em ~3,1:1)"*. **Verifiquei a aritmética: 4.72:1 e 3.13:1 — as duas reproduzem.** Dois times, dois problemas diferentes (anel de foco × cor default de lojista), o mesmo valor. Isso é evidência forte de que `#2a7ba2` é a resposta certa para "escurecer o ciano da marca até AA".
+- **Risco · esforço:** P / P (por derivado).
+- **Multi-fonte?** Sim, **três**: ctvitrine (aqui), cuidari (`cuidari.md:2561`, `--ring: var(--color-accent-light)`), boilerplate (curado). ctfinance foi a origem do candidato F5.
+
+---
+
+### V6T8 · O `--primary` do escuro: ctvitrine tem 3,3× a margem de contraste do boilerplate — e o comentário dele descreve um boilerplate que não existe mais
+
+- **Evidência:** `resources/css/app.css:173-177@53d7d9a` —
+  ```
+  /* No escuro o primary flipa para o accent claro (mesmo padrão da sidebar):
+     o upstream usa #379bcb com texto branco (~3,1:1, abaixo de AA); accent
+     claro + texto escuro mantém contraste real (~7,9:1) nos botões. */
+  --primary: var(--palette-accent-light);      /* #8ac7e5 */
+  --primary-foreground: var(--palette-primary-dark);  /* #0f2a44 */
+  ```
+- **Aritmética verificada:** `#0f2a44` sobre `#8ac7e5` = **7.93:1**. `white` sobre `#379bcb` = **3.13:1**. As duas afirmações do comentário reproduzem.
+- **Estado do boilerplate hoje:** `app.css:176-180@origin/main` — `--primary: var(--brand-cyan)` (`#379bcb`) com `--primary-foreground: var(--brand-navy-dark)`, medido **4.68:1**, com comentário próprio dizendo *"branco dá 3.13:1 (reprova AA) e o navy dá 4.68:1. Medido, não estimado"*. **Os dois passam AA; o ctvitrine passa com 3,3× a folga.**
+- **O que absorver / o que travar:** **nada, e digo isso com convicção.** O ctvitrine trocou a **matiz do botão primário** por segurança de contraste; o boilerplate manteve o ciano da marca e trocou só o texto. São escolhas de marca, não de correção — 4.68:1 é AA legítimo. **A crítica do comentário do ctvitrine ao "upstream" está desatualizada:** ele descreve `#379bcb` + branco, combinação que o boilerplate não tem mais.
+- **O que vale registrar como (b):** um comentário que critica o upstream por valor congela uma versão do upstream. É argumento a favor do V6T13 (teste em vez de comentário).
+- **Risco · esforço:** — (não recomendo mudança).
+- **Multi-fonte?** cuidari mantém `--primary-foreground: #ffffff` sobre ciano no escuro = **3.13:1, reprova AA, vivo** (`cuidari.md:2561`).
+
+---
+
+### V6T9 · `[absorver]` `<meta name="theme-color">` — o ctvitrine tem, o boilerplate não declara nenhum
+
+- **Evidência:** `resources/views/app.blade.php:21@53d7d9a` → `<meta name="theme-color" content="{{ $meta['theme_color'] ?? '#0f2a44' }}" >`, alimentado por 4 controllers (`Site/LandingController.php:41`, `Site/PrivacyController.php:37`, `Site/TermsController.php:38`, `Signup/ShowSignupController.php:59`, todos `'#0f2a44'`).
+- **Estado do boilerplate hoje:** ausente. Medido: `git grep -n "theme-color\|theme_color" origin/main` → **0 linhas**.
+- **O que absorver:** a tag, com o valor vindo do mesmo literal que o `<style>` inline já usa (`#0f2a44`) — e entrando no `InlineThemeBackgroundTest` que já trava aquele hex, para não virar uma **terceira** cópia solta. Encaixa naturalmente no F35/`color-scheme` que a PR #112 acabou de assentar: `theme-color` pinta o chrome do browser mobile, `color-scheme` pinta os controles nativos; são complementares.
+- **Adaptação necessária:** o `theme-color` do ctvitrine é estático por rota pública. No boilerplate ele deveria acompanhar a aparência — `media="(prefers-color-scheme: dark)"` em duas tags, ou um único valor navy. **Não medi** qual das duas o `use-appearance` suportaria sem JS extra; quem pegar a fatia decide.
+- **Risco · esforço:** P / P.
+- **Multi-fonte?** Não medido em cuidari/ctfinance.
+
+---
+
+### V6T10 · `[absorver]` `preconnect` para `fonts.bunny.net` é handshake TLS com terceiro que nunca baixa nada — nos DOIS projetos
+
+- **Evidência (ctvitrine):** `resources/views/app.blade.php:138@53d7d9a`. Medido: `git grep -n "bunny" 53d7d9a` → **1 linha na árvore inteira**, essa. Zero `@import`, zero `<link rel=stylesheet>`, zero `src:` apontando para bunny; as 23 `@font-face` de `_fonts.css` são todas `url('/fonts/woff2/…')` locais.
+- **Estado do boilerplate hoje:** idêntico. `resources/views/app.blade.php:67@origin/main`; `git grep -n "bunny" origin/main` → **1 linha**.
+- **O que absorver / o que travar:** apagar a linha. Já está no BACKLOG como parte do **F38** (`BACKLOG.md:623`); o que esta frente acrescenta é a **segunda fonte** e a medição limpa (1 ocorrência, não N).
+- **Adaptação necessária:** nenhuma.
+- **Risco · esforço:** P / P. É a fatia mais barata da frente.
+- **Multi-fonte?** Sim — ctvitrine e boilerplate, mesmo defeito, herdado do starter kit da Laravel (que usa bunny e foi trocado por self-host sem limpar o `preconnect`).
+
+---
+
+### V6T11 · `[correção de fato]` As "34 `@font-face`" do inventário são **23** — 11 dos 34 matches estão dentro de uma URL da MDN em comentário
+
+- **Evidência:** `resources/css/_fonts.css@53d7d9a`. Onze blocos carregam o comentário `/* Check https://developer.mozilla.org/en-US/docs/Web/CSS/@font-face/font-display for other options. */` — e a string `@font-face` está dentro da URL.
+
+  | comando | resultado |
+  |---|---|
+  | `grep -c '@font-face'` | 34 |
+  | `grep -cE '^@font-face'` | **23** |
+  | `grep -c 'docs/Web/CSS/@font-face'` | 11 |
+
+  23 + 11 = 34. Fecha. Composição real: Aptos **10**, Montserrat **6**, Merriweather Sans **5**, Playfair Display **2**.
+- **Estado do boilerplate hoje:** mesma armadilha. `grep -c '@font-face'` → 32; `grep -cE '^@font-face'` → **21** (as mesmas 23 menos as 2 do Playfair); 11 comentários. O `_fonts.css` do boilerplate tem **21** faces, não 32.
+- **O que absorver / o que travar:** **(b) de método.** A contagem errada não é inofensiva: 34 faces sugere "peso demais, corta pesos"; 23 muda a conversa. E o corte seria inútil de qualquer forma — **`@font-face` não usada não custa byte nenhum ao usuário**: o browser só busca o arquivo quando algum elemento seleciona aquela combinação família/peso/estilo. O custo real das 23 é de **repositório** (1.069.976 B em `public/fonts`, medido por `ls-tree -r -l`) e de manutenção, não de rede.
+- **O custo de rede real, esse sim medido:** os `<link rel="preload">` de `app.blade.php`, que baixam **incondicionalmente**. Boilerplate, 5 preloads = `aptos.woff2` 72.824 + `aptos-semibold` 73.272 + `aptos-bold` 73.324 + `montserrat-800` 19.012 + `merriweather-regular` 16.940 = **255.372 B em toda navegação**. (Tamanhos medidos na árvore do ctvitrine; **não confirmei que os blobs do boilerplate são byte-idênticos** — os nomes e caminhos são.)
+- **O padrão que o ctvitrine tem e o boilerplate não:** preload **condicional por página** — `app.blade.php:134-136@53d7d9a`:
+  ```
+  @if (str_starts_with($page['component'] ?? '', 'site/boutique/'))
+      <link rel="preload" href="/fonts/woff2/playfair-display/playfair-display-latin-600-normal.woff2" …>
+  @endif
+  ```
+  com comentário: *"o Clássico e o admin não pagam o download de uma fonte que nunca desenham"*. O boilerplate hoje tem uma família só de títulos, então o gancho não tem caso de uso — mas o **princípio** ("preload só do que a página desenha") é a regra que impede a lista de 5 virar 8.
+- **Risco · esforço:** P / P (o `preconnect` do V6T10 é o item acionável; a contagem é correção de documento).
+- **Multi-fonte?** cuidari tem as mesmas 22 `.woff2` em 3 famílias (`cuidari.md:182`) e o inventário dele **não menciona `woff2`/`font-face` uma única vez** — o crítico registrou isso como buraco. Ou seja: a superfície de fontes foi mal contada em dois dos quatro inventários.
+
+---
+
+### V6T12 · `[absorver forma]` + `[guard-rail]` Cor de marca por lojista injetada como `--brand` + `color-mix(in oklab, …)` — a arquitetura que o F3 procura, com um piso de contraste que não existe
+
+Este é o candidato mais substantivo de **(a)** desta frente.
+
+- **Evidência (o mecanismo):**
+  - `app/Models/SiteSetting.php:190@53d7d9a` → `'primary_color' => $this->primary_color ?? self::DEFAULT_PRIMARY_COLOR,` (default `#2a7ba2`, `:28`)
+  - `resources/js/pages/site/home.tsx:97@53d7d9a` e `site/boutique/home.tsx:230`, `site/boutique/item.tsx:121` → `style={{ '--brand': settings.primary_color } as CSSProperties}` no wrapper da página
+  - consumo por utilitária arbitrária: **38** ocorrências de `text-[var(--brand)]`, **7** de `bg-[var(--brand)] text-white`, **33** de `color-mix(in_oklab,var(--brand),white_N%)` (medidos com `git grep -o`), distribuídas em 8 níveis de mistura:
+
+    | mistura | ocorrências |
+    |---|---|
+    | `white_55%` | 11 |
+    | `white_65%` | 6 |
+    | `white_90%` | 4 |
+    | `white_88%` | 4 |
+    | `white_93%` | 3 |
+    | `white_85%` | 3 |
+    | `white_94%` | 1 |
+    | `white_70%` | 1 |
+
+- **Por que importa para o F3:** é exatamente o trio *fill / soft-fill / texto* que o F3 quer, **derivado em runtime de uma cor base desconhecida**, em `oklab` (espaço perceptual, que é a escolha certa) — e é a prova de campo de que a forma `color-mix` funciona. O ctfinance tem a mesma forma com base **conhecida**; o ctvitrine mostra o caso difícil.
+- **O defeito que vira guard-rail (b):** a validação é só de formato. `app/Http/Requests/SiteSetting/UpdateSiteSettingRequest.php:35@53d7d9a` —
+  ```
+  'primary_color' => ['nullable', 'string', 'regex:/^#[0-9a-fA-F]{6}$/'],
+  ```
+  **Nenhum piso de contraste.** E há 7 lugares com `text-white` sobre essa cor e 38 com `text-[var(--brand)]` sobre branco. Medido:
+
+  | cor | branco sobre ela | ela sobre branco | veredito |
+  |---|---|---|---|
+  | `#2a7ba2` (default) | **4.72:1** | 4.72:1 | AA nos dois sentidos |
+  | `#b26e79` (a cor da loja fictícia do mockup, `landing.tsx:36`) | **3.89:1** | 3.89:1 | reprova AA |
+  | `#ffff00` (pior caso admitido pelo regex) | **1.07:1** | 1.07:1 | ilegível |
+
+  O default é seguro; **o espaço de valores que o formulário aceita, não.** As 8 misturas ad-hoc agravam: `white_93%` sobre um `--brand` já claro é fundo praticamente branco.
+- **Estado do boilerplate hoje:** **não tem cor configurável nenhuma.** Medido: `git grep -ln "primary_color\|theme_color\|brand_color" origin/main` → 0 arquivos. Então isto não é um defeito a consertar aqui — é **a regra a escrever antes de a primeira feature de white-label chegar**.
+- **O que absorver / o que travar:**
+  1. **Forma:** `style={{ '--x': valorRuntime }}` no wrapper + `color-mix(in oklab, var(--x), …)` para as variações — em vez de gerar N classes ou recalcular em JS. Vale para o F3 mesmo com base estática.
+  2. **Regra `.ai/rules`:** *"cor escolhida por usuário nunca é par de um foreground fixo. Ou a validação impõe piso de contraste contra os fundos onde ela será usada, ou o foreground é derivado da luminância dela em runtime."*
+  3. **Consolidar as misturas:** 8 percentuais ad-hoc é o sintoma inverso do token — vira 3 níveis nomeados (`soft`, `muted`, `subtle`).
+- **Adaptação necessária:** o piso não é uma regra só. `text-white` sobre `--brand` pede ≥4.5:1; `text-[var(--brand)]` sobre branco também; `border-[var(--brand)]` pede só 3:1. Uma regra de validação única inviabiliza metade da paleta de marca legítima — o desenho correto é **derivar o foreground** (preto/branco por luminância) e reservar a validação de piso só para os usos como **texto**.
+- **Risco · esforço:** M / M. A forma é P; o piso de contraste é onde mora o projeto.
+- **Multi-fonte?** A técnica `color-mix` para estado aparece no ctfinance (`ctfinance.md:438`, e é de lá que o F3 nasce). O caso *runtime* é exclusivo do ctvitrine entre os inventariados.
+
+---
+
+### V6T13 · `[guard-rail]` O ctvitrine acerta 6 de 6 contas de contraste — em comentário, sem um único teste. É o argumento mais limpo a favor do artefato que o boilerplate já tem
+
+- **Evidência:** recalculei ao centésimo cada afirmação de contraste escrita no código do ctvitrine:
+
+  | afirmação | onde | recalculado | bate? |
+  |---|---|---|---|
+  | branco sobre `#25D366` ≈ 1,98:1 | `resources/js/pages/site/landing.tsx:71-73@53d7d9a` | **1.98:1** | ✓ |
+  | `#0f2a44` sobre `#25D366` = 7,38:1 | idem | **7.38:1** | ✓ |
+  | `#0f2a44` sobre `#1FB457` (hover) = 5,38:1 | idem | **5.38:1** | ✓ |
+  | `#2a7ba2` com texto branco = 4,7:1 | `app/Models/SiteSetting.php:25-28` | **4.72:1** | ✓ |
+  | `#379bcb` com texto branco ≈ 3,1:1 | idem | **3.13:1** | ✓ |
+  | accent claro + texto escuro ≈ 7,9:1 | `resources/css/app.css:174-175` | **7.93:1** | ✓ |
+
+- **E ainda assim:** medido `git ls-tree -r 53d7d9a --name-only -- resources/js/test` → 16 entradas, **nenhuma** em `styles/`, nenhuma sobre token, tema ou contraste. Os 14 arquivos `.test.tsx?` cobrem componentes, hooks, máscaras e tracking. **Zero teste de tema.** E o resultado disso está no V6T7: o `--ring` a 1.85:1 passou despercebido no mesmo arquivo onde havia três contas corretas de contraste, e o comentário do V6T8 envelheceu para descrever um upstream que já mudou.
+- **Estado do boilerplate hoje:** `resources/js/test/styles/theme-tokens.test.ts` (216 linhas) + `focus-ring.test.ts` — 6 pares × 2 temas para AA, 4 pares × 2 temas para o anel, guarda de namespace `--color-*`, e uma **catraca com data de validade** (`:161-168`): `DIVIDA_DESTRUCTIVE_ESCURO = 3.67` com asserção dupla — falha se piorar **e** falha se chegar a 4.5, com a mensagem *"se passou de 4.5, o F3 chegou — mova o par para a tabela de cima"*. **Reproduzi todos os números desse teste com script independente: 3.67, 3.99, 1.85, 1.49, 4.72, 3.81, 7.93, 5.18, 3.13, 4.68. Todos batem.** Este é o melhor artefato de contraste dos quatro projetos, e não é perto.
+- **O buraco que sobra, medido:** a tabela de pares (`:128-135`) cobre `primary, secondary, accent, muted, card, background`. **Não cobre `success`, `warning` nem `info`** — que o `app.css` declara com `-foreground` em ambos os temas (`:135-140` e `:189-194`). Recalculado:
+
+  | par declarado | claro | escuro |
+  |---|---|---|
+  | `--success-foreground` / `--success` | `white` sobre `#16a34a` = **3.30:1** | `white` sobre `#22c55e` = **2.28:1** |
+  | `--warning-foreground` / `--warning` | `white` sobre `#f59e0b` = **2.15:1** | `#0f2a44` sobre `#fbbf24` = 8.77:1 |
+  | `--info-foreground` / `--info` | `white` sobre `#0ea5e9` = **2.77:1** | `#0f2a44` sobre `#38bdf8` = 6.83:1 |
+
+  **Quatro pares declarados reprovam AA e nenhum é vigiado.** Hoje o dano é contido porque esses tokens não são texto em lugar nenhum (medido: os únicos consumidores são `border-left: 4px` no CSS e o `iconTheme` do `toast-config.ts`) — mas o F2 vai transformá-los em `text-success`/`text-warning`/`text-info`, e é essa a razão de o `BACKLOG.md:545` exigir que F2 viaje com F3.
+- **O que absorver / o que travar:** **(b)**, e é fatia P: mover `success`/`warning`/`info` para o mesmo modelo de catraca do `destructive` — asserção "não piora" com o valor atual + asserção "se passou de 4.5, o F3 chegou". Nasce verde, documenta os quatro números, e impede que alguém "melhore" a paleta de estado sem medir.
+- **Risco · esforço:** P / P. **Recomendo como a primeira fatia desta frente.**
+- **Multi-fonte?** ctfinance tem `test/styles/design-tokens-contract.test.ts` (26 tokens + 11 classes) — mas é contrato de **presença**, não de **contraste** (`ctfinance.md:147,381`). cuidari tem **zero** teste de tema (`cuidari.md:2652`).
+
+---
+
+### V6T14 · `[guard-rail]` Achado novo na mesma família da PR #108: `iconTheme` de `warning` e `info` é config morta — e o teste que a PR #108 escreveu trava as duas
+
+Não vem do ctvitrine; nasceu de conferir, na fonte da lib, a afirmação que a PR #108 deixou escrita. Reporto porque é do meu escopo (cor) e refuta uma guarda recém-criada.
+
+- **Evidência (fonte da lib instalada, `node_modules/react-hot-toast/dist/index.js`, v2.6.0):**
+  ```js
+  $=({toast:e})=>{ let {icon:t, type:o, iconTheme:s}=e;
+    return t!==void 0 ? (typeof t=="string" ? createElement(ve,null,t) : t)
+         : o==="blank" ? null
+         : createElement(Re,null, createElement(L,{...s}), …) }
+  ```
+  `icon !== undefined` **retorna antes** — `iconTheme` nunca chega ao indicador.
+- **Estado do boilerplate hoje:** `resources/js/lib/toast-config.ts@origin/main` define `icon: '⚠️'` (`:74`) e `icon: 'ℹ️'` (`:97`). Logo `iconTheme` de `:87-90` e `:109-112` **nunca é lido**. E `resources/js/test/lib/toast-config.test.ts:49-56` afirma nas linhas 52 e 53 exatamente essas duas, sob um comentário (`:39`) que diz *"A cor do ícone é `iconTheme`, e este é o único canal que funciona"* — **falso para metade das linhas da própria tabela**.
+- **O que travar:** as 2 linhas de `iconTheme` morto saem do `toast-config.ts`; a tabela do teste vira 2 linhas (`success`, `error`) mais 2 asserções de que `warning`/`info` definem `icon` e por isso **não** usam `iconTheme`; o comentário passa a dizer os dois canais e quando cada um vale.
+- **Contraste, de brinde (medido nos dois canais vivos):** `iconTheme` = glifo sobre disco colorido → SC 1.4.11, 3:1.
+
+  | variante | claro | escuro |
+  |---|---|---|
+  | success (`white` / `--success`) | 3.30:1 passa | **2.28:1 reprova** |
+  | error (`white` / `--destructive`) | 4.70:1 passa | 3.67:1 passa |
+
+  **Uma reprovação viva e visível: o glifo do toast de sucesso no tema escuro.** Nasce e morre com a mesma fatia do V6T13.
+- **Risco · esforço:** P / P.
+- **Multi-fonte?** O ctvitrine tem os mesmos `icon: '⚠️'`/`'ℹ️'` e o mesmo par `iconTheme` (`resources/js/lib/toast-config.ts:70-100@53d7d9a`) — herdou o defeito e ainda tem as 4 regras de CSS morto que a #108 apagou aqui.
+
+---
+---
+
+## ENTREGÁVEL F3 — qual das quatro fontes tem o sistema de tokens de ESTADO mais maduro
+
+### Tabela comparativa
+
+| Fonte | Como resolve estado | Números medidos | Guard-rail | Veredito |
+|---|---|---|---|---|
+| **ctfinance** | **Único com trio real.** `@theme` expõe `success/warning/info`; escalas `--space-1..12`, `--radius-{control,surface,hero}`, `--focus-ring-*`, `--surface-{base,elevated,overlay,subtle}`, **`--state-*`**; `@layer components` com `.surface-page`/`.surface-panel`; `app.css` 1.072 l. (`ctfinance.md:147`) | ⚠️ Fórmula `color-mix` **não transporta**: aplicada à paleta do boilerplate, **3 dos 4 reprovam** — warning **2.53:1**, info **3.26:1**, success **3.92:1** (`ctfinance.md:438`, aritmética já refeita ao centésimo pela lente). Números **não re-medidos por mim** — fonte fora do meu pin | `design-tokens-contract.test.ts` — 26 tokens + 11 classes. **Contrato de presença, não de contraste** | **Vence na FORMA. Perde em todo valor.** Carrega a colisão `--color-*` sem resolver (`BACKLOG.md:536`) |
+| **ctvitrine** | **Não tem token de estado.** Medido: `git grep -n -- '--state-\|--status-' 53d7d9a` → **0 linhas**. `--success/--warning/--info` existem em `:root`/`.dark` e são consumidos **só** como `border-left: 4px` (`app.css:635,657,668`) e `iconTheme` (`lib/toast-config.ts`) — nunca como texto nem fundo | Pares declarados, medidos por mim: claro `white`/`#16a34a` **3.30**, `white`/`#f59e0b` **2.15**, `white`/`#0ea5e9` **2.77**; escuro `white`/`#22c55e` **2.28**. Idênticos aos do boilerplate (mesmos hexes) | **Zero.** Sem `test/styles/`; 16 entradas em `resources/js/test`, nenhuma de tema | **Não concorre no F3.** Contribui outra coisa: o `--brand` runtime + `color-mix(in oklab)` do V6T12 |
+| **cuidari** | Não tem token de estado. Tem a **colisão `--color-*` viva** (`app.css:107-112`, `cuidari.md:2548-2556`), `--ring` a 1.85:1 e `--primary-foreground` branco sobre ciano a **3.13:1** — ambos reprovando, ambos vivos (`cuidari.md:2561`) | Números do inventário; **não re-medidos por mim** | **Zero teste de front sobre tema** (`cuidari.md:2652`) | **Último. Não copiar nada.** |
+| **boilerplate `origin/main`** | Também **não tem** `--state-*`, e os 6 pares `success/warning/info` não estão no `@theme` (medido no compilado: `.text-success{` e `.bg-success{` → **0 ocorrências**; controle positivo `.text-destructive{` → 1) | **Todos re-medidos por mim, batendo com o teste dele:** `--ring` claro 4.72 / 3.81 · escuro 7.93 / 5.18 · `primary` escuro 4.68 · `destructive` escuro 3.67 (fill) e 3.99 (texto) · os 4 buracos de estado da linha acima | **`theme-tokens.test.ts` (216 l.) + `focus-ring.test.ts` — o melhor artefato dos quatro, e não é perto.** 6 pares × 2 temas AA; 4 pares × 2 temas ×3:1 no anel; guarda de namespace; **catraca com data de validade** que falha se `destructive` piorar E falha quando passar de 4.5 ("o F3 chegou") | **Vence no MÉTODO e na ARITMÉTICA. Perde na forma** |
+
+### Recomendação explícita para o F3
+
+**Não canonizar nenhuma das quatro inteira. O F3 é uma costura de dois, com peças nomeadas:**
+
+1. **A FORMA vem do ctfinance, e só a forma.** O trio `--state-{status}-{bg,fg,border}` é a única resposta correta para o problema real — um token achatado por status faz dois trabalhos incompatíveis, e o boilerplate tem a prova aritmética no próprio arquivo: `--destructive` no escuro dá **3.67:1** como fundo de botão e **3.99:1** como cor de texto; escurecer conserta um e quebra o outro (`theme-tokens.test.ts:148-160`). Exportar via **`@utility`**, não `@layer components` — pelo motivo do V6T5: o que está fora de layer perde a cascata para o Radix.
+
+2. **Os VALORES nascem aqui, calculados, nunca copiados.** Os percentuais de `color-mix` do ctfinance reprovam 3 de 4 na paleta do boilerplate. E há um piso que a fatia não pode furar: o emerald inline hoje em `verify-email.tsx` está em **14.38:1** (`ctfinance.md:438`); trocá-lo por um `state-success-soft` mal calibrado é regressão de acessibilidade, não melhoria.
+
+3. **O GUARD-RAIL é o do boilerplate, estendido — e este é o ponto em que discordo do enquadramento da pergunta.** A pergunta assume que o F3 espera uma arquitetura. Ele espera **duas** coisas, e a segunda já está aqui: `theme-tokens.test.ts` é o único dos quatro artefatos que mede contraste, e o único que sabe expressar dívida com data de validade. O F3 não deve escrever um contrato de presença no molde do `design-tokens-contract.test.ts` do ctfinance — deve **acrescentar linhas à tabela de pares que já existe**, para que cada `--state-*-fg` novo nasça com sua razão medida e o `destructive` migre da catraca para a tabela principal, como o próprio teste pede em `:167`.
+
+4. **Do ctvitrine, uma peça e uma regra.** A peça: `color-mix(in oklab, base, white N%)` para os *soft fills* — espaço perceptual, e é a única forma dos quatro que já roda contra base desconhecida em produção (V6T12). A regra: **consolidar em 3 níveis nomeados**, porque o ctvitrine mostra para onde isso degenera sem token — **8 percentuais distintos** (`white_55/65/70/85/88/90/93/94%`) em 33 call sites, medidos.
+
+5. **Ordem, e uma catraca que pode entrar antes.** F1 → F2 → F3 continua correta e não estou propondo furá-la. Mas o V6T13 — estender a tabela de pares para `success`/`warning`/`info` no molde da catraca do `destructive` — **nasce verde, é P, não depende do F1 e documenta os quatro números que o F3 vai ter de mover**. Recomendo que entre como primeira fatia desta frente, antes do F1. Se o F3 demorar mais um mês, esses quatro pares seguem sem vigilância nenhuma pelo mês inteiro.
+
+**Se a resposta tivesse de ser uma palavra:** o sistema de tokens de estado mais maduro dos quatro é o do **ctfinance**, e o F3 não deve canonizá-lo — deve canonizar o **desenho** dele dentro do **método** do boilerplate. Copiar o ctfinance inteiro embarcaria 3 reprovações de AA; escrever do zero jogaria fora o único trio bem desenhado da família. Nenhuma das duas é a resposta.
+
+---
+
+#### Medições
+
+Fonte lida **exclusivamente** por `git show`/`git grep`/`git ls-tree` sobre `53d7d9a`. Alvo lido por `git show`/`git grep` sobre `origin/main` (= `beb848e`, confirmado por `git rev-parse origin/main`). Três medições saem de arquivos do **disco do boilerplate** e estão rotuladas.
+
+```bash
+# --- baseline ---
+git -C .../boilerplate rev-parse origin/main                        # beb848ea…
+git -C .../boilerplate merge-base --is-ancestor 30fe0eb origin/main # YES (PR #108 já em main)
+
+# --- V6T1 / V6T9 / V6T10 ---
+git -C .../ctvitrine show 53d7d9a:resources/views/app.blade.php | cat -n
+git -C .../boilerplate show origin/main:resources/views/app.blade.php | cat -n
+git -C .../ctvitrine  grep -n "bunny"  53d7d9a        # 1 linha (app.blade.php:138)
+git -C .../boilerplate grep -n "bunny" origin/main    # 1 linha (app.blade.php:67)
+git -C .../boilerplate grep -n "theme-color\|theme_color" origin/main   # 0 linhas
+git -C .../boilerplate grep -n "0f2a44" origin/main   # 4 arquivos, um é o teste de sincronia
+
+# --- V6T2 / V6T3 ---
+git -C .../ctvitrine grep -n -- '--palette-' 53d7d9a
+git -C .../ctvitrine grep -n -- 'var(--palette' 53d7d9a
+for t in palette-primary-dark palette-primary palette-primary-darker \
+         palette-accent-light palette-accent palette-muted-light; do
+  git -C .../ctvitrine grep -o -- "--$t" 53d7d9a -- ':!resources/css/app.css' | wc -l; done
+git -C .../ctvitrine show 53d7d9a:resources/css/app.css | awk 'NR>74' | grep -E '^\s*--color-'  # vazio
+git -C .../boilerplate grep -c 1f3c57 origin/main     # 0
+
+# --- V6T4  (as 3 últimas linhas leem o ARTEFATO COMPILADO no disco do boilerplate,
+#            build de 2026-08-20 16:00, working tree em 30fe0eb, ancestral de origin/main) ---
+git -C .../boilerplate grep -n 'var(--font-title)\|var(--font-subtitle)\|font-subtitle' origin/main -- resources
+for c in font-title font-subtitle font-support font-boutique; do
+  git -C .../ctvitrine  grep -o "$c" 53d7d9a    -- resources/js resources/views | wc -l
+  git -C .../boilerplate grep -o "$c" origin/main -- resources/js resources/views | wc -l; done
+grep -o -- '.font-title{[^}]*}' public/build/assets/app-BKlgUCP1.css
+grep -bo -- '.font-title{'  public/build/assets/app-BKlgUCP1.css   # 44554, 815278
+grep -bo '@layer utilities{' public/build/assets/app-BKlgUCP1.css  # 16742
+
+# --- V6T5  (mesmo artefato de disco) ---
+python3 -c "import re,sys; s=open('public/build/assets/app-BKlgUCP1.css').read();
+  print([m.start() for m in re.finditer(r'--color-background\s*:',s)]);
+  print([m.start() for m in re.finditer(r'@layer',s)])"
+  # --color-background em 11010 / 227969 / 232573 ; @layer em 66/5429/12152/16724/16742
+git -C .../boilerplate grep -n "radix-ui/themes" origin/main -- resources/js/app.tsx
+git -C .../boilerplate grep -n 'layer(' origin/main -- resources/js/test resources/css   # 0 linhas
+
+# --- V6T6 ---
+git -C .../ctvitrine  show 53d7d9a:resources/css/app.css   | grep -c '!important'   # 52 (1 em comentário → 51)
+git -C .../boilerplate show origin/main:resources/css/app.css | grep -c '!important' # 46 (0 em comentário)
+# … | grep -n '!important' | awk -F: '{print $1}'   → linhas usadas na classificação
+
+# --- V6T11 ---
+git -C .../ctvitrine  show 53d7d9a:resources/css/_fonts.css | grep -c '@font-face'                  # 34
+git -C .../ctvitrine  show 53d7d9a:resources/css/_fonts.css | grep -cE '^@font-face'                # 23
+git -C .../ctvitrine  show 53d7d9a:resources/css/_fonts.css | grep -c 'docs/Web/CSS/@font-face'     # 11
+git -C .../boilerplate show origin/main:resources/css/_fonts.css | grep -cE '^@font-face'           # 21
+git -C .../ctvitrine ls-tree -r -l 53d7d9a -- public/fonts     # tamanhos; soma = 1.069.976 B
+
+# --- V6T12 ---
+git -C .../ctvitrine grep -n "DEFAULT_PRIMARY_COLOR\|primary_color" 53d7d9a
+git -C .../ctvitrine grep -o 'bg-\[var(--brand)\] text-white'                    53d7d9a -- resources/js | wc -l  # 7
+git -C .../ctvitrine grep -o 'text-\[var(--brand)\]'                             53d7d9a -- resources/js | wc -l  # 38
+git -C .../ctvitrine grep -o 'color-mix(in_oklab,var(--brand),[a-z]*_[0-9]*%)'   53d7d9a -- resources/js | sort | uniq -c  # 33 em 8 níveis
+git -C .../boilerplate grep -ln "primary_color\|theme_color\|brand_color" origin/main   # 0
+
+# --- V6T13 ---
+git -C .../ctvitrine ls-tree -r 53d7d9a --name-only -- resources/js/test   # 16 entradas, 0 em styles/
+git -C .../boilerplate show origin/main:resources/js/test/styles/theme-tokens.test.ts | cat -n
+git -C .../boilerplate grep -n -- 'var(--success\|var(--warning\|var(--info' origin/main -- resources
+
+# --- V6T14  (lê node_modules do disco do boilerplate — lib instalada, v2.6.0 confirmada) ---
+node -e "console.log(require('./node_modules/react-hot-toast/package.json').version)"   # 2.6.0
+python3 -c "s=open('node_modules/react-hot-toast/dist/index.js').read(); i=s.find('iconTheme'); print(s[i-600:i+200])"
+git -C .../boilerplate show origin/main:resources/js/lib/toast-config.ts | cat -n
+git -C .../boilerplate show origin/main:resources/js/test/lib/toast-config.test.ts | cat -n
+
+# --- todos os números de contraste ---
+# script próprio (WCAG 2.x: linearização sRGB + luminância relativa + (L1+.05)/(L2+.05)),
+# salvo em <scratchpad>/contrast.py. Validação cruzada: os 10 valores que o
+# theme-tokens.test.ts do boilerplate afirma (3.67 · 3.99 · 1.85 · 1.49 · 4.72 ·
+# 3.81 · 7.93 · 5.18 · 3.13 · 4.68) reproduzem ao centésimo, e as 6 afirmações de
+# contraste escritas no código do ctvitrine (1.98 · 7.38 · 5.38 · 4.72 · 3.13 ·
+# 7.93) também.
+```
+
+**Não medido, e onde isso importa:**
+- Os números do **ctfinance** (2.53 / 3.26 / 3.92 / 14.38) e do **cuidari** vêm dos inventários — as fontes estão fora do meu pin. Estão citados com a fonte, e a tabela do F3 marca isso.
+- Não conferi se os `.woff2` do boilerplate são byte-idênticos aos do ctvitrine; comparei nomes e caminhos.
+- Não rodei build no boilerplate. O `public/build/assets/app-BKlgUCP1.css` já existia no disco (2026-08-20 16:00) com a working tree em `30fe0eb`, que é ancestral de `origin/main` — as três medições que dependem dele (V6T4, V6T5 e a contagem de `.text-success`) devem ser reconfirmadas por quem aplicar a fatia, com build limpo em `origin/main`.
+- Não varri token a token no boilerplate para o teste de órfão do V6T2 — só os seis do ctvitrine.
+
+### Lente REFUTAR — vereditos
+
+# Veredito da lente REFUTAR — Caçador 1 (tokens, tema, paleta, dark mode, tipografia, contraste)
+
+Baseline reconfirmado por mim: `git -C boilerplate rev-parse origin/main` → **`beb848ea509bf6682c9e31f10611ad7ab489392e`**. Todos os 24 valores de contraste do lote foram recalculados com script próprio (`<scratchpad>/contrast.py`, WCAG 2.x) — **os 24 reproduzem ao centésimo**. Aritmética não é onde este lote falha; o que falha é lente 1 (já existe) e lente 4 (custo>ganho).
+
+Um aviso de método antes dos vereditos: a inferência "o último `@layer` abre no byte 16.742, logo o que vem depois está fora de layer" **não é prova** — não diz nada sobre onde o bloco fecha. Refiz com varredura de chaves com pilha (`postcss` não está instalado; Tailwind v4 não o usa). A primeira tentativa deu `EOF depth 1 / aspa não fechada` por causa dos `\'` escapados em seletores como `.\[\&_svg\:not\(\[class\*\=\'size-\'\]\)\]\:size-4`; com escape tratado fora de string, fecha em `EOF depth 0, quote None`. Só então as conclusões de V6T4/V6T5 se sustentam — e se sustentam.
+
+---
+
+### V6T1 — DERRUBADO
+
+Lente 1. O hunter já reconhece que está curado, e propõe como entregável uma linha de `.ai/rules`. Mas a regra **já é executável e já é mais forte que a prosa proposta**: `tests/Unit/Theme/InlineThemeBackgroundTest.php:135-142` falha em qualquer `var(--` dentro do `<style>` inline, com a mensagem *"roda antes (ou na ausência) do app.css: um var() aqui fica sem valor exatamente na janela que este bloco existe para cobrir"* — e cobre **os dois** blades (`app.blade.php` e `errors/500.blade.php`), com o teste de sincronia hex↔token (`:144-165`) e o de `color-scheme` por classe (`:167-178`) por cima. Trocar um teste verde por um parágrafo é regressão de garantia.
+
+Agravante de escopo: `.ai/rules/css.md` declara `paths: ['resources/css/**']`, então a regra proposta **nem dispararia** ao editar um blade. Sobrevive apenas o que o hunter mesmo classificou assim: item de playbook para os derivados, não fatia do boilerplate.
+
+---
+
+### V6T2 — SOBREVIVE, escopo reduzido a metade do proposto
+
+O fato central reproduz: `var(--palette-primary)` e `var(--palette-accent)` têm **0** consumidores em `53d7d9a`. Mas o candidato erra três fatos verificáveis e não é novo:
+
+| afirmação do candidato | o que eu medi | comando |
+|---|---|---|
+| `--palette-primary-dark`: 21 consumidores | **20** (19 em `app.css` + 1 em `app.blade.php`) | `git show 53d7d9a:<f> \| grep -o 'var(--palette-primary-dark)'` por arquivo |
+| `--palette-accent-light`: 12 | **11** | idem |
+| `git grep -c 1f3c57 origin/main` → **0 linhas** | **1 linha**: `resources/js/test/styles/theme-tokens.test.ts:10`, num comentário | `git grep -n 1f3c57 origin/main` |
+
+O terceiro é o que importa como método: o hunter apresentou "0" como medição e o comando devolve 1. A conclusão substantiva ("`#1f3c57` não sobrevive como *valor de token*") continua verdadeira, mas foi afirmada com um número que não é o que o comando dá.
+
+**Não é achado novo:** `ctvitrine.md:3902` já registra *"`var(--palette-primary)` e `var(--palette-accent)` com **zero** uso"*.
+
+**Escopo corrigido que sobrevive:** só o guard-rail — asserção em `theme-tokens.test.ts` de que todo token declarado em `:root` tem ao menos um `var()` que o leia. O hunter admite não ter varrido o boilerplate token a token, e essa varredura **é** o risco da fatia, não um detalhe: quem pegar mede antes de escrever, e a fatia só entra se nascer verde sem allowlist. Sem isso é P na aparência e M na prática.
+
+---
+
+### V6T3 — DERRUBADO
+
+Não é candidato. O próprio bloco diz "nada a absorver — as três fontes já concordam", `Risco · esforço: —`, e nenhuma ação sai dele. Resultado nulo bem medido (confirmei: `git show 53d7d9a:resources/css/app.css | awk 'NR>74' | grep -cE '^\s*--color-'` → **0**), mas resultado nulo não é fatia. O que ele aponta como ativo é o V6T4/V6T5, julgados lá.
+
+---
+
+### V6T4 — SOBREVIVE, com a manchete corrigida
+
+**Mecanismo CONFIRMADO por varredura independente.** No `public/build/assets/app-BKlgUCP1.css` (824.001 B no disco, gitignorado, build de 2026-08-20 16:00 com working tree em `30fe0eb`):
+
+| byte | regra | ancestrais (varredura com pilha) |
+|---|---|---|
+| 44.554 | `.font-title{font-family:var(--font-title)}` | `['LAYER @layer utilities']` |
+| **815.276** | `.font-title{font-family:Montserrat,sans-serif!important}` | **`[]` — topo de nível, fora de qualquer layer** |
+
+Fora de layer vence layer, e ainda leva `!important`. A fonte disso é `resources/css/app.css:450-452@origin/main`. Confirmado.
+
+**A manchete é falsa.** "Os **três** tokens `--font-*` do `@theme` são funcionalmente órfãos" não se sustenta: `--font-sans` tem **5** consumidores vivos (`git show origin/main:resources/css/app.css | grep -c 'var(--font-sans)'` → 5, incluindo `:442`), mais `lib/toast-config.ts`. São **dois** órfãos, não três — `--font-title` (sombreado) e `--font-subtitle` (`git grep -n font-subtitle origin/main` → **1 linha, a própria declaração**). Byte 815.278 é 815.276.
+
+**Achado que o candidato perdeu e que muda a fatia:** `.font-support` (`app.css:455-457`, com `!important`) tem **zero** uso no markup — `git grep -o 'font-support' origin/main -- resources/js resources/views | wc -l` → **0**. Ele não sumiu do compilado; o minificador o fundiu com os outros seletores da mesma declaração (`grep -o 'font-support[^}]*}'` mostra a lista mesclada). Ou seja: o arquivo tem **duas** utilitárias de tipografia escritas à mão, uma sombreando o token e outra sem call-site nenhum.
+
+**Escopo corrigido:** (1) apagar `.font-title` de `app.css:450-452`; (2) apagar `.font-support` de `:455-457` (0 call-sites) ou dar-lhe um; (3) decidir `--font-subtitle` — ganha consumidor ou sai; (4) a extensão do teste. Risco de aparência é nulo em (1) — `var(--font-title)` resolve para `'Montserrat', sans-serif`, idêntico ao literal. A ressalva do hunter sobre `.font-sans` procede e a allowlist tem de trazer o porquê escrito.
+
+Nota de dependência: `BACKLOG.md:606` (F17) já registra "`--font-title` usado 2×" — bate com a minha medição, e a fatia deve nascer sabendo que o F17 mexe no mesmo terreno.
+
+---
+
+### V6T5 — DERRUBADO como fatia; a prova fica como evidência do F1
+
+**O mecanismo é real** — e é a única coisa aqui que eu confirmei de forma independente:
+
+| byte | seletor | ancestrais |
+|---|---|---|
+| 11.010 | `:root,:host` → `--color-background: var(--background)` | `['LAYER @layer theme', ':root,:host']` |
+| 227.969 | `:where(.radix-themes)` → `white` | **`[]`** |
+| 232.573 | `:is(.dark,.dark-theme)…` → `var(--gray-1)` | **`[]`** |
+
+Wrapper confirmado em `resources/js/app.tsx:7,27-39@origin/main`.
+
+Mas as lentes 1 e 4 o derrubam como candidato:
+
+1. **Já existe, duas vezes.** `BACKLOG.md:534` (F1 Defeito 3) registra exatamente isto, com os offsets do build anterior. E `.ai/rules/css.md:18` **já é a regra por escrito**: *"Folha de terceiro entra em layer — `@import` de CSS de biblioteca traz declarações fora de layer, que vencem o `@theme`. Hoje `@radix-ui/themes/styles.css` redeclara `--color-background` e sequestra `bg-background` no app inteiro — dívida registrada, ainda não paga."* O candidato propõe escrever uma regra que está escrita.
+2. **A única peça não construída nasce vermelha, por admissão do próprio candidato.** Confirmei que não existe: `git grep -n 'layer(' origin/main -- resources/js/test resources/css` → **0 linhas**. Mas uma asserção que falha no commit em que entra não é catraca — é o F1. "Ou entra junto com a correção do import, ou entra com um `expect.fail` documentado" é a descrição de um PR que já está na fila como G, não de uma fatia P.
+
+Sobrevive **como evidência**: os três offsets com ancestralidade provada devem substituir os do F1, que foram medidos noutro build. Isso é atualizar o BACKLOG, não abrir fatia.
+
+O único ponto genuinamente novo — `theme-tokens.test.ts:20` lê só `resources/css/app.css`, então passa verde com o sequestro vivo — é correto e vale uma linha na nota do F1.
+
+---
+
+### V6T6 — DERRUBADO
+
+Lente 4, e o candidato se derruba sozinho: *"Não recomendo como fatia isolada"*, risco G, nenhuma ação. É classificação, não candidatura.
+
+Registro que a aritmética é impecável — reproduzi a distribuição inteira por número de linha:
+
+- ctvitrine: 52 matches, `:516` dentro do comentário `/* … */` de `:514-520` → **51 declarações** = 22 tipografia + 28 toast + 1 iOS.
+- boilerplate: 46, nenhuma em comentário = **21** tipografia (98…514) + **24** toast (608…670) + **1** iOS (`:595`, dentro do `@supports (-webkit-touch-callout: none)`). 21+24+1 = 46. Fecha.
+
+A diferença de −1/−4 é exatamente como o candidato explica. Mas somar bem não é propor.
+
+---
+
+### V6T7 — DERRUBADO
+
+Lente 1, admitida pelo próprio candidato: curado em `origin/main` pela PR #72 (`--brand-cyan-dark: #2a7ba2` em `app.css:115`, `--ring` em `:146` e `--sidebar-ring` em `:162`, travado por `theme-tokens.test.ts:183-215`). Backport para derivado é playbook, não harvest — e a instrução desta rodada é fatia no boilerplate.
+
+Todos os números reproduzem (1.85 / 1.49 / 7.93 / 5.18 no ctvitrine; 4.72 / 3.81 no boilerplate), e a convergência do `#2a7ba2` é real: `SiteSetting.php:28@53d7d9a` chega ao mesmo hex por outro caminho, e as duas contas do comentário dele (4,7:1 e ~3,1:1) reproduzem em 4.72 e 3.13. É uma boa observação. Não é uma mudança.
+
+---
+
+### V6T8 — DERRUBADO
+
+O candidato conclui *"nada, e digo isso com convicção"*. Concordo, e a aritmética confirma os dois lados (7.93 no ctvitrine, 4.68 no boilerplate, ambos AA). Nada a julgar.
+
+O resíduo — "comentário que critica o upstream por valor congela uma versão do upstream" — é argumento de apoio ao V6T13, e já está lá.
+
+---
+
+### V6T9 — DERRUBADO
+
+**Lente 1, e é o golpe mais limpo do lote.** O candidato mediu o código (`git grep theme-color origin/main` → 0 linhas, confirmo) e **não mediu o BACKLOG**. Está lá, enfileirado, com fonte:
+
+```
+BACKLOG.md:620
+| F14 | `<meta name="theme-color">` por esquema | absorver P | absorver corrigindo o erro do ctfinance |
+```
+
+Pior para o candidato: o F14 diz **"por esquema"** — ou seja, já decidiu a pergunta que o V6T9 deixa em aberto (*"não medi qual das duas o `use-appearance` suportaria"*), e já sabe que existe um erro do ctfinance a evitar na cópia. O candidato é estritamente mais pobre que o item que duplica.
+
+Sobrevive **só** como segunda fonte anotada no F14 (o ctvitrine tem a tag em `app.blade.php:21@53d7d9a`, estática por rota, alimentada por 4 controllers) e como o bom ponto de encaixe que ele identifica: entrar no `InlineThemeBackgroundTest`, que já trava `#0f2a44` em 4 arquivos, para não virar uma terceira cópia solta.
+
+---
+
+### V6T10 — SOBREVIVE como adendo ao F38, não como fatia nova
+
+Fato confirmado nos dois lados: `git grep -n bunny 53d7d9a` → 1 linha (`app.blade.php:138`); `git grep -n bunny origin/main` → 1 linha (`app.blade.php:67`). Zero `@font-face`/`@import`/`<link>` apontando para bunny.
+
+Já enfileirado: `BACKLOG.md:623` (F38). O candidato reconhece. Contribuição real = segunda fonte + a medição limpa (1 ocorrência, não N).
+
+**Escopo corrigido:** não abrir fatia; anexar a linha de segunda fonte ao F38 e deixar que a PR do F38 apague as duas ocorrências (a do boilerplate agora, a do ctvitrine no playbook). Abrir PR próprio para uma linha que já tem PR previsto é custo de processo maior que o ganho.
+
+---
+
+### V6T11 — SOBREVIVE, e é a única correção de fato genuinamente nova do lote
+
+Reproduzi tudo, exato:
+
+| | `grep -c '@font-face'` | `grep -cE '^@font-face'` | `grep -c 'docs/Web/CSS/@font-face'` |
+|---|---|---|---|
+| ctvitrine `_fonts.css` | 34 | **23** | 11 |
+| boilerplate `_fonts.css` | 32 | **21** | 11 |
+
+23+11=34 e 21+11=32. Composição do ctvitrine confirmada por `grep -A3 -E '^@font-face' \| grep font-family \| sort \| uniq -c`: Aptos **10**, Montserrat **6**, Merriweather Sans **5**, Playfair Display **2**.
+
+E o erro propaga: `ctvitrine.md:2734` mostra o comando que mediu — literalmente `grep -c '@font-face'` — e o 34 aparece em **três** lugares (`:2500`, `:3825`, `:3902`). **Não está entre as 8 correções do banner**, então quem consultar o banner primeiro, como o próprio banner manda, continua consumindo 34.
+
+Duas ressalvas de escopo, ambas do próprio candidato e ambas corretas: (a) os 255.372 B de preload foram medidos nos blobs do **ctvitrine**, e ele não confirmou que os do boilerplate são byte-idênticos — a fatia não pode citar esse número como do boilerplate; (b) a parte acionável (o `preconnect`) é V6T10/F38, não isto.
+
+**Escopo corrigido:** correção de documento — editar as três ocorrências em `ctvitrine.md` e acrescentar a linha ao banner, com o par de comandos que separa 23 de 34. Zero código. O princípio do preload condicional por página (`app.blade.php:134-136@53d7d9a`) vale como nota no `.ai/rules/views.md`, mas hoje o boilerplate tem uma família de títulos só e nenhum caso de uso — nota, não regra com teste.
+
+---
+
+### V6T12 — SOBREVIVE, mas re-enquadrado: é regra + técnica dentro do F3, nunca `[absorver]` autônomo
+
+Todos os números reproduzem, sem exceção:
+
+- `text-[var(--brand)]` → **38** · `bg-[var(--brand)] text-white` → **7** · `color-mix(in_oklab,var(--brand),…)` → **33** em 8 níveis (11/6/4/4/3/3/1/1 — soma 33, fecha).
+- Validação só de formato: `UpdateSiteSettingRequest.php:35` → `['nullable','string','regex:/^#[0-9a-fA-F]{6}$/']`. Nenhum piso.
+- Contrastes: `#2a7ba2` **4.72** · `#b26e79` **3.89** · `#ffff00` **1.07**. Confirmados.
+- Boilerplate: `git grep -ln "primary_color\|theme_color\|brand_color" origin/main` → **0 arquivos**. Confirmado.
+
+Correção menor: são **5** pontos de injeção de `--brand`, não 3 — o candidato omitiu `site/item.tsx:50` e `landing.tsx:820`.
+
+**Por que o enquadramento `[absorver]` cai (lente 4):** o boilerplate não tem cor configurável, não tem white-label, não tem formulário de lojista. Não há nada para absorver — não existe o defeito que a peça conserta nem a feature que ela serve. O que sobra é: uma **técnica** (`style={{'--x': runtime}}` + `color-mix(in oklab, …)`) que o F3 pode ou não usar, e uma **regra preventiva**. Isso não é fatia; é insumo de um item G que já está na fila e cuja ordem (F1→F2→F3) o próprio candidato diz não querer furar.
+
+**Escopo corrigido:** duas linhas em `.ai/rules/css.md`, e só quando o F3 chegar — (1) *"cor escolhida por usuário nunca é par de um foreground fixo: ou a validação impõe piso contra os fundos de uso, ou o foreground é derivado da luminância dela em runtime"*; (2) *"variação de cor de marca sai em níveis nomeados, não em percentual ad-hoc"* — com os 8 níveis do ctvitrine como o contraexemplo medido. A ressalva do candidato sobre pisos diferentes por uso (4.5:1 para texto, 3:1 para borda) está certa e é justamente o motivo de a regra ser "derive o foreground", não "valide o hex".
+
+---
+
+### V6T13 — SOBREVIVE. Primeira fatia da frente, e o escopo do candidato está certo
+
+Verifiquei linha a linha e não achei o que derrubar:
+
+- A tabela `pares` (`theme-tokens.test.ts:128-135`) cobre `primary, secondary, accent, muted, card, background/foreground` — **6 pares, e nenhum de estado**. Confirmado.
+- A catraca do `destructive` (`:161-168`) é exatamente como descrito, com a asserção dupla e a mensagem *"se passou de 4.5, o F3 chegou — mova o par para a tabela de cima"*.
+- Os 10 números que o teste afirma reproduzem no meu script: 3.67 · 3.99 · 1.85 · 1.49 · 4.72 · 3.81 · 7.93 · 5.18 · 3.13 · 4.68.
+- As 6 contas escritas no código do ctvitrine reproduzem: 1.98 · 7.38 · 5.38 · 4.72 · 3.13 · 7.93. E `git ls-tree -r 53d7d9a --name-only -- resources/js/test` → **16 entradas, nenhuma em `styles/`**. Zero teste de tema lá.
+- Os 4 pares reprovando: success claro **3.30**, success escuro **2.28**, warning claro **2.15**, info claro **2.77**. Warning escuro (8.77) e info escuro (6.83) passam.
+- Consumidores: `git grep -nE 'var\(--(success|warning|info)' origin/main -- resources` → só `border-left` em `app.css:636,648,654` e o `iconTheme` de `toast-config.ts`. Confirmado.
+
+**Reforço que o candidato não usou, e que fecha a lente 1 a favor dele:** `.ai/rules/css.md:12` **já manda fazer isto** — *"Ao acrescentar um token semântico, acrescente a linha correspondente na tabela do teste no mesmo commit."* Os 6 pares de estado entraram sem cumprir a regra. A fatia não inventa política; executa uma que já está escrita e foi furada.
+
+**Duas correções de escopo, e a primeira é obrigatória ou a fatia parece contradizer o F2:**
+
+1. **Diga qual par a tabela vigia.** Os 4 números do candidato medem o par declarado (`--X-foreground` sobre `--X`) — fundo de preenchimento com seu rótulo. O `BACKLOG.md:545` (F2) cita 6.42 / 8.77 / 6.83 no escuro, que são **outro par**: `--X` como *cor de texto* sobre o canvas (`#22c55e` sobre `#0f2a44` = 6.42, confirmei os três). Os dois conjuntos estão certos e medem perguntas diferentes. Sem nomear isso, a fatia lê como se refutasse o F2 — e é exatamente a dualidade que motiva o F3.
+2. **Um call-site morto existe:** `components/users/user-actions-menu.tsx:126` escreve `text-success focus:text-success`, classe que hoje é descartada (`.text-success{` → 0 no compilado; controle positivo `.text-destructive{` → 1). Já é o F2; a fatia deve citar para não parecer que "nenhum é usado".
+
+Com isso, nasce verde, é P, não depende do F1 e documenta os quatro números que o F3 terá de mover. Recomendação do candidato mantida.
+
+---
+
+### V6T14 — SOBREVIVE, e o defeito é mais fundo do que o candidato mediu
+
+Confirmei na fonte da lib instalada (`react-hot-toast@2.6.0`, offset 7937 de `dist/index.js`):
+
+```js
+$=({toast:e})=>{let{icon:t,type:o,iconTheme:s}=e;
+  return t!==void 0 ? (typeof t=="string"?S.createElement(ve,null,t):t)
+       : o==="blank" ? null
+       : S.createElement(Re,null,S.createElement(L,{...s}),…)}
+```
+
+`icon !== undefined` retorna antes — `s` (o `iconTheme`) nunca chega ao indicador.
+
+**O que eu acrescento (e agrava):** os call-sites em `resources/js/lib/flash.ts` mostram que warning e info são **duplamente** mortos. `:29` e `:33` chamam `toast(flash.warning, …)` / `toast(flash.info, …)` — a forma base, que produz `type: 'blank'`. Mesmo que alguém apagasse `icon: '⚠️'`, o ramo seguinte é `o==="blank" ? null` — não haveria ícone nenhum para colorir. Já `:21` e `:25` chamam `toast.success` / `toast.error`, sem `icon` nas options: **esses dois têm `iconTheme` vivo de verdade**.
+
+**E a afirmação falsa está em três lugares, não um.** O candidato achou dois (`toast-config.test.ts:39` e as linhas 52-53 da tabela). O terceiro é `.ai/rules/css.md:20-21`: *"Cor de ícone é `iconTheme`"*, sem ressalva — a regra que o agente lê antes de escrever CSS de toast ensina o canal errado para metade das variantes.
+
+**Contraste, e este é o único defeito de AA vivo e visível do lote:** `iconTheme` = glifo sobre disco. Success no escuro = branco sobre `#22c55e` = **2.28:1**, reprova SC 1.4.11 (3:1). Error no escuro = 3.67 (passa), claro = 4.70 (passa).
+
+**Escopo corrigido:** (1) apagar os 2 blocos `iconTheme` mortos de `toast-config.ts:87-90` e `:109-112`; (2) tabela do teste vira 2 linhas (`success`, `error`) + 2 asserções de que warning/info definem `icon` e por isso não usam `iconTheme`; (3) corrigir o comentário `:39` **e** a regra `.ai/rules/css.md:20-21` para dizer os dois canais e quando cada um vale; (4) o 2.28:1 do success escuro entra pela mesma porta do V6T13. Fatia P, e é a companheira natural do V6T13 — mesma família, mesmo arquivo de teste do lado do CSS.
+
+---
+
+## Placar
+
+| ID | Veredito | Golpe / escopo |
+|---|---|---|
+| V6T1 | **DERRUBADO** | Lente 1 — o `InlineThemeBackgroundTest` já proíbe `var(--` nos dois blades; a `.ai/rules` proposta é mais fraca e nem casaria o path |
+| V6T2 | **SOBREVIVE** (reduzido) | Só o guard-rail de token órfão; 2 contagens erradas (20/11, não 21/12), `grep -c 1f3c57` é 1 e não 0, e o achado já está no inventário |
+| V6T3 | **DERRUBADO** | Resultado nulo; não propõe ação |
+| V6T4 | **SOBREVIVE** | Mecanismo provado por varredura própria; manchete falsa (`--font-sans` tem 5 consumidores → 2 órfãos, não 3); acrescentar `.font-support`, 0 call-sites |
+| V6T5 | **DERRUBADO** | Lente 1+4 — F1 Defeito 3 no BACKLOG **e** regra já escrita em `.ai/rules/css.md:18`; a única peça nova nasce vermelha, logo é o F1. Fica como evidência |
+| V6T6 | **DERRUBADO** | Autoderrubado ("não recomendo como fatia isolada"); classificação, não candidatura |
+| V6T7 | **DERRUBADO** | Lente 1 — curado pela PR #72; backport é playbook |
+| V6T8 | **DERRUBADO** | Autoderrubado ("nada a absorver"); correto |
+| V6T9 | **DERRUBADO** | Lente 1 — **`BACKLOG.md:620` F14, "por esquema"**, já resolve a pergunta que o candidato deixa aberta. O hunter não mediu o backlog |
+| V6T10 | **SOBREVIVE** (adendo) | Fato certo, já é F38; vira linha de segunda fonte, não PR próprio |
+| V6T11 | **SOBREVIVE** | Única correção de fato nova; 34→23 e 32→21 reproduzem; corrigir `ctvitrine.md:2500,3825,3902` + banner |
+| V6T12 | **SOBREVIVE** (re-enquadrado) | Números todos certos (5 injeções, não 3), mas sem white-label no alvo não há `[absorver]` — vira 2 regras dentro do F3 |
+| V6T13 | **SOBREVIVE** | **Primeira fatia.** Nada a derrubar; `.ai/rules/css.md:12` já mandava fazer. Exigir que a fatia nomeie qual par vigia, senão colide com o F2 |
+| V6T14 | **SOBREVIVE** | Confirmado na lib; pior que o alegado (`type:'blank'` mata de novo) e a afirmação falsa também está em `.ai/rules/css.md:20-21`. 2.28:1 vivo |
+
+**Ordem recomendada:** V6T13 + V6T14 juntos (mesma família, ambos P, ambos nascem verdes, ambos executam regra já escrita e furada) → V6T4 → V6T11 como correção de documento → V6T2 depois da varredura → V6T10 na carona do F38 → V6T12 só junto do F3.
+
+**Sobre o entregável F3:** a recomendação em 5 pontos não tem erro de fato que eu tenha achado, e o item 3 (guard-rail é o do boilerplate, estendido, não um contrato de presença) é o mais bem fundamentado do documento. A ressalva de escopo é a do V6T13: a tabela de pares mede fill×rótulo, o F2 mede texto×canvas, e o F3 precisa das **duas** — é literalmente a razão de existir do trio `--state-*-{bg,fg,border}`. Escrever isso explicitamente na entrada do F3 evita que a primeira PR meça o par errado e declare vitória.
+
+**Arquivos relevantes**
+- `/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate/resources/css/app.css` (`:19,21` tokens órfãos · `:450-457` utilitárias à mão · `:135-140`, `:189-194` pares de estado)
+- `/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate/resources/js/test/styles/theme-tokens.test.ts` (`:128-135` tabela · `:161-168` catraca)
+- `/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate/resources/js/lib/toast-config.ts` (`:87-90`, `:109-112` mortos) e `/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate/resources/js/lib/flash.ts` (`:21-33` call-sites)
+- `/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate/.ai/rules/css.md` (`:12`, `:18`, `:20-21`)
+- `/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate/tests/Unit/Theme/InlineThemeBackgroundTest.php`
+- `/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate-harvest-state/docs/harvest/v2/BACKLOG.md` (`:620` F14 · `:623` F38 · `:534` F1-D3 · `:545` F2)
+- `/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate-harvest-state/docs/harvest/v2/ctvitrine.md` (`:2500`, `:2734`, `:3825`, `:3902` — o 34 a corrigir)
+
+### Lente RISCO — vereditos
+
+# Lente RISCO DE ABSORÇÃO — lote do Caçador 1 (tokens/tema/paleta/contraste)
+
+**Baseline conferido por mim:** `git -C .../boilerplate rev-parse origin/main` → `beb848ea509bf6682c9e31f10611ad7ab489392e`. Toda leitura do alvo por `git show origin/main:<path>`, exceto três artefatos de disco rotulados (`public/build/assets/app-BKlgUCP1.css` de 2026‑08‑20 16:00, `node_modules/react-hot-toast@2.6.0`, `node_modules/@radix-ui/themes/styles.css`, `public/fonts/**`).
+
+**Catracas de estilo que existem hoje e que qualquer fatia desta frente pode derrubar** (medido, `git ls-tree -r origin/main -- resources/js/test` + `tests/`):
+
+| gate | linhas | o que trava |
+|---|---|---|
+| `resources/js/test/styles/theme-tokens.test.ts` | 216 | 6 pares AA × 2 temas · 4 pares 3:1 do anel × 2 temas · namespace `--color-*` · catraca `destructive` |
+| `resources/js/test/styles/focus-ring.test.ts` | 99 | `ring-ring/` fracionário · `outline-none` sem reposição · controle positivo `sources.length > 50` |
+| `tests/Unit/Theme/InlineThemeBackgroundTest.php` | 184 | literal-nunca-`var()` no `<style>` inline · sincronia hex↔`--brand-navy-dark` · `color-scheme` nos 2 blades · `<meta name="color-scheme">` |
+| `resources/js/test/lib/toast-config.test.ts` | 57 | `ariaProps` × 4 · `iconTheme.primary` × 4 |
+
+**Custo de gate — a restrição que domina metade do lote.** Confirmado: `composer.json@origin/main` tem `pestphp/pest ^5.1` + `pest-plugin-laravel`, **nenhum `pest-plugin-browser`**; `package.json` não tem Playwright; o Vitest roda em **jsdom** (`vite.config.ts:110`), que não implementa cascata, `@layer`, nem resolução de `var()` em `getComputedStyle`. **E `ci:check` é `ci:lint && ci:test && ci:build`** (`package.json:23`) — o Vitest roda **antes** do build, então um teste que leia `public/build/assets/*.css` lê artefato velho ou inexistente em CI. Consequência prática: **nenhuma afirmação sobre quem vence a cascata é provável por gate automatizado hoje.** Onde a prova só existiria no compilado, eu digo isso e proponho o substituto possível.
+
+---
+
+## V6T1 — bloco pré-paint com `var()` · **RISCO: BAIXO**
+
+**O que quebra:** nada, porque não há absorção. Confirmei o alvo: `app.blade.php:40-52@origin/main` já usa literal, e a guarda existe.
+
+**O risco real está na proposta (b), e é de duplicação de autoridade.** A regra `.ai/rules` proposta ("bloco inline só usa literais") **já é um teste executável** — `InlineThemeBackgroundTest.php:135-142` faz exatamente `expect(str_contains(themeStyleBlock($nome), 'var(--'))->toBe(false, …)`, parametrizado sobre `app.blade.php` **e** `errors/500.blade.php`. Escrever a mesma regra em prosa cria um segundo lugar que envelhece sozinho — é o defeito que o próprio V6T8 diagnostica no ctvitrine.
+
+**Mitigação:** se a regra entrar em `.ai/rules`, que ela **cite o teste como autoridade** ("o gate é `tests/Unit/Theme/InlineThemeBackgroundTest.php`; esta linha só explica o porquê"), em vez de repetir o critério. Zero risco de regressão visual; zero dado persistido; zero impacto de a11y.
+
+**Custo de gate:** nenhum — o gate já existe e é o mais forte da casa nessa dimensão.
+
+---
+
+## V6T2 — guarda de token órfão · **RISCO: BAIXO, mas o gate proposto é quase vacuoso**
+
+**Medi o que o caçador declarou não ter medido.** Script sobre `block(':root')` de `app.css@origin/main` cruzado com `git grep -oh 'var(--…' origin/main -- resources`: **45 tokens em `:root`, 0 órfãos**. A guarda **nasce verde**. Nenhuma allowlist necessária.
+
+**Mas ela não pega o defeito que motivou o candidato.** Todo token semântico de `:root` é re-exportado pelo `@theme` como `--color-x: var(--x)` (`app.css:28-69`), então a varredura de `var()` acha consumidor **por construção** — ela nunca pode falhar para a camada semântica. E o único órfão real do arquivo, `--font-subtitle`, mora **dentro do `@theme`**, não em `:root` (medido: `git grep -n font-subtitle origin/main -- resources` → 2 linhas, ambas em `app.css`, nenhuma de consumo; e `.font-subtitle{` → **0** ocorrências no CSS compilado). A guarda proposta passa por cima dele.
+
+**Risco embutido, e é o mesmo em V6T5/V6T13:** o helper `block(':root')` (`theme-tokens.test.ts:23-43`) faz `css.indexOf(':root {')` — literal. Hoje o primeiro casamento é `app.css:105` (a linha 94 é `:root,\n.dark,\n[data-radix-theme] {`, que o needle não casa). **Qualquer fatia que insira um segundo `:root {` acima da 105 sequestra `rootVars`** e derruba `resolveToken` de todos os pares. Isso é exatamente o que a "higiene" prescrita no F1 (`BACKLOG.md:536`, "reafirmar `--color-background` depois do `@import`") faria.
+
+**Mitigação:** (1) se a guarda entrar, que ela varra **`:root` + `@theme` + `.dark`**, não só `:root`, e conte consumo por `var()` **e** por utilitário emitido (`--color-x` conta como consumido só se alguma classe `x-` aparecer no source); (2) na mesma fatia, trocar `indexOf(':root {')` por um matcher que aceite `:root` como um dos seletores de um grupo, senão a fragilidade vira armadilha para o F1.
+
+---
+
+## V6T3 — namespace `--palette-*` × `--brand-*` · **RISCO: N/A (nada a absorver)**
+
+Confirmado. Nenhuma mudança proposta ao boilerplate, nenhum vetor de regressão. Só registro que o veredito "as três fontes já concordam" é o argumento **contra** mexer no namespace agora — e que `theme-tokens.test.ts:112-115` já trava a existência de `--brand-*`, de modo que uma renomeação futura (para `--palette-*`, por simetria com derivados) **quebraria esse teste**. Se alguém propuser a harmonização de nome, ela é uma fatia com gate a atualizar, não cosmética.
+
+---
+
+## V6T4 — `.font-title` duplicada · **RISCO: ALTO como escopado; MÉDIO com a mitigação abaixo**
+
+Este é o candidato onde a lente muda o veredito. **Reproduzi todas as medições do caçador** no `public/build/assets/app-BKlgUCP1.css` (823.999 B; `@layer` abrem em 66 `properties`, 5429 `theme`, 12152 `base`, 16724 `components` — vazio, `@layer components;` — e 16742 `utilities`):
+
+- `44554  .font-title{font-family:var(--font-title)}` — dentro de `@layer utilities`
+- `815276 .font-title{font-family:Montserrat,sans-serif!important}` — **fora de layer**
+- `.font-subtitle{` → **0** · `.font-sans{` em 16548 (`@layer base`, com `!important`) e 44514 (`@layer utilities`) — confirmado, mesmo valor final, allowlist necessária.
+
+**A afirmação "P de risco (o valor final não muda)" é FALSA para um dos dois call sites, e eu localizei qual.** `resources/js/pages/errors/error-page.tsx:35@origin/main`:
+
+```
+<p className="text-muted-foreground font-title text-7xl font-bold tracking-tight">{status}</p>
+```
+
+Esse `<p>` casa **três** regras. Apagando `.font-title` de `app.css:450-452`, sobram:
+
+| regra | camada | família |
+|---|---|---|
+| `.font-title` (utilitária do Tailwind) | `@layer utilities` | Montserrat |
+| `p, .app-text` (`app.css:440-445`) | **fora de layer** | Aptos |
+| `.text-muted-foreground, …` (`app.css:460-472`) | **fora de layer**, `!important` | **Merriweather Sans** |
+
+Fora de layer vence layer independentemente de especificidade, e o `!important` fora de layer vence tudo. **O "404" em `text-7xl` sai de Montserrat e vira Merriweather Sans.** É regressão visível, na página de erro, nos dois temas. O outro call site (`:38`, `<h1 className="font-title …">`) é seguro: `html body h1` já carimba Montserrat `!important` fora de layer (`app.css:371-395`) — ali `font-title` sempre foi decorativo.
+
+**Custo de gate: não há prova possível.** jsdom não resolve cascata; o compilado não é legível pelo Vitest dentro do `ci:check` (build roda depois). A única evidência real seria screenshot manual de `/404` em claro e escuro no PR.
+
+**Mitigação, em ordem de preferência:**
+1. **Fatiar em dois e mandar só a metade segura primeiro.** `--font-subtitle` tem **0 consumidores medidos** e **0 classes emitidas** — apagá-lo é risco nulo e não toca cascata. Fatia P, verde, isolada.
+2. Para `.font-title`, **inverter a direção**: em vez de apagar a classe manual, apagar `--font-title` do `@theme` (`app.css:19`). Isso elimina o sombreamento (só sobra uma `.font-title`, a de fora de layer) sem mover nenhum elemento de família. Custo: perde-se `font-title` como token; ganho: zero mudança de pixel.
+3. Se a decisão for mesmo apagar a classe manual, **corrigir `error-page.tsx:35` na mesma fatia** (tirar `text-muted-foreground` ou trocar por `text-muted-foreground/…` sem a regra de família) e anexar screenshot.
+4. Sobre estender a guarda para "classe manual com nome de utilitária do `@theme`": ela é escrevível como texto sobre `app.css` e nasce **vermelha** (`.font-title` existe hoje). Ou vai junto do conserto, ou vai com `expect.fail` documentado — nunca com allowlist muda, pelo mesmo motivo que `focus-ring.test.ts:80-85` cobra remoção de entrada obsoleta.
+
+**Dados persistidos:** nenhum. **A11y:** trocar Montserrat 800 por Merriweather Sans 400 num numeral `text-7xl font-bold` muda peso aparente, não contraste — não há SC violado, mas é regressão de legibilidade que ninguém pediu.
+
+---
+
+## V6T5 — `@import` do Radix sem `layer()` · **RISCO: ALTO — e a "asserção de 3 linhas" é a parte perigosa**
+
+**Confirmei o mecanismo na fonte instalada:** `node_modules/@radix-ui/themes/styles.css` (812.667 B) tem **`grep -c '@layer'` = 0** e declara `--color-background` em `:where(.radix-themes)` (`white`) e em `:is(.dark,.dark-theme), :is(.dark,.dark-theme) :where(.radix-themes:not(.light,.light-theme))` (`var(--gray-1)`). No compilado: `--color-background:` em 11010 (dentro de `@layer theme`), 227969 e 232573 (fora de layer). O sequestro é real e global.
+
+**O que o caçador não mediu, e é onde mora o risco:** *satisfazer* a asserção proposta é uma mudança de cascata em todo o app, não um `layer(...)` colado no import.
+
+- Ordem de camada é definida pela **primeira aparição**. Com `@import 'tailwindcss'` na linha 4 criando `theme, base, components, utilities`, um `@import '@radix-ui/themes/styles.css' layer(radix)` na linha 5 cria `radix` **depois de `utilities`** → **todo CSS do Radix passa a vencer toda utilitária do Tailwind** aplicada a componente Radix. Regressão massiva, invisível em teste.
+- Colocar `radix` **antes** de `theme` resolve o sequestro de token, mas então o preflight do Tailwind (`@layer base`) passa a vencer os resets do próprio Radix. Também regressão massiva.
+- A forma correta é declarar a ordem explicitamente **antes de qualquer `@import`** — `@layer theme, base, components, radix-themes, utilities;` — e só então importar com `layer(radix-themes)`. Isso é a fatia G, não a fatia P.
+
+**Segundo risco, este mensurável e imediato:** a "higiene na mesma PR" que o `BACKLOG.md:536` prescreve — *"reafirmar `--color-background` depois do `@import` da :5"* — **quebra dois testes existentes de uma vez**: (a) `theme-tokens.test.ts:102-110` falha na hora, porque a asserção é literalmente "nenhum `--color-*` declarado fora do `@theme`"; (b) se a reafirmação for escrita como um `:root { … }` acima da linha 105, `block(':root')` a captura e `rootVars` vira um mapa de 1 entrada, fazendo **todos** os `resolveToken` lançarem. Ou seja: a prescrição do backlog e o guard-rail do backlog são incompatíveis entre si como escritos.
+
+**Mitigação:**
+1. **Tirar `@theme inline` da frente.** Ele conserta o sequestro de `bg-background`/`text-background` sem tocar em nenhuma camada — as utilitárias passam a carregar `var(--background)` direto em vez de consultar `--color-background`. É estritamente mais estreito que a operação de layers e não colide com nenhum gate atual.
+2. Se a asserção de `layer()` entrar antes disso, que ela asserte **ordem**, não presença: `@layer …;` explícito na primeira linha do arquivo e o nome do layer de terceiro posicionado **antes de `utilities`**. Presença sozinha é uma asserção que pode ser satisfeita do jeito errado.
+3. Se a "higiene" de reafirmar `--color-background` sobreviver, ela **tem** de vir com a atualização das duas guardas acima — e a mensagem de falha do `theme-tokens.test.ts:102-110` deve dizer por que a exceção existe.
+4. **Evidência possível sem browser:** um teste de texto sobre `app.css` que asserta a linha `@layer …;` e a posição do nome de terceiro nela. Prova a *declaração*, não o *efeito*. O efeito só por screenshot de uma página com componente Radix (tabela de usuários) em claro e escuro.
+
+**A11y:** o sequestro atual não reprova SC nenhum diretamente (as duas paletas são legíveis); o risco é a **correção** mover `--background` sob textos já medidos e invalidar os 6 pares AA que o gate trava. A recalibração já está prevista no F1 e o gate a pega — esse é o caso raro em que a catraca funciona.
+
+---
+
+## V6T6 — anatomia dos `!important` · **RISCO: ALTO. Concordo com "não fatiar"**
+
+Confirmei as contagens no alvo: `git show origin/main:resources/css/app.css | grep -c '!important'` → **46**, nenhuma em comentário. E acrescento a razão estrutural pela qual isto não é fatiável hoje: **o bloco de tipografia inteiro (`app.css:220-515`) está fora de qualquer layer**, junto com `p, .app-text` e `.font-title`. Mover *parte* dele para `@layer base` inverte a cascata só para os seletores movidos, produzindo um estado híbrido pior que qualquer um dos dois extremos — e sem gate que o detecte.
+
+**Mitigação:** o primeiro corte defensável não é o V6T4 (que, medido acima, tem regressão embutida), é o **V6T13+V6T14** — token de estado, aritmética pura, gate real. Deixar tipografia inteira para depois de a decisão de layers (V6T5) estar tomada, porque as duas mexem no mesmo mecanismo e a ordem entre elas importa.
+
+**Dados persistidos / a11y:** nenhum e nenhum, desde que ninguém mexa nos tamanhos.
+
+---
+
+## V6T7 — `--ring` a 1.85:1 · **RISCO: BAIXO no boilerplate (zero mudança); MÉDIO por derivado**
+
+Reproduzi ao centésimo, com script independente: `#2a7ba2` vs `white` = **4.72**, vs `#e6e7e8` = **3.81**; `#8ac7e5` vs `#0f2a44` = **7.93**, vs `#2c485e` = **5.18**; e os valores doentes `1.85` / `1.49`. Também `#2a7ba2` com branco = **4.72** e `#379bcb` com branco = **3.13** — a convergência com `SiteSetting::DEFAULT_PRIMARY_COLOR` do ctvitrine é real.
+
+**Risco de absorção no alvo: nulo, porque não há absorção.** O que anoto é o risco do **backport**, que é o item de playbook:
+
+- O par `--sidebar-ring` × `--sidebar-border` no escuro do boilerplate dá **6.42:1** (`#8ac7e5` vs `#1e3a4f`) — um derivado que copiar só `--ring` e esquecer `--sidebar-ring` passa no teste portado apenas se portar os **4** pares. `theme-tokens.test.ts:199-204` lista os quatro; o backport tem de levar a tabela inteira, não a linha.
+- `#2a7ba2` a 3.10:1 contra o navy escuro — se algum derivado usar `--brand-cyan-dark` como anel também no tema escuro (atalho tentador), ele fica **abaixo** de 3:1. O boilerplate acertou ao trocar de família entre temas (`app.css:197-200`); o backport tem de copiar essa decisão, não só o hex.
+
+**Custo de gate por derivado:** o teste é portável inteiro (lê CSS como texto, jsdom irrelevante). É o raro caso de gate 100% real sem browser.
+
+---
+
+## V6T8 — `--primary` do escuro · **RISCO: BAIXO (nada a mudar) / ALTO se alguém "melhorar"**
+
+Reproduzi: `#0f2a44` sobre `#8ac7e5` = **7.93**, `white` sobre `#379bcb` = **3.13**, e o valor vivo do boilerplate `#0f2a44` sobre `#379bcb` = **4.68**.
+
+**Concordo com "não absorver" e reforço com um dado que o caçador não levantou:** adotar a escolha do ctvitrine (`--primary: var(--brand-cyan-light)` no escuro) **colapsaria `--primary` com `--sidebar-primary`**, que já é `var(--brand-cyan-light)` no `.dark` (`app.css:210`). CTA e item ativo de sidebar passariam a ter exatamente a mesma cor — perda de hierarquia visual, sem ganho de conformidade (4.68 já é AA). Passaria no gate (`theme-tokens.test.ts:176-180` só exige que o `--primary` escuro difira do claro), o que é justamente o motivo de eu registrar: **é uma regressão que o teste atual não pega.**
+
+**Mitigação:** nenhuma ação. Se a discussão de marca reabrir, a asserção que falta é "`--primary` ≠ `--sidebar-primary` dentro do mesmo tema" — uma linha, mesma forma da 176-180.
+
+---
+
+## V6T9 — `<meta name="theme-color">` · **RISCO: MÉDIO — reintroduz o F35 em outra roupa**
+
+Confirmei a ausência: `git grep -n "theme-color\|theme_color" origin/main` → **0 linhas**.
+
+**O que quebra, e o caçador marcou como "não medi" exatamente o ponto crítico. Eu medi.** `resources/js/hooks/use-appearance.tsx:22-26@origin/main`:
+
+```
+const applyTheme = (appearance) => {
+    const isDark = appearance === 'dark' || (appearance === 'system' && prefersDark());
+    document.documentElement.classList.toggle('dark', isDark);
+};
+```
+
+Ele **só** alterna a classe. Nunca toca no `<head>`. Portanto:
+
+- `<meta name="theme-color" content="#0f2a44">` **estático** congela no servidor — é literalmente o defeito F35 que a PR #112 acabou de contornar movendo `color-scheme` do `<meta>` para a regra `.dark` do `<style>`. Absorver a tag estática reintroduz o mesmo bug numa propriedade nova.
+- `<meta name="theme-color" media="(prefers-color-scheme: dark)">` **não** segue escolha explícita: quem está com sistema claro e escolheu "escuro" recebe o chrome claro. Mesmo furo, causa diferente.
+- Não existe equivalente CSS de `theme-color` (não é uma propriedade; é metadado). **Não há solução sem JS**, ao contrário do `color-scheme`. Ou a fatia aceita uma linha em `applyTheme` (`document.querySelector('meta[name=theme-color]').content = …`) ou aceita o congelamento e o documenta.
+
+**Segundo risco, concreto no gate:** `InlineThemeBackgroundTest` é parametrizado sobre `themedBlades()` = **`app.blade.php` + `errors/500.blade.php`** (`:34-42`). Uma asserção escrita no molde `->with(fn() => array_keys(themedBlades()))` passa a **exigir `theme-color` no 500.blade.php também** — e o 500 é a página que existe para o caso de tudo estar quebrado, onde cada tag a mais é superfície. O molde certo já está no arquivo: `it('declares a color-scheme meta …')` em `:180-184` é um `it()` avulso sobre `app.blade.php`. Copiar esse, não o parametrizado.
+
+**Terceira cópia do `#0f2a44`:** risco real e trivialmente mitigável — o helper `appCssToken('brand-navy-dark')` (`:118-125`) já existe; a asserção nova deve comparar contra ele, não contra literal.
+
+**Mitigação:** fatia P só se vier com (a) `it()` avulso em `app.blade.php`, (b) comparação via `appCssToken`, (c) decisão explícita e comentada sobre a atualização em `applyTheme` — ou uma linha dizendo que o valor é único nos dois temas e por quê. Sem (c) é o F35 de volta.
+
+**Dados persistidos:** nenhum. **A11y:** nenhum SC — `theme-color` pinta chrome do browser, não conteúdo.
+
+---
+
+## V6T10 — `preconnect` para `fonts.bunny.net` · **RISCO: BAIXO. A fatia mais segura do lote**
+
+Reproduzi no alvo: `git grep -n "bunny" origin/main` → **1 linha**, `resources/views/app.blade.php:67`. E confirmei que não há nada dependendo dela: `git grep -n 'rel="icon"\|apple-touch' origin/main -- resources/views` → **0 linhas** (ou seja, a outra metade do F38 — links de ícone e 5 arquivos órfãos — segue intocada e **não deve viajar junto**; são mudanças com superfícies diferentes).
+
+**O que quebra:** nada. `preconnect` é dica de rede sem efeito de estilo, layout, foco ou anúncio. Nenhum teste atual o lê.
+
+**Custo de gate:** o único gate possível é uma asserção de texto — e ela vale a pena, porque a linha veio herdada do starter kit e vai reaparecer no próximo `laravel new`. Proposta: uma linha em `InlineThemeBackgroundTest` (ou um `HeadTagsTest` novo) asserindo que o `<head>` de `app.blade.php` não contém host de terceiro. Cabe em 4 linhas e nasce verde depois da remoção.
+
+**Dados persistidos / a11y / contraste:** nenhum.
+
+---
+
+## V6T11 — as "34 `@font-face`" são 23 · **RISCO: BAIXO como correção de documento; a ação implícita é que seria ALTA**
+
+**Re-medi no alvo, não no ctvitrine:** `_fonts.css@origin/main` → `grep -c '@font-face'` = **32**, `grep -cE '^@font-face'` = **21**, `grep -c 'docs/Web/CSS/@font-face'` = **11**. 21+11=32. Fecha.
+
+**E medi os 5 preloads nos arquivos reais do boilerplate** (`ls -l public/fonts/woff2/...`), o que o caçador declarou não ter confirmado:
+
+| arquivo | bytes |
+|---|---|
+| `aptos/aptos.woff2` | 72.824 |
+| `aptos/aptos-semibold.woff2` | 73.272 |
+| `aptos/aptos-bold.woff2` | 73.324 |
+| `montserrat/montserrat-v31-latin-800.woff2` | 19.012 |
+| `merriweather-sans/merriweather-sans-v28-latin-regular.woff2` | 16.940 |
+| **soma** | **255.372** |
+
+Confirmado no alvo. `du -sk public/fonts` = 1.044 KB.
+
+**O risco que a contagem errada convidava, e que eu preciso marcar em vermelho:** "34 faces, corta pesos" leva a apagar blocos `@font-face`. **Isso é regressão sem gate.** Um peso que nenhum `font-weight` explícito seleciona ainda pode ser escolhido pelo algoritmo de matching do CSS Fonts (arredondamento de peso) — e quando a face some, o browser faz *synthetic bolding*, que muda métrica e piora legibilidade em `text-7xl`. jsdom não carrega fontes; nenhum teste atual pega. **Recomendação: nenhuma poda de `@font-face` nesta rodada.**
+
+**Sobre o preload condicional do ctvitrine:** absorver o `@if (str_starts_with($page['component'] …))` hoje cria um ramo morto — o boilerplate tem uma família de título só. Risco de absorver o mecanismo: baixo mas inútil; risco de absorver **a regra** ("preload só do que a página desenha"): zero, e é o que impede a lista de 5 virar 8 quando o F3/F7 trouxerem uma família nova. Absorver só a regra.
+
+---
+
+## V6T12 — `--brand` runtime + `color-mix(in oklab)` · **RISCO: BAIXO como regra `.ai/rules`; ALTO como feature**
+
+Verifiquei o lado da fonte: os 5 pontos de injeção (`site/home.tsx:97`, `site/item.tsx:50`, `site/boutique/home.tsx:230`, `site/boutique/item.tsx:121`, `site/landing.tsx:820`), a validação `regex:/^#[0-9a-fA-F]{6}$/` em `UpdateSiteSettingRequest.php:35`, e os **8 níveis / 33 call sites** de `color-mix(in_oklab,var(--brand),white_N%)` — a distribuição bate exatamente com a tabela do caçador (11/6/1/3/4/4/3/1). Contrastes reproduzem: `#2a7ba2` 4.72, `#b26e79` **3.89**, `#ffff00` **1.07**.
+
+E no alvo: `git grep -ln "primary_color\|theme_color\|brand_color" origin/main` → **0 arquivos**; `color-mix` aparece **1 vez** em todo `resources/` (`app.css`). Confirmado: não há nada a consertar aqui.
+
+**Riscos que a lente acrescenta, para quando a feature chegar:**
+
+1. **Dado persistido — trap de migração, anotada como manda o escopo.** `primary_color` é hex gravado por lojista. Introduzir piso de contraste depois invalida linhas já salvas: ou a migração recalcula/clampa (mudando a marca de alguém sem avisar), ou a validação vale só na escrita e o banco fica com valores reprovados legíveis pelo front. Não há obrigação de compatibilidade no boilerplate, mas a regra tem de dizer qual das duas o derivado escolhe **antes** da primeira gravação.
+2. **A validação de formato é barreira de segurança, não só de estética.** `style={{ '--brand': settings.primary_color }}` injeta string controlada pelo usuário numa custom property. React não sanitiza valor de custom property. O `regex:/^#[0-9a-fA-F]{6}$/` é o que impede que um valor arbitrário chegue a uma propriedade que aceite `url()` mais adiante na cadeia de `color-mix`. Qualquer afrouxamento ("aceitar `rgb()`", "aceitar nome de cor") é mudança de segurança, não de UX. **Isso precisa estar na regra.**
+3. **Utilitária arbitrária é invisível ao gate.** `bg-[color-mix(in_oklab,var(--brand),white_55%)]` não passa por token nenhum; `theme-tokens.test.ts` lê **só** `resources/css/app.css` (`:20`) e nunca a verá. Absorver a forma sem a camada de token compra o espalhamento de 8 percentuais que o próprio ctvitrine exibe — e sem catraca.
+4. **Foreground derivado, não validado.** Concordo com o caçador e reforço o desenho: `text-white` sobre `--brand` é SC 1.4.3 (4.5), `border-[var(--brand)]` é SC 1.4.11 (3.0). Uma regra única inviabiliza marca legítima. O caminho é derivar preto/branco por luminância (`color-contrast()` ainda não é seguro; um `--brand-fg` calculado no servidor a partir da luminância resolve e é testável em Pest, sem browser).
+
+**Custo de gate:** a regra em si não tem gate — é `.ai/rules`. O piso de contraste, quando existir, é testável 100% em Pest (aritmética sobre o hex validado). Nenhuma parte disso precisa de browser.
+
+**Veredito de risco:** BAIXO para escrever a regra agora; ALTO para trazer a feature sem os quatro pontos acima resolvidos.
+
+---
+
+## V6T13 — estender a tabela de pares para `success`/`warning`/`info` · **RISCO: BAIXO. Concordo que é a primeira fatia — com uma correção de alvo**
+
+Reproduzi os 10 valores que `theme-tokens.test.ts` afirma (3.67 · 3.99 · 1.85 · 1.49 · 4.72 · 3.81 · 7.93 · 5.18 · 3.13 · 4.68) e os 6 do ctvitrine (1.98 · 7.38 · 5.38 · 4.72 · 3.13 · 7.93). Todos batem ao centésimo. E os pares de estado: success claro **3.30** / escuro **2.28**; warning claro **2.15** / escuro **8.77**; info claro **2.77** / escuro **6.83**.
+
+**Correção de alvo, e ela melhora o candidato.** A catraca proposta trava `--x-foreground` sobre `--x` a 4.5 — mas medi os consumidores reais e **esse par quase não existe hoje**:
+
+```
+git grep -n -- '--success-foreground' origin/main -- resources
+  → resources/js/lib/toast-config.ts:38  (iconTheme.secondary)   [1 linha, a única]
+git grep -n -- '--warning-foreground' origin/main -- resources
+  → resources/js/lib/toast-config.ts:89                          [1 linha, e é MORTA — ver V6T14]
+git grep -n -- '--info-foreground'    origin/main -- resources
+  → resources/js/lib/toast-config.ts:111                         [1 linha, e é MORTA]
+```
+
+**O par que está vivo e reprovando hoje é outro: a borda de 4px do toast contra a superfície do toast** (`app.css:635-655`, `border-left: 4px solid var(--x)` sobre `background: var(--card)`). Isso é SC 1.4.11, 3:1. Medido:
+
+| variante | claro (card = `white`) | escuro (card = `#0f2a44`) |
+|---|---|---|
+| success | 3.30 · passa | 6.42 · passa |
+| **warning** | **2.15 · REPROVA** | 8.77 · passa |
+| **info** | **2.77 · REPROVA** | 6.83 · passa |
+| destructive | 4.70 · passa | 3.99 · passa |
+
+**Duas reprovações vivas e visíveis no tema claro**, no único elemento que distingue a variante do toast além do emoji. Isso é um achado melhor que o hipotético, prova-se por aritmética pura sobre tokens, e cabe na mesma fatia.
+
+**E existe conserto medido, de custo zero em regressão:**
+
+| mudança | efeito medido |
+|---|---|
+| `--warning-foreground: white` → `var(--brand-navy-dark)` (claro) | 2.15 → **6.81** · consumidor único é config morta ⇒ zero pixel muda hoje |
+| `--info-foreground: white` → `var(--brand-navy-dark)` (claro) | 2.77 → **5.28** · idem |
+| `--success-foreground: white` → `var(--brand-navy-dark)` | glifo do check: claro 3.30 → **4.44**, escuro 2.28 → **6.42** · consumidor vivo (V6T14), melhora nos dois temas |
+
+Nenhum desses toca a cor de preenchimento, então a **borda** de 2.15/2.77 continua reprovando — para ela o conserto é escurecer `--warning`/`--info` no claro, e aí sim há mudança visual, então é fatia separada.
+
+**Riscos da catraca como proposta:**
+- Fixar 2.15 como piso "não piora" **sanciona** a reprovação. A catraca do `destructive` funciona porque tem a asserção-teto (`toBeLessThan(4.5)`, `:167`) com mensagem dizendo o que fazer quando estourar. As quatro novas precisam da mesma dupla, senão viram allowlist.
+- A catraca tem de **nomear qual pergunta de contraste trava** (fill+label 4.5 × indicador 3.0), porque as duas dão números diferentes para os mesmos tokens e a confusão entre elas já circula: o `BACKLOG.md:545` cita "no escuro ficam bons (6.42 / 8.77 / 6.83)", que são as razões de **texto sobre o canvas**, não os pares `-foreground`/fill.
+- Mesma fragilidade de `block(':root')` do V6T2 se a fatia adicionar blocos.
+- `--warning-foreground` e `--info-foreground` são hoje config morta; travar o contraste deles **antes** de o V6T14 decidir se eles sobrevivem trava um valor que pode ser apagado na fatia seguinte. **V6T14 vem primeiro ou junto, nunca depois.**
+
+**Custo de gate:** zero problema — é leitura de texto de `app.css` + aritmética. É o único candidato do lote com gate integralmente real.
+
+---
+
+## V6T14 — `iconTheme` morto em `warning`/`info` · **RISCO: BAIXO. Confirmado em três níveis**
+
+Verifiquei os três, e o achado é mais forte do que o caçador escreveu:
+
+1. **Fonte da lib** (`node_modules/react-hot-toast/dist/index.js`, `package.json.version` = **2.6.0**): `$=({toast:e})=>{let{icon:t,type:o,iconTheme:s}=e;return t!==void 0?typeof t=="string"?…createElement(ve,null,t):t:o==="blank"?null:…createElement(L,{...s})…}`. `icon !== undefined` retorna antes de `iconTheme` ser lido. Confirmado.
+2. **Call sites** (`resources/js/lib/flash.ts:29,33@origin/main`): warning e info entram por `toast(msg, opts)` **sem** `.warning`/`.info` — ou seja `type: 'blank'`. **Mesmo se `icon` fosse removido, o ramo `o==="blank" ? null` não desenha indicador nenhum.** O `iconTheme` de warning/info está morto **duas** vezes, não uma. Sucesso e erro entram por `toast.success`/`toast.error` (`:21,:25`) → `iconTheme` vivo.
+3. **O gate atual afirma o falso e passa verde.** `toast-config.test.ts:49-56` assevera `iconTheme.primary` das quatro variantes sob o comentário de `:39` ("este é o único canal que funciona"). Metade da tabela é vacuosa. Isso é pior que ausência de teste: é cobertura aparente sobre config morta.
+
+**Riscos da correção:** baixos, mas há um.
+- Apagar `iconTheme` de warning/info não muda um pixel (é config nunca lida). Zero regressão visual, zero dado persistido, zero a11y.
+- **A armadilha a travar:** se alguém depois remover `icon: '⚠️'` esperando o disco colorido de volta, recebe **`null`** — porque o tipo é `blank`. O teste substituto não pode ser só "warning não define iconTheme"; tem de afirmar **o pareamento**: *warning/info definem `icon` porque entram por `toast()` com `type: 'blank'`, e nessa rota `iconTheme` nunca é lido nem existe indicador default*. Sem isso a fatia troca uma afirmação falsa por outra meia-verdade.
+- Contraste medido do canal vivo: success `white`/`#22c55e` no escuro = **2.28:1**, abaixo dos 3:1 de SC 1.4.11 para objeto gráfico. Reprovação viva. O conserto é o mesmo `--success-foreground: var(--brand-navy-dark)` do V6T13 (→ 6.42 escuro, 4.44 claro).
+
+**Custo de gate:** integral. É teste de objeto JS, roda em jsdom sem cascata nenhuma.
+
+**Recomendação de sequenciamento:** **V6T14 + V6T13 são uma fatia só.** Separá-las faz o V6T13 travar contraste de tokens que o V6T14 vai apagar, e faz o V6T14 apagar consumidores dos tokens que o V6T13 acabou de justificar.
+
+---
+
+## Entregável F3 — risco da costura recomendada · **RISCO: ALTO na peça de forma, BAIXO na peça de valor**
+
+Julgo as 5 recomendações porque elas prescrevem absorção:
+
+**(1) `@utility` em vez de `@layer components` — a justificativa está certa e a consequência está incompleta.** `@utility` é suportado (Tailwind **4.3.3** confirmado no alvo), e sim, `@layer components` perderia para código fora de layer. Mas **`@utility` emite dentro de `@layer utilities`** — que é, medido, a camada mais fraca deste arquivo específico: perde para os 46 `!important` fora de layer (`app.css:220-515`, `:602-671`) e perde para os 812 KB do Radix não-layerizado. Concretamente: `state-success-fg` aplicado a um `<p>`, a um `.text-muted-foreground` ou a qualquer descendente de `.radix-themes` **pode ser sombreado exatamente onde cor de estado mais aparece** (célula de tabela Radix, descrição de card, rodapé). **F3 depende do V6T5 estar decidido**, não só do F1 — e essa dependência não está na cadeia do backlog.
+
+**(2) Valores calculados aqui, nunca copiados — concordo integralmente, sem ressalva.** Os 3 de 4 reprovados do ctfinance vêm do inventário e estão fora do meu pin; não os re-medi e a tabela marca isso corretamente. O piso de 14.38:1 do emerald é a única âncora que eu não consigo verificar e que, se errada, inverte uma decisão — vale re-medir antes de a fatia começar.
+
+**(3) Estender a tabela existente em vez de escrever contrato de presença — concordo, e é a decisão de menor risco do documento.** Um contrato de presença (`design-tokens-contract.test.ts`) apodrece; a tabela de pares falha com número. Única ressalva: cada par novo herda a fragilidade de `block(':root')`.
+
+**(4) `color-mix(in oklab)` do ctvitrine + consolidação em 3 níveis — risco baixo, com um ponto cego.** `color-mix` dentro de valor arbitrário do Tailwind não passa por token e é invisível ao gate (que lê só `app.css`). Se a forma entrar, ela tem de entrar **dentro do `@theme`/`@utility`**, nunca como `bg-[color-mix(…)]` no JSX — senão o F3 importa a doença junto com a cura.
+
+**(5) V6T13 antes do F1 — concordo, e reforço com dado.** Confirmei que a justificativa do F2 segue **viva**: `resources/js/components/users/user-actions-menu.tsx:126@origin/main` escreve `'text-destructive focus:text-destructive' : 'text-success focus:text-success'`, e no compilado `.text-destructive{` existe (1) enquanto `.text-success{` e `.bg-success{` são **0**. Ou seja: hoje "Desativar" sai vermelho e "Ativar" sai sem cor nenhuma — assimetria viva, causada pela ausência do export. Isso fortalece o F2 e **não** enfraquece a recomendação de mandar o V6T13/V6T14 primeiro: a catraca documenta os quatro números que o F2 vai mover, e nasce verde.
+
+---
+
+## Ordem de menor risco para esta frente
+
+| # | fatia | risco | gate real? |
+|---|---|---|---|
+| 1 | **V6T14 + V6T13** (poda do `iconTheme` morto + tabela/catraca de `success/warning/info` + os 3 `-foreground` para navy) | **BAIXO** | **sim, integral** |
+| 2 | **V6T10** (`preconnect` bunny, 1 linha) + asserção de host de terceiro no `<head>` | **BAIXO** | sim |
+| 3 | **V6T4 metade segura** (apagar só `--font-subtitle`) | **BAIXO** | parcial (texto sobre `app.css`) |
+| 4 | **V6T9** (`theme-color`) — só com a decisão sobre `applyTheme` escrita | **MÉDIO** | sim (Pest de texto) |
+| 5 | **V6T2** (guarda de órfão, reescrita para cobrir `@theme` também) | **BAIXO** | sim, nasce verde (45 tokens, 0 órfãos — medido) |
+| 6 | **V6T5** via `@theme inline` — **não** via `layer()` avulso | **ALTO** | **não** (só screenshot) |
+| 7 | **V6T4 resto** (`.font-title`) — exige consertar `error-page.tsx:35` junto | **ALTO** | **não** |
+| — | **V6T6** (os 21 `!important` de tipografia) | **ALTO** | **não** — não fatiar |
+| — | V6T1 · V6T3 · V6T7 · V6T8 · V6T11 · V6T12 | sem absorção no alvo | — |
+
+**As três medições que dependem do artefato de disco** (`public/build/assets/app-BKlgUCP1.css`, mtime 2026‑08‑20 16:00 — V6T4, V6T5 e a contagem `.text-success`/`.bg-success` = 0) **reconfirmei eu mesmo neste turno**, mas sobre o mesmo arquivo; um build limpo em `origin/main` continua sendo pré-requisito de quem aplicar as fatias 6 e 7.
+
+**Não medido:** os números do ctfinance (2.53 / 3.26 / 3.92 / 14.38) e do cuidari — fontes fora do meu alcance nesta rodada; o piso de 14:1 do `verify-email.tsx` é o único deles que, se errado, inverte uma decisão do F3.
+
+### Lente ATUALIDADE — vereditos
+
+### V6T1 — Bloco pré-paint com literais
+
+**Veredito: ATUAL COM MODERNIZAÇÃO (opcional, baixo valor).**
+
+A regra que o candidato quer registrar não foi superada por nada. O motivo do `var()` quebrado é resolução de custom property em computed-value time — não é comportamento de Tailwind, e nenhuma versão de 4.x muda isso. E não existe, em Tailwind 4.3.3, mecanismo para exportar um token do `@theme`/`:root` para o Blade: os tokens nascem dentro do próprio `app.css`, que é exatamente a folha que ainda não chegou. Literal + teste de sincronia continua sendo a única resposta disponível na versão instalada. Quem propuser "usa o token, o Tailwind resolve" está errado na 4.3.
+
+**Modernização que existe:** `light-dark()` — MDN, *Baseline 2024, newly available since May 2024*: *"The function accepts two values and returns the first value if the used color scheme is `light` (or if no preference is set) and the second value if the used color scheme is `dark`."* Como o bloco já fixa `color-scheme: light` / `dark` por classe (`app.blade.php:41-51@origin/main`), as duas regras colapsariam em:
+
+```css
+html { color-scheme: light; background-color: light-dark(#fff, #0f2a44); transition: background-color .2s ease; }
+html.dark { color-scheme: dark; }
+```
+
+Ganho real: some a duplicação do `transition` e some uma regra. **Não recomendo executar** — o artefato atual está curado, comentado e travado por teste, e `light-dark()` ainda mantém dois literais (não reduz a superfície que o teste vigia). Vale registrar na `.ai/rules` como forma alternativa aceita, não como fatia.
+
+**Não medido:** se `laravel-vite-plugin@3.1.3` + Vite 8.2 mudaram a ordem de injeção do CSS em `composer dev` (a janela onde o defeito do ctvitrine é real). A calibragem de severidade do candidato não depende disso, mas quem escrever o playbook deveria conferir.
+
+---
+
+### V6T2 — Tokens órfãos
+
+**Veredito: ATUAL COM MODERNIZAÇÃO — e a modernização corrige a especificação do teste proposto.**
+
+Tailwind 4.3 **já resolve órfão nativamente, mas só dentro do `@theme`**. Doc oficial (tailwindcss.com/docs/theme, versão 4.x): *"By default only used CSS variables will be generated in the final CSS output."* E o opt-out explícito: *"If you want to always generate all CSS variables, you can use the `static` theme option: `@theme static { … }`"*.
+
+Medido: os seis `--palette-*` do ctvitrine estão em `:root`, não no `@theme` — `git show 53d7d9a:resources/css/app.css` linha **109** abre `:root {`, e os tokens vêm em 111-116. O boilerplate é idêntico: `:root {` em **105**, `--brand-*` em 107-116. Ou seja, **os dois projetos optaram para fora do tree-shaking**, e a doc diz que estão certos em fazê-lo: *"Use `@theme` when you want a design token to map directly to a utility class, and use `:root` for defining regular CSS variables that shouldn't have corresponding utility classes."*
+
+**Consequência para o teste proposto — duas correções de especificação:**
+
+1. A varredura tem de se **restringir a `:root`/`.dark`** e **ignorar o `@theme`**. Um token de `@theme` sem consumidor custa **zero byte** na saída (o compilador o descarta); marcá-lo produziria falso positivo contra o comportamento documentado do framework.
+2. A medição de "tem consumidor?" tem de ser feita **na fonte**, nunca no CSS compilado. No compilado, um token de `@theme` não usado simplesmente não existe — o teste leria ausência como defeito.
+
+Sem essas duas correções o teste nasce vermelho por desenho. Com elas, o candidato está atual: não há, em 4.3.3, nenhum lint nativo para custom property órfã declarada em `:root`.
+
+---
+
+### V6T3 — Namespace `--palette-*` / `--brand-*` fora do `@theme`
+
+**Veredito: ATUAL.** É literalmente a prescrição da doc da versão instalada, citada acima: `:root` para variável que não deve virar utilitária, `@theme` para a que deve. Os dois projetos acertam por construção, o cuidari erra por construção.
+
+Nenhuma modernização a propor: Tailwind 4.3 não oferece namespace reservado, prefixo protegido nem verificação de colisão de nome de token. A guarda de texto do `theme-tokens.test.ts:102-110` é o único mecanismo disponível na versão — ela não é um paliativo até o framework resolver, é o teto do que dá para fazer hoje.
+
+O que **não** é coberto por nada nativo, e por isso continua sendo trabalho do teste: colisão em nome de **classe** (V6T4) e em folha de **terceiro** (V6T5). Confirmo o enquadramento negativo do candidato.
+
+---
+
+### V6T4 — `.font-title` emitida duas vezes
+
+**Veredito: OBSOLETO — o artefato do boilerplate é um idioma de Tailwind v3 sobrevivendo dentro de um projeto v4.** O achado é válido e importante; a *proposta* precisa ser reescrita em torno de três APIs nativas que a versão instalada já tem.
+
+**1. A classe escrita à mão é duplicata de uma utilitária que o framework já emite.** Doc 4.x: *"theme variables defined in the `--font-*` namespace determine all of the `font-family` utilities that exist in a project"* e *"If another theme variable like `--font-poppins` were defined, a `font-poppins` utility class would become available to go with it."* O boilerplate declara `--font-title` no `@theme` (`app.css:19@origin/main`) — `font-title` **já existe**. `app.css:450-452` reimplementa a mesma coisa com hex literal e `!important`. Apagar não é uma escolha de estilo: é remover código que o compilador escreve sozinho.
+
+**2. Se a variante à mão fosse mesmo necessária, a API é `@utility`, não uma classe solta.** Upgrade Guide v4, verbatim: *"In v4 we are using native cascade layers and no longer hijacking the `@layer` at-rule, so we've introduced the `@utility` API as a replacement"*. Medido: `git show origin/main:resources/css/app.css | grep -c '^@utility'` → **0**. O boilerplate não usa a API uma única vez.
+
+**3. A causa-raiz não é o `!important` — é que as regras estão fora de layer, e isso tem correção nativa.** Confirmei no **código-fonte** de `origin/main` (independente do build velho que o candidato usou): `git show origin/main:resources/css/app.css | grep -n '^@layer'` → só **duas** ocorrências, `83` e `221`, fechando em `91` e `250`. Tudo de 252 a 681 — incluindo `.font-title` (450), `.font-support` (455) e as 21 regras `!important` de tipografia — está **fora de qualquer cascade layer**, e sem layer vence com layer. Mover esse bloco para `@layer base` faz **todos** os `!important` de tipografia ficarem desnecessários de uma vez. Esse é o mecanismo v4, não um truque.
+
+**Correção de fato dentro do candidato.** A frase *"`.font-subtitle{` não aparece no CSS compilado (0 ocorrências)"* está sendo usada como prova de defeito, e **não é**: pela doc citada em V6T2, Tailwind 4.3 só emite variável de `@theme` que é usada e só gera utilitária que aparece na fonte. `--font-subtitle` ausente do compilado é o framework funcionando como documentado. O achado "`--font-subtitle` não tem consumidor" sobrevive **apenas** pela medição na fonte (`git grep -n 'font-subtitle' origin/main -- resources` → 1 linha, a própria declaração). A metade compilada do argumento tem de cair.
+
+**Correção da premissa da lente.** Medi `git show 53d7d9a:package.json`: ctvitrine está em `tailwindcss ^4.3.0`, `@radix-ui/themes ^3.3.0`, `tailwindcss-animate ^1.0.7` — **o mesmo minor do Tailwind e a mesma Radix do alvo** (4.3.3 / 3.3.0 instalados). Então nada aqui é deriva de versão: o `!important` sobre `!important` do ctvitrine (`app.css:521-523`, com `--font-boutique` declarado no `@theme` em `:25`, portanto com `.font-boutique` já gerada pelo compilador) é o mesmo legado v3 que o boilerplate carrega, escrito no mesmo Tailwind. Os dois times pagaram o mesmo pedágio por não terem migrado o idioma.
+
+**Fatia que eu recomendo em lugar da proposta:** apagar 450-457 (`.font-title` e `.font-support`); envolver o bloco de tipografia de elemento em `@layer base`; estender a guarda para falhar quando o `app.css` declarar à mão uma classe homônima de utilitária de `@theme` **ou** usar `@layer utilities`/`@layer components` no lugar de `@utility`. Risco maior do que o candidato estimou: mover para `@layer base` muda quem vence contra o Radix (que é unlayered — ver V6T5) e pode inverter a tipografia dentro de componentes Radix. Precisa vir **depois** ou **junto** do `layer()` do V6T5, não antes.
+
+---
+
+### V6T5 — `@import '@radix-ui/themes/styles.css'` sem `layer()`
+
+**Veredito: ATUAL COM MODERNIZAÇÃO — a correção proposta é a documentada, e a versão instalada oferece uma segunda, mais barata, que o candidato não nomeia.**
+
+**Premissa reconfirmada sem depender do build velho.** Medi o pacote instalado: `grep -c '@layer' node_modules/@radix-ui/themes/styles.css` → **0**, em `@radix-ui/themes@3.3.0`. A Radix Themes 3.3 envia CSS inteiramente sem layer. O sequestro é estrutural, não artefato de build desatualizado — as três medições em byte offset do candidato ficam corroboradas por um caminho independente.
+
+**Modernização A — `layer()` no import.** É o idioma da própria Tailwind: a doc 4.x mostra o entry point do framework fazendo exatamente isso — `@import "./theme.css" layer(theme); @import "./preflight.css" layer(base); @import "./utilities.css" layer(utilities);`. Para terceiro, `@import '@radix-ui/themes/styles.css' layer(components);` é a forma sancionada ([discussão oficial radix-ui/themes #763](https://github.com/radix-ui/themes/discussions/763)).
+
+**Modernização B — `@theme inline`, uma palavra, resolve o sintoma medido.** Doc 4.x: *"Using the `inline` option, the utility class will use the theme variable **value** instead of referencing the actual theme variable."* Com `@theme inline`, `.bg-background` compila para `background-color: var(--background)` — e a redeclaração de `--color-background` que a Radix faz em `:where(.radix-themes)` fica **inerte, porque nada mais lê `--color-background`**. É o que o shadcn/ui distribui para Tailwind v4. O `@theme` do boilerplate está em `app.css:14@origin/main` **sem** `inline`, com 30 tokens no formato `--color-x: var(--x)` — exatamente o padrão que `inline` existe para servir.
+
+As duas não são alternativas: **B** mata o sequestro específico dos `--color-*`; **A** conserta a cascata em geral (a Radix continua vencendo utilitárias em tudo que não passa por token). A ordem barata é B → A.
+
+**Sobre a asserção proposta** (`@import` de terceiro carrega `layer()`): confirmo que ela não existe — `git grep -n 'layer(' origin/main -- resources/js/test resources/css` → 0 linhas. E confirmo o alerta do candidato: ela nasce vermelha. Com **B** aplicado primeiro, ela pode nascer verde no mesmo PR se **A** vier junto; sozinha, não.
+
+---
+
+### V6T6 — Anatomia dos `!important`
+
+**Veredito: ATUAL COM MODERNIZAÇÃO — três dos quatro grupos têm resposta nativa nomeável, e um dos grupos é código morto.**
+
+- **Tipografia (21 no boilerplate, 22 no ctvitrine):** resposta nativa é a cascade layer, não o `!important`. Medido na fonte (V6T4): as regras estão fora de layer. Upgrade Guide v4: *"we are using native cascade layers and no longer hijacking the `@layer` at-rule"*. Dentro de `@layer base`, utilitária ganha sem `!`. Continuo concordando que **não é fatia P** e que mexer nos 21 seletores muda aparência — mas o caminho de saída agora tem nome de API, não é "redesenhar".
+- **Radix (`--default-font-family: … !important`, `app.css:97-98`):** a Radix Themes documenta `--default-font-family` como ponto de customização; com o import em `layer(components)` (V6T5-A) o override deixa de precisar de `!`. **Não medi** se o `!important` já é redundante hoje — as duas declarações são unlayered, então ordem de fonte deveria bastar. Conferir quando a fatia do V6T5 rodar.
+- **Toast (24):** não é questão de versão. `react-hot-toast@2.6.0` é a versão instalada nos dois projetos e estiliza por `style` inline via emotion; CSS externo é o canal errado em qualquer versão. Nada a modernizar, o diagnóstico do candidato está certo.
+- **iOS (1) — achado novo, e é `[rejeitado]` por outro motivo:** a regra está guardada por `.ios-input-16`, e essa classe **não é aplicada em lugar nenhum**. Medido em toda a árvore dos dois projetos: `git grep -n 'ios-input-16' origin/main` → 3 linhas, todas a própria declaração em `app.css:592-594`; `git grep -n 'ios-input-16' 53d7d9a` → 3 linhas, idem em `app.css:600-602`. **O único `!important` "não-tipografia, não-toast" do censo é CSS morto nos dois projetos** — mesma família que a PR #108 podou. Sai com `@supports` e tudo, 8 linhas, risco zero, e o censo passa de 46 para 45.
+
+**Um `!important` a mais que o censo não viu, e em sintaxe deprecada.** `resources/js/components/ui/dropdown-menu.tsx:75@origin/main` traz `data-[variant=destructive]:*:[svg]:!text-destructive-foreground` — o `!` **no início**, forma v3. Upgrade Guide v4, verbatim: *"In v3 you could mark a utility as important by placing an `!` at the beginning of the utility name … In v4 you should place the `!` at the very end of the class name instead … The old way is still supported for compatibility but is deprecated."* Forma correta: `…:text-destructive-foreground!`. Uma ocorrência em toda a árvore (medido) — fatia de um caractere.
+
+---
+
+### V6T7 — `--ring` a 1.85:1
+
+**Veredito: ATUAL.** Nada em Tailwind 4.3, React 19.2 ou Radix 3.3 substitui um token de contraste medido, e não existe lint de contraste nativo em nenhuma das três.
+
+**O que a versão acrescenta a favor do candidato:** o boilerplate usa `outline-none` + `focus-visible:ring-ring focus-visible:ring-[3px]` (medido em `button.tsx:9` e `input.tsx:12@origin/main`), que é o idioma **correto de v4** — o Upgrade Guide registra que v4 mudou o `ring` padrão de 3px para 1px e a cor de `blue-500` para `currentColor`, tornando `ring-[3px]` + cor explícita obrigatórios. Isso reforça o argumento: `--ring` é o indicador inteiro, o `ring-[3px]` não tem cor de fallback do framework para cair, e o piso de 3:1 de 1.4.11 incide direto sobre o token. O backport para ctvitrine/cuidari é correto e não tem alternativa nativa.
+
+---
+
+### V6T8 — `--primary` do escuro
+
+**Veredito: ATUAL. Concordo com o "nada a absorver", e a lente confirma por um segundo caminho.**
+
+Existe hoje uma função nativa que faria o trabalho — `contrast-color()`, MDN: *"Baseline 2026 — Newly available. Since April 2026 this feature works across the latest devices and browser versions"*, retornando `white` ou `black` mirando WCAG AA. Ela poderia derivar `--primary-foreground` em vez de o time escolher à mão.
+
+**E é o caso em que ela é a resposta errada**, pela advertência da própria MDN: *"WCAG AA contrast is not always sufficient for mid-tone colors. For example, `contrast-color()` on royal blue (#2277d3) produces black text that may not be readable for small text."* `#379bcb` é exatamente um mid-tone dessa família. A escolha manual de `--brand-navy-dark` (4.68:1) é melhor do que o que a função devolveria, e ela devolveria `black`/`white`, não navy — perderia a marca. Nomear a alternativa nativa e **descartá-la com a ressalva da doc** é o veredito.
+
+O ponto (b) do candidato — comentário que critica upstream por valor congela uma versão do upstream — é atemporal e correto. Vira argumento para o V6T13.
+
+---
+
+### V6T9 — `<meta name="theme-color">`
+
+**Veredito: ATUAL, com correção de escopo — e a lente resolve a pergunta que o candidato deixou aberta.**
+
+Nada nativo substitui: `color-scheme` (já presente em `app.blade.php:8` e `:43,49`) pinta controles e canvas, `theme-color` pinta o chrome do browser. São complementares, como o candidato disse.
+
+**Correção de escopo, que muda como vender a fatia:** MDN classifica `<meta name="theme-color">` como **"Limited availability — this feature is not Baseline because it does not work in some of the most widely-used browsers"**. Não é um recurso cross-browser; é um ganho em Chrome Android e no chrome de PWA/Safari. Vender como "o app passa a acompanhar o tema no browser" seria falso. Vale P de esforço, mas o texto do PR precisa dizer "onde o browser suporta".
+
+**Resposta à pergunta em aberto ("qual das duas formas o `use-appearance` suportaria sem JS extra"):** nenhuma das duas sozinha, e a escolha não é entre elas — é pelo estado. A MDN documenta o `media` como parte da especificação, com o exemplo `<meta name="theme-color" content="cornflowerblue" media="(prefers-color-scheme: light)">`. Duas tags com `media` acompanham a preferência do SO sem uma linha de JS, mas **não acompanham a troca manual**, que no boilerplate é uma classe no `<html>` e não um estado de media query. Então o desenho correto espelha o que o `<meta name="color-scheme">` já faz na linha 8:
+
+- `$appearance === 'light'|'dark'` → **uma** tag com o hex correspondente, renderizada no servidor;
+- `$appearance === 'system'` → **duas** tags com `media="(prefers-color-scheme: light|dark)"`.
+
+Custo: uma condicional Blade, zero JS. E o hex escuro entra no `InlineThemeBackgroundTest` que já trava `#0f2a44` — o candidato está certo em exigir isso, senão vira a quarta cópia solta (medido: `git grep -n 0f2a44 origin/main` → 4 arquivos hoje).
+
+---
+
+### V6T10 — `preconnect` para `fonts.bunny.net`
+
+**Veredito: ATUAL.** Apagar linha morta não tem dimensão de versão; a fatia está certa em qualquer stack. Medi de novo por conta própria: 1 ocorrência no boilerplate (`app.blade.php:67@origin/main`), 1 no ctvitrine (`app.blade.php:138@53d7d9a`), zero `@font-face`, `@import` ou `src:` apontando para bunny nos dois.
+
+**Uma nota de versão, para ninguém propor a coisa errada no lugar:** medido `git grep -n 'prefetch' origin/main -- app resources/views bootstrap` → **0 linhas**. O boilerplate não usa `Vite::prefetch()` do Laravel 13, que é o mecanismo sancionado de resource hint hoje — e que trata de **chunks do build**, não de host de terceiro. Substituir o `preconnect` morto por prefetch de Vite seria trocar uma coisa por outra sem relação. É deleção pura.
+
+---
+
+### V6T11 — 23 `@font-face`, não 34
+
+**Veredito: ATUAL.** A correção de contagem é aritmética e independe de versão; reproduzi o mecanismo do erro (`@font-face` dentro da URL da MDN em comentário) e a composição fecha. A economia central — *`@font-face` não usada não custa byte de rede, o custo é de repositório e manutenção* — continua valendo integralmente em Vite 8.2 / Tailwind 4.3: nenhum dos dois gera, poda ou audita `@font-face`, e nenhum dos dois gera `<link rel=preload>` para fonte. Não há sucessor nativo do preload escrito à mão.
+
+**O que a versão acrescenta:** `font-display: swap` está em todas as faces (medido em `_fonts.css@origin/main`, amostra de 10 blocos lidos) — é a prática corrente, nada mais novo a fazer aí.
+
+**A modernização que o candidato não nomeia, e que ataca justamente os 255.372 B de preload:** **fonte variável**. As 10 faces de Aptos são instâncias estáticas (light/regular/semibold/bold + itálicos, medido pelos nomes de arquivo); um woff2 variável colapsaria a lista de preload de 5 para 1-2 e o `_fonts.css` de 21 faces para 3-4. **Não medi** se existem builds variáveis dessas três famílias no repositório nem qual seria o peso — é opção real, não afirmação. Idem `size-adjust`/`ascent-override` para casar métricas de fallback: ausente, e é o que reduz CLS sem baixar byte nenhum.
+
+O princípio "preload só do que a página desenha" do ctvitrine é atemporal e continua sendo a única guarda possível contra a lista de 5 virar 8.
+
+---
+
+### V6T12 — `--brand` runtime + `color-mix(in oklab, …)`
+
+**Veredito: ATUAL COM MODERNIZAÇÃO — o candidato mais forte da frente, e a lente melhora as duas metades dele.**
+
+**Modernização A — `color-mix(in oklab)` não é só defensável, é o que o Tailwind instalado emite.** Medido no artefato compilado (`public/build/assets/app-BKlgUCP1.css`, o mesmo build de 20/08 16:00 que o candidato usou, e com a mesma ressalva de estar em `30fe0eb`):
+
+| forma | ocorrências |
+|---|---|
+| `color-mix(in oklab` | **159** |
+| `color-mix(in lab` | **122** |
+| `color-mix(in srgb` | **1** |
+
+E confirmei a origem sem depender do build: `grep -rho 'color-mix(in [a-z]*' node_modules/tailwindcss/*.css` → só `oklab`. A única `srgb` do arquivo é código do próprio boilerplate — `app.css:366@origin/main`, `background-color: color-mix(in srgb, var(--table-row-hover) var(--table-row-hover-opacity), transparent)`. Ou seja: **a forma do ctvitrine está mais alinhada ao framework instalado do que o único `color-mix` que o boilerplate já escreveu.** Fatia adjacente, P: `in srgb` → `in oklab` em 366 (muda levemente o tom renderizado; pede olhada, não é troca cega).
+
+**Modernização B — a metade difícil ganhou função nativa desde abril.** O candidato escreve a regra como *"ou o foreground é derivado da luminância dela em runtime"* e deixa o mecanismo por inventar. Ele existe: `contrast-color()`, MDN — *"takes a color value and returns a contrasting color — either `white` or `black` — depending on which has greater contrast with the input color… designed to ensure WCAG AA minimum contrast (4.5:1)"*, **Baseline 2026, newly available desde abril de 2026**. `color: contrast-color(var(--brand))` faz em CSS puro, sem JS e sem round-trip, o que a regra pede. Duas ressalvas, ambas da própria MDN: (a) *newly available* significa aparelho antigo de fora — precisa de `@supports (color: contrast-color(red))` com fallback; (b) *"WCAG AA contrast is not always sufficient for mid-tone colors"* — e cor de lojista é justamente o espaço onde mid-tone é comum (o `#b26e79` do mockup é exemplar).
+
+Consequência para o texto da regra `.ai/rules`: a **primeira** cláusula (piso de contraste na validação, para os usos como texto) sobrevive intacta — nada nativo valida input de formulário. A **segunda** cláusula deve passar a **nomear `contrast-color()` como o mecanismo sancionado**, com `@supports`, em vez de deixar cada implementador escrever sua própria conversão de luminância em TS. Isso é o que muda entre "regra que descreve um desejo" e "regra que aponta uma API".
+
+**Modernização C — os 8 percentuais ad-hoc têm API de primeira classe na versão instalada.** "Consolidar em 3 níveis nomeados" não é só higiene: em 4.3.3 isso é `@theme` + `@utility` funcional. Doc: `@utility tab-* { tab-size: --value(--tab-size-*); }` — *"Use the `--value(--theme-key-*)` syntax to resolve the utility value against a set of theme keys"*. Três tokens `--brand-soft/-muted/-subtle` no `@theme` mais um `@utility` de uma linha substituem os 33 call sites com 8 misturas diferentes, e ganham variantes (`hover:`, `dark:`) de graça — coisa que `bg-[color-mix(...)]` escrito à mão não tem.
+
+**Não verificado:** sintaxe de cor relativa (`oklch(from var(--brand) …)`), que seria a alternativa a `color-mix` para rampas de luminância. Não conferi o status de baseline dela; não a use como argumento sem medir.
+
+Confirmo o resto: `git grep -ln "primary_color\|theme_color\|brand_color" origin/main` → 0 arquivos, então isto é regra a escrever antes da primeira feature de white-label, não defeito a consertar.
+
+---
+
+### V6T13 — 6 de 6 contas certas em comentário, zero testes
+
+**Veredito: ATUAL — e o desenho do artefato é acertadamente adequado à versão, o que merece ser dito em vez de ficar implícito.**
+
+Nada em Tailwind 4.3, Vite 8.2 ou Vitest 4.1 oferece verificação de contraste. Não há plugin oficial, não há hook no `@theme`, não há nada no `@utility`. O `theme-tokens.test.ts` não é um remendo à espera de recurso nativo — é o teto.
+
+**E a escolha de lê-lo como texto é a correta, por um motivo de versão que vale registrar na fatia:** como Tailwind 4.3 só emite variável de `@theme` que é usada (doc citada em V6T2), qualquer asserção futura que procurar token **na saída do build** dará falso negativo para tokens de `@theme`. Ler `resources/css/app.css` como texto imuniza o teste contra o tree-shaking. Quem estender a tabela precisa saber disso.
+
+**Para os quatro pares que o candidato quer acrescentar, a armadilha não morde:** `--success`, `--warning`, `--info` e seus `-foreground` estão em `:root`/`.dark` (medido, `app.css:135-140` e `:189-194@origin/main`), **não** no `@theme` — sempre emitidos, sempre visíveis à leitura de texto. E é por isso que `.text-success{` dá 0 no compilado: não existe `--color-success` no `@theme` (`app.css:14-70`, medido — a lista vai de `--color-background` a `--color-sidebar-ring` e não inclui estado). As duas medições do candidato são consistentes entre si e com o framework.
+
+Fatia P, nasce verde, não depende do F1. Concordo em ser a primeira.
+
+---
+
+### V6T14 — `iconTheme` morto em `warning` e `info`
+
+**Veredito: ATUAL — e passo o achado de PLAUSÍVEL para CONFIRMADO na versão instalada.**
+
+Verifiquei por conta própria, não pela citação do candidato. `node -e "require('./node_modules/react-hot-toast/package.json').version"` → **2.6.0**, que é a versão do `package.json@origin/main` (`^2.6.0`) e a mesma do ctvitrine (`^2.6.0`, medido em `53d7d9a:package.json`). O `ToastIcon` minificado em `node_modules/react-hot-toast/dist/index.js`:
+
+```js
+$=({toast:e})=>{let{icon:t,type:o,iconTheme:s}=e;return t!==void 0?typeof t=="string"?S.createElement(ve,null,t):t:o==="blank"?null:S.createElement(Re,null,S.createElement(L,{...s}),o!=="loading"&&S.createElement(Pe,null,o==="error"?S.createElement(C,{...s}):S.createElement(U,{...s})
+```
+
+`t!==void 0` retorna antes de `s` (=`iconTheme`) ser espalhado em qualquer elemento. Como `toast-config.ts@origin/main` define `icon: '⚠️'` (`:74`) e `icon: 'ℹ️'` (`:97`), os `iconTheme` de `:87-90` e `:109-112` são inalcançáveis. **Confirmado, não plausível.** E o comentário do teste em `:39` — *"a cor do ícone é `iconTheme`, e este é o único canal que funciona"* — é falso para metade da tabela que ele encabeça.
+
+**Dimensão de atualidade:** `react-hot-toast` 2.6.0 é a versão corrente e não está deprecada; nenhuma versão mais nova altera esse caminho de render. O default de ecossistema pós-shadcn é `sonner`, mas isso é troca de biblioteca, decisão de outro escopo, e **não mudaria o achado** — chave de config que o caminho de render nunca lê é morta em qualquer lib. Não há modernização a propor: a fatia é apagar as 2 linhas mortas, ajustar a tabela do teste para 2 linhas + 2 asserções de que `warning`/`info` usam `icon` e por isso não usam `iconTheme`, e reescrever o comentário com os dois canais.
+
+O achado de contraste de brinde (glifo de sucesso a **2.28:1** no escuro) não tem componente de versão e nasce/morre com a fatia do V6T13, como o candidato disse.
+
+---
+
+### Nota transversal (fora dos 14, porque a lente foi instruída a caçar isto)
+
+`tailwindcss-animate@1.0.7` continua instalado e carregado por `@plugin 'tailwindcss-animate'` (`app.css:7@origin/main`), com 17 usos de `animate-in`/`animate-out` mais `animate-spin` (18) e `animate-pulse` (1) no markup (medido em `resources/js` + `resources/views`). É o plugin JS da era v3. O upstream o deprecou em favor de **`tw-animate-css`**, substituto puro-CSS para Tailwind v4 — *"TailwindCSS v4.0 compatible replacement for `tailwindcss-animate`"* — e tanto o [shadcn/ui](https://ui.shadcn.com/docs/tailwind-v4) quanto o [shadcn-svelte](https://shadcn-svelte.com/docs/migration/tailwind-v4) migraram. O ctvitrine tem a **mesma** linha `@plugin` no **mesmo** minor do Tailwind, então é legado do boilerplate, não deriva da fonte. `@keyframes` manual no `app.css@origin/main`: **zero** (medido; a única ocorrência da string está em comentário na linha 675, resíduo textual da PR #108) — ou seja, não há o defeito inverso. Fora do escopo deste lote; registrado para quem montar a frente de animação.
+
+---
+
+#### Medições e versões (base de todos os vereditos)
+
+Alvo lido só por `git show`/`git grep` sobre `origin/main` = **`beb848ea509bf6682c9e31f10611ad7ab489392e`** (confirmado por `git rev-parse`). Fonte lida só por `git show`/`git grep` sobre **`53d7d9a`**. Nenhum build, teste ou comando de escrita foi executado.
+
+| pacote | alvo (`origin/main` + node_modules) | fonte (`53d7d9a`) |
+|---|---|---|
+| tailwindcss | **4.3.3** (instalado) | `^4.3.0` — **mesmo minor** |
+| @radix-ui/themes | **3.3.0** (instalado, `@layer` = 0) | `^3.3.0` |
+| react / react-dom | `^19.2.8` | `^19.2.7` |
+| @inertiajs/react | `^3.6.1` | `^3.4.0` |
+| vite | `^8.2.1` | `^7.3.5` |
+| typescript | `^6.0.3` | `^5.9.3` |
+| react-hot-toast | **2.6.0** (instalado) | `^2.6.0` |
+| tailwindcss-animate | **1.0.7** (instalado) | `^1.0.7` |
+| laravel/framework · php | `^13.0` · `^8.4` | não medido |
+
+A premissa da lente de que "a fonte está em versões diferentes do alvo" **não vale para CSS**: Tailwind e Radix Themes são o mesmo minor nos dois. Divergem Vite (7.3 → 8.2), TS (5.9 → 6.0) e Inertia (3.4 → 3.6), nenhum dos quais toca os 14 candidatos desta frente.
+
+Fontes de doc consultadas (todas *version-aware* ou baseline explícito): `search-docs` do Boost para `tailwindcss@4.x` (Theme, Adding Custom Styles, Functions and Directives, Upgrade Guide, Color Scheme, Dark Mode); [tailwindcss.com/docs/theme](https://tailwindcss.com/docs/theme) para `@theme static` e `@theme inline`; [MDN `contrast-color()`](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/contrast-color); [MDN `light-dark()`](https://developer.mozilla.org/en-US/docs/Web/CSS/color_value/light-dark); [MDN `meta name="theme-color"`](https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Elements/meta/name/theme-color); [radix-ui/themes discussão #763](https://github.com/radix-ui/themes/discussions/763); [tw-animate-css](https://github.com/Wombosvideo/tw-animate-css) e [shadcn/ui Tailwind v4](https://ui.shadcn.com/docs/tailwind-v4).
+
+**Não medido, e onde importa:** builds variáveis das três famílias de fonte (V6T11); baseline da sintaxe de cor relativa `oklch(from …)` (V6T12); se o `!important` do `--default-font-family` já é redundante (V6T6); ordem de injeção de CSS do Vite 8.2 em dev (V6T1). As três medições que dependem do artefato compilado (`app-BKlgUCP1.css`, 824.001 B, 20/08 16:00, working tree em `30fe0eb`) foram usadas apenas em V6T4, V6T5 e V6T12 — e nos dois primeiros casos eu as **substituí ou corroborei** por medição na fonte de `origin/main` e no `node_modules` instalado, que não dependem do build.
+
+---
+
+## Caçador 2 — primitivos de `components/ui/`
+
+# Caçador 2 — primitivos de `components/ui/` (ctvitrine `53d7d9a` × boilerplate `origin/main`)
+
+## Diff da lista (confirmado, não é o número do inventário repetido)
+
+`26` no ctvitrine × `30` no boilerplate — os dois números do inventário reproduzem.
+
+- **Só no ctvitrine (1):** `navigation-menu.tsx`.
+- **Só no boilerplate (5):** `confirm-dialog.tsx`, `currency-input.tsx`, `date-input.tsx`, `form-field.tsx`, `masked-input.tsx`.
+- **Nos dois: 25.** Destes, **14 são byte-idênticos** (`alert`, `avatar`, `card`, `collapsible`, `dropdown-menu`, `icon`, `label`, `placeholder-pattern`, `separator`, `skeleton`, `table`, `toast-provider`, `toggle-group`, `tooltip`) e **11 divergem**.
+
+Dos 11 divergentes, **10 são o boilerplate à frente ou empate cosmético**, e a divergência é quase toda de uma linha só:
+
+| Arquivo | Natureza da divergência | Quem está à frente |
+|---|---|---|
+| `badge`, `checkbox`, `input`, `select`, `textarea`, `toggle` | **só** `focus-visible:ring-ring/50` → `focus-visible:ring-ring` | boilerplate |
+| `breadcrumb` | `sr-only` "More" → "Mais" | boilerplate |
+| `sheet` | `sr-only` "Close" → "Fechar" | boilerplate |
+| `dialog` | idêntico exceto um comentário de 2 linhas que o boilerplate removeu | empate |
+| `button` | token de anel + **prop `loading`** (`aria-busy`, `LoaderCircle`, `loadingText`) | boilerplate |
+| `sidebar` | 5 blocos: 4 do boilerplate (guarda `isTypingTarget`, `aria-keyshortcuts`, tooltip do atalho, `type="button"` no rail, strings pt-BR) + **1 do ctvitrine: `min-w-0` no `SidebarInset`** | dividido → **V6P-1** |
+
+**Resposta direta à pergunta prioritária** (`button`, `confirm-dialog`, `sidebar`, `tooltip`, `input`, `select`): em cinco dos seis o boilerplate está estritamente à frente e não há regressão. O **único** ponto em que o ctvitrine passou o boilerplate na lista prioritária é o `min-w-0` do `SidebarInset` — V6P-1.
+
+---
+
+### V6P-1 · `SidebarInset` perdeu o `min-w-0` que o ctvitrine tem, e o `<main>` do kit é flex item sem trava de encolhimento
+
+- **Evidência:** `resources/js/components/ui/sidebar.tsx:307-309@53d7d9a`
+  ```
+  // min-w-0: sem isso o min-content de tabelas/linhas largas expande o main
+  // além do viewport no mobile, em vez de rolar dentro dos containers
+  "bg-background relative flex min-h-svh min-w-0 flex-1 flex-col",
+  ```
+- **Estado do boilerplate hoje:** a classe **não existe**. `origin/main:resources/js/components/ui/sidebar.tsx:329-336` é `"bg-background relative flex min-h-svh flex-1 flex-col"`. E o contêiner pai é flex de linha: `origin/main:resources/js/components/ui/sidebar.tsx:148` → `"group/sidebar-wrapper has-data-[variant=inset]:bg-sidebar flex min-h-svh w-full"`. A cadeia que chega lá é real e única: `layouts/app/app-sidebar-layout.tsx` → `AppContent variant="sidebar"` (`components/app-content.tsx:10`, `return <SidebarInset {...props}>`) → `<main>`. `git grep -n "min-w-0" origin/main -- resources/js/components/ui/sidebar.tsx` devolve 4 linhas (412, 481, 668, 711) — todas dentro da coluna da sidebar, **nenhuma no `SidebarInset`**.
+- **O que absorver / o que travar:** acrescentar `min-w-0` ao `SidebarInset` e o comentário de origem. Travar com um teste de estilo no molde do que já existe (`resources/js/test/styles/focus-ring.test.ts`): ler o arquivo e exigir que a className do `data-slot="sidebar-inset"` contenha `min-w-0`, com controle positivo (o slot tem de ser encontrado) para não passar vácuo se o arquivo for renomeado.
+- **Adaptação necessária:** nenhuma — é a mesma linha, no mesmo arquivo shadcn, no mesmo `cn()`. O comentário do ctvitrine cita "tabelas largas"; no boilerplate o gatilho medido é outro (`git grep -ln "components/ui/table" origin/main -- resources/js` → **0 importadores**; toda tabela vem do `@radix-ui/themes`), então o texto do comentário deve dizer "conteúdo de min-content largo", não "tabelas".
+- **Risco · esforço:** **P · P.** Uma classe. `min-width: 0` num flex item só permite encolher; não muda nada onde o conteúdo já cabe.
+- **Ressalva de honestidade:** **não reproduzi visualmente.** Não rodei browser nem build (proibido nesta rodada). O que está medido é: (a) a classe existe lá e não aqui, (b) o `<main>` é `flex-1` dentro de um flex de linha, que é a condição em que `min-width:auto` impede o encolhimento. A consequência visual é a alegação da fonte, não minha medição.
+- **Multi-fonte?** Sim, o tema do `SidebarInset` ser o `<main>` real aparece no ctfinance — `docs/harvest/v2/ctfinance.md:336` ("O `<main>` real é o do `SidebarInset` (`ui/sidebar.tsx:304`)"). O `min-w-0` em si só apareceu no ctvitrine.
+
+---
+
+### V6P-2 · Resíduo da poda do header: uma dependência npm com zero importadores e um componente morto que ainda carrega a única string de UI em inglês do front
+
+- **Evidência (o lado ctvitrine, que mostra o que foi podado):** `resources/js/components/ui/navigation-menu.tsx@53d7d9a` existe e é vivo — `resources/js/components/app-header.tsx:6@53d7d9a`: `import { NavigationMenu, NavigationMenuItem, NavigationMenuList, navigationMenuTriggerStyle } from '@/components/ui/navigation-menu';`
+- **Estado do boilerplate hoje:** a poda dos três arquivos já aconteceu e está documentada em `origin/main:resources/js/test/styles/focus-ring.test.ts:54` ("a cadeia `app-header-layout` → `app-header` → `navigation-menu` era órfã inteira"). Mas ficaram dois resíduos, os dois medidos:
+  1. `origin/main:package.json:69` → `"@radix-ui/react-navigation-menu": "^1.2.22"` com **0 importadores** (`git grep -c "from '@radix-ui/react-navigation-menu'" origin/main -- resources/js` → 0; é o único dos 13 pacotes `@radix-ui/*` com zero).
+  2. `origin/main:resources/js/components/appearance-dropdown.tsx` tem **0 importadores** (`git grep -n "AppearanceToggleDropdown\|appearance-dropdown" origin/main -- resources/js` devolve só a própria definição, linha 7) — e é onde mora `sr-only">Toggle theme</span>` (linha 27). `AppearanceTabs` é o único dos dois montado (`origin/main:resources/js/pages/settings/appearance.tsx:4`).
+  Sobrevivem também os ramos `variant="header"` de `app-shell.tsx:22` e `app-content.tsx:14`, sem nenhum call-site (`git grep -n 'variant="header"' origin/main -- resources/js` → 0 fora de comentários).
+- **O que absorver / o que travar:** remover a dependência do `package.json`, apagar `appearance-dropdown.tsx` e decidir sobre os ramos `variant="header"`. O guard-rail que impede a próxima poda deixar rastro: um teste node (mesmo padrão de `focus-ring.test.ts`, que já lê a árvore com `readdirSync`) que cruza os `@radix-ui/*` das `dependencies` com os `import ... from` de `resources/js` e falha em dependência sem importador. Hoje o cruzamento acusaria exatamente 1.
+- **Adaptação necessária:** nenhuma para o pacote. Para `appearance-dropdown.tsx` a decisão é apagar ou adotar; se adotar, cai na V6P-6 junto com o `appearance-tabs`.
+- **Risco · esforço:** **P · P.** Remover dependência sem importador não muda bundle de runtime, só o lockfile.
+- **Multi-fonte?** Sim, **3 de 3**. `navigation-menu.tsx` está vivo nos derivados: cuidari (`docs/harvest/v2/cuidari.md:2453`, na lista dos 27 em ambos) e spinmax (`docs/harvest/v2/spinmax.md:1178`, `navigation-menu.tsx (168)`). `appearance-dropdown.tsx` aparece nos dois também (`cuidari.md:174`, `spinmax.md:1216`). Ou seja: o boilerplate podou e os derivados não — a fatia de sincronização vai reencontrar isto.
+
+---
+
+### V6P-3 · Campo de imagem com preview e disciplina de `revokeObjectURL` — o boilerplate tem **zero** superfície de upload no front
+
+- **Evidência:** `resources/js/pages/site-settings/edit.tsx:166-198@53d7d9a` — `BrandingImageField` monta miniatura + `<Input type="file" accept="image/jpeg,image/png,image/webp">` + botão "Remover", com a cadeia de fallback declarada em duas linhas:
+  ```
+  const shownUrl = previewUrl ?? currentUrl ?? defaultUrl;
+  const isCustom = previewUrl !== null || currentUrl !== null;
+  ```
+  E o ciclo de vida do blob, `resources/js/pages/site-settings/edit.tsx:289-330@53d7d9a` — **três** pontos de revogação (`dropPreview`, o `setPreview` do `selectImage`, e o `onSaved`), sempre pelo updater funcional para não vazar o URL anterior:
+  ```
+  setPreview((previous) => { if (previous) URL.revokeObjectURL(previous); return URL.createObjectURL(file); });
+  ```
+- **Estado do boilerplate hoje:** **não existe nada disto.** Três comandos, os três vazios: `git grep -n 'type="file"' origin/main -- resources/js` → 0 · `git grep -n "createObjectURL" origin/main -- resources/js` → 0 · `git grep -n 'accept="image' origin/main -- resources/js` → 0. Os cinco primitivos de formulário que o boilerplate tem a mais (`currency-input`, `date-input`, `masked-input`, `form-field`, `confirm-dialog`) não cobrem arquivo.
+- **O que absorver / o que travar:** um `ui/image-field.tsx` genérico: props `label`, `hint`, `accept`, `previewUrl | currentUrl | defaultUrl`, `onSelect(File|null)`, `onRemove`, `error`; miniatura com `alt=""` (decorativa, o `Label` já nomeia o campo); o botão "Remover" só quando há imagem customizada. E um hook `use-object-url` que encapsule os três pontos de revogação — é essa a parte que erra sozinha.
+- **Adaptação necessária:** três. (1) O ctvitrine acopla o campo ao `useSettingsAutosave` (`resources/js/hooks/use-settings-autosave.ts@53d7d9a`, `router.post` com `only:['settings']` + `async: true`); o boilerplate não tem autosave e usa `useForm` — o primitivo tem de ser controlado, sem saber salvar. (2) Trocar `focus-within:ring-ring/50` do estilo herdado por `ring-ring` (contrato do boilerplate, travado em `focus-ring.test.ts`). (3) **Não** absorver sem o backend: o `spinmax.md:3444` e `:3536` já registraram que **upload não existe em nenhum dos dois lados do par spinmax↔boilerplate**, e que guard-rail de MIME/tamanho passaria vácuo. Se o front entrar sem a feature, o teste do primitivo cobre render e revogação — não política de upload.
+- **Risco · esforço:** **M · M.** O componente é pequeno; a armadilha é o ciclo do object URL, e ele é testável em jsdom com `URL.createObjectURL`/`revokeObjectURL` mockados.
+- **Multi-fonte?** Parcial e **por negação**, o que é o achado: `spinmax.md:3444` mede `0 × 0` (nenhum `type="file"` no spinmax nem no boilerplate) e `cuidari.md:2064` registra um disco `private` LGPD **sem uso**. O ctvitrine é o **único dos quatro** com superfície de upload real no front.
+
+---
+
+### V6P-4 · Entrada por chips (`ColorChipsInput`) — primitivo genérico que o boilerplate não tem em nenhuma forma
+
+- **Evidência:** `resources/js/components/items/color-chips-input.tsx:28-97@53d7d9a`. O que o torna genérico e não domínio: dedup sem diferenciar maiúscula (`mergeColor`, linha 13), Backspace no campo vazio remove o último (linha 56+), `aria-label` por chip (linha 77, `Remover cor ${color}`), e a colagem multi-valor com o motivo escrito:
+  ```
+  // Colar "Preto, Tartaruga, Azul" adiciona todos de uma vez. Os segmentos
+  // são acumulados numa lista e enviados num ÚNICO onChange: chamar onChange
+  // por cor dentro do mesmo evento faria cada chamada ler o `value` obsoleto
+  // do closure e sobrescrever a anterior — só a última cor sobreviveria.
+  ```
+- **Estado do boilerplate hoje:** ausente. `git grep -in "chip\|tagsinput\|tag-input" origin/main -- resources/js` → **0 linhas**. O mais próximo é `ui/toggle-group.tsx` (escolha entre opções fixas), que resolve outro problema — ali o conjunto é aberto.
+- **O que absorver / o que travar:** `ui/chips-input.tsx` com `value: string[]`, `onChange`, `separators` (default `[',', 'Enter']`), `maxLength`, `disabled`, `placeholder`. O teste que vale é o da colagem: um único `onChange` com todos os segmentos — é a regressão que o comentário descreve e que ninguém pega lendo.
+- **Adaptação necessária:** três. Renomear e tirar o vocabulário de cor (label, `placeholder`, `aria-label`). Trocar `focus-within:ring-ring/50` (linha 67) por `ring-ring`. E **acrescentar o que falta**: a lista de chips não tem região viva — remover um chip não anuncia nada; o boilerplate já tem o idioma certo em `origin/main:resources/js/components/data-table/search-bar.tsx:78` (`<div aria-live="polite" aria-atomic="true" className="sr-only">` renderizada sempre).
+- **Risco · esforço:** **P · M.** Componente isolado, sem dependência de Radix.
+- **Multi-fonte?** Não encontrei o tema nos outros três inventários (`grep -i "chip" cuidari.md spinmax.md ctfinance.md` → nada relevante). Fonte única.
+
+---
+
+### V6P-5 · Ícone de marca próprio: o ctvitrine tem contrato escrito; o boilerplate tem 2 SVGs inline e **nenhum** com atributo de acessibilidade
+
+- **Evidência:** `resources/js/components/whatsapp-icon.tsx:4-10@53d7d9a` — o contrato está no docblock e na tag:
+  ```
+  * Glifo oficial do WhatsApp (sólido). O lucide-react não inclui ícones de
+  * marca, então usamos o SVG próprio. Herda a cor via `fill="currentColor"`
+  * e o tamanho pela className (ex.: "h-4 w-4"), como os ícones do lucide.
+  <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+  ```
+  Não é caso isolado: 8 call-sites em 7 arquivos (`git grep -n "WhatsappIcon" 53d7d9a -- resources/js` → 18 linhas), e `resources/js/pages/site/landing.tsx:34@53d7d9a` documenta o denominador comum ("Ícone: aceita tanto os do lucide quanto o WhatsappIcon próprio").
+- **Estado do boilerplate hoje:** lucide dos dois lados (bp: 59 arquivos importam `lucide-react`, versão `^1.31.0`; ct: 89 arquivos, `^0.475.0` — major diferente, mas o mesmo pacote). SVG local: o boilerplate tem **2** arquivos com `<svg` (`git grep -ln "<svg" origin/main -- resources/js`), e os dois estão sem qualquer marcação de a11y — `origin/main:resources/js/components/app-logo-icon.tsx:5` → `<svg {...props} viewBox="0 0 40 42" xmlns="...">` e `origin/main:resources/js/components/ui/placeholder-pattern.tsx:11` → `<svg className={className} fill="none">`. O `app-logo-icon` é decorativo de fato: `origin/main:resources/js/components/app-logo.tsx:7` põe o texto "Simplify Starter Kit" ao lado — ou seja, falta só o `aria-hidden`, o nome já existe.
+- **O que absorver / o que travar:** **(a)** o contrato do glifo local como regra em `.ai/rules/js.md`: marca que o lucide não cobre entra como componente próprio em `components/`, `fill="currentColor"`, tamanho por className, `aria-hidden="true"` embutido, `{...props}` por último. **(b)** o guard-rail, que é o valor real: teste node no molde do `focus-ring.test.ts` exigindo que todo `<svg` de `resources/js` traga `aria-hidden` **ou** (`role="img"` + `aria-label`/`<title>`). Hoje ele acusa **2** infratores no boilerplate — número medido, não estimado.
+- **Adaptação necessária:** o ctvitrine tem 3 arquivos com `<svg` e **1 infrator** pelo mesmo critério: `ui/placeholder-pattern.tsx`, que é byte-idêntico ao do boilerplate (herdado dos dois lados). Ou seja, a correção do `placeholder-pattern` é do kit, não da fonte.
+- **Risco · esforço:** **P · P.** Dois atributos e um teste.
+- **Multi-fonte?** Não medido nos outros três — os inventários de cuidari/spinmax/ctfinance não enumeram `<svg` inline.
+
+---
+
+### V6P-6 · `appearance-tabs.tsx`: seletor exclusivo de 3 opções sem papel nem estado ARIA, em inglês, com `ui/toggle-group` já disponível e já usado ao lado — **defeito do boilerplate**
+
+- **Evidência (o que o ctvitrine mostra):** `resources/js/components/site/color-selector.tsx:23-32@53d7d9a` — a fonte pelo menos **declara** o papel:
+  ```
+  <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Cor do produto">
+  … role="radio" aria-checked={active}
+  ```
+  E aí mostra o próprio erro: `git grep -n "tabIndex\|onKeyDown" 53d7d9a -- resources/js/components/site/color-selector.tsx` → **0 linhas**. `role="radiogroup"` sem tabulação móvel nem setas é um widget anunciado que o teclado não opera do jeito prometido.
+- **Estado do boilerplate hoje:** pior, e medido. `git grep -n 'role="radiogroup"\|role="radio"\|aria-checked\|role="tablist"\|role="tab"' origin/main -- resources/js` → **0 linhas em todo o front**. O trocador de tema é `origin/main:resources/js/components/appearance-tabs.tsx:16-18`: uma `<div>` sem papel com três `<button type="button">` que se distinguem **só pela cor de fundo** (`appearance === value ? 'bg-white shadow-xs …'`). Quem usa leitor de tela não tem como saber qual tema está ativo. E os rótulos, `origin/main:resources/js/components/appearance-tabs.tsx:10-12`, são `'Light'`, `'Dark'`, `'System'` — contra a regra escrita em `origin/main:.ai/rules/js.md` ("O frontend é monolíngue pt_BR"). Com o `appearance-dropdown` morto (V6P-2), **estas três linhas são a única string de UI em inglês viva no front inteiro** (`git grep -nE ">(Light|Dark|System|Close|More|Toggle …)<"` → 4 acertos, 3 aqui + 1 no arquivo morto).
+  O agravante: o boilerplate **já tem** o primitivo certo e **já sabe usá-lo** — `origin/main:resources/js/components/data-table/date-range-filter.tsx:78`:
+  ```
+  <ToggleGroup type="single" variant="outline" value={active?.key ?? ''} onValueChange={handleShortcut} aria-label="Atalhos de período">
+  ```
+  `ui/toggle-group.tsx` é Radix (tabulação móvel e estado de pressão de graça) e tem exatamente **1** importador no projeto.
+- **O que absorver / o que travar:** reescrever `appearance-tabs.tsx` sobre `ToggleGroup type="single"` com `aria-label="Tema"` e rótulos "Claro" / "Escuro" / "Sistema"; um `ToggleGroup` de seleção única não pode ficar vazio, então o `value` vem do `useAppearance` e o `onValueChange` ignora string vazia. Guard-rail duplo: (1) teste render que exige, para cada opção, um controle com nome acessível pt-BR e o estado de pressão correto no tema ativo; (2) linha em `.ai/rules/js.md` — "escolha exclusiva entre opções visíveis usa `ui/toggle-group type=single`; `<div>` de `<button>`s com estado só na cor não anuncia nada".
+- **Adaptação necessária:** nada vem do ctvitrine — o `appearance-tabs.tsx` de lá é o mesmo arquivo, ainda **sem** o `type="button"` que o boilerplate acrescentou (diff de 34 bytes). O que o ctvitrine contribui é o diagnóstico via `ColorSelector`: o par `role`/estado sem operação de teclado é o erro-irmão, e a lição é usar o primitivo Radix em vez de reimplementar o papel à mão.
+- **Risco · esforço:** **P · P.** Um arquivo de 34 linhas, um teste, zero dependência nova.
+- **Multi-fonte?** Sim, **3 de 3**: `appearance-tabs.tsx` está listado em cuidari (`cuidari.md:174`) e spinmax (`spinmax.md:1216`, "34 linhas"). O mesmo arquivo defeituoso viajou para todos os derivados — corrigir aqui é corrigir na origem de quatro cópias.
+
+---
+
+### V6P-7 · `role="status"` num nó que remonta a cada estado — a regra existe escrita no boilerplate, o teste não
+
+- **Evidência:** `resources/js/pages/site-settings/edit.tsx:121-150@53d7d9a`. `SaveIndicator` retorna um **elemento diferente por estado**: linha 122 (`idle`) devolve um `<span>` **sem papel nenhum**; as linhas 128, 137 e 145 devolvem `<span … role="status" aria-live="polite">`. Cada transição destrói e recria a região viva — que é exatamente a condição em que ela não anuncia.
+- **Estado do boilerplate hoje:** a regra está escrita em **dois** lugares e o comportamento está certo nos **dois** pontos onde se aplica: `origin/main:resources/js/components/input-error.tsx:7-11` ("`aria-live` num nó recém-montado não anuncia nada — a região precisa preexistir à mudança") e `origin/main:resources/js/components/data-table/search-bar.tsx:74-78` ("Renderizada SEMPRE, mesmo vazia"), com o parágrafo correspondente em `origin/main:.ai/rules/js.md`. O inventário completo das regiões vivas no front é **7 linhas de código** (`git grep -n 'aria-live\|role="status"\|role="alert"' origin/main -- resources/js | grep -v /test/`): `search-bar.tsx:78`, `input-error.tsx:18`, `ui/alert.tsx:30`, `lib/toast-config.ts:53,76`. **Zero `role="status"`.** O que **não** existe é teste: nenhum dos 41 arquivos de `resources/js/test/` cobre este contrato (`focus-ring.test.ts` e `theme-tokens.test.ts` cobrem foco e tokens, não região viva).
+- **O que absorver / o que travar:** nada de código a portar — o boilerplate já está certo. O ativo é o guard-rail: `resources/js/test/styles/live-region.test.ts`, mesmo molde node do `focus-ring.test.ts`, com duas asserções e um controle positivo. (1) Nenhum `aria-live`/`role="status"` aparece dentro de um retorno condicional por estado — checável de forma barata exigindo que o atributo esteja no **mesmo componente** que também renderiza o caso vazio (o idioma do `search-bar.tsx`). (2) `role="alert"` continua permitido em nó montado sob condição, porque é o mecanismo desenhado para inserção — o `input-error.tsx` depende disso.
+- **Adaptação necessária:** o teste tem de tolerar `ui/alert.tsx:30` (papel fixo no primitivo, call-site condicional legítimo) e `lib/toast-config.ts` (props passadas para a biblioteca, não JSX). Sem essas duas isenções ele nasce vermelho por motivo errado.
+- **Risco · esforço:** **P · M.** O risco é o teste virar heurística frágil de regex; o controle positivo (achar pelo menos as 3 regiões conhecidas) é o que impede que ele passe vácuo.
+- **Multi-fonte?** Sim. `ctfinance.md:137` registra que a região viva de busca aparecia copiada em **11 telas** no ctfinance — a mesma família de defeito, pelo outro lado (duplicação em vez de remontagem).
+
+---
+
+### V6P-8 · Cor de marca: `<input type="color">` pareado com campo hex — ausente no boilerplate
+
+- **Evidência:** `resources/js/pages/site-settings/edit.tsx:565-582@53d7d9a` — o par, com o hex validado antes de alimentar o seletor nativo (que rejeita valor inválido em silêncio):
+  ```
+  <input type="color" aria-label="Selecionar cor primária"
+         value={HEX_PATTERN.test(form.primary_color) ? form.primary_color : DEFAULT_PRIMARY_COLOR}
+         onChange={…} onBlur={saveColor} className="border-input h-9 w-12 cursor-pointer rounded-md border bg-transparent p-1" />
+  <Input id="primary_color" value={form.primary_color} … maxLength={7} className="w-32 font-mono" />
+  ```
+  O `aria-label` no seletor e o `id`/`htmlFor` no campo de texto são deliberados: o `<Label>` nomeia o campo digitável, e o seletor nativo precisa de nome próprio porque não é o alvo do label.
+- **Estado do boilerplate hoje:** ausente. `git grep -n 'type="color"' origin/main -- resources/js` → **0 linhas**.
+- **O que absorver / o que travar:** `ui/color-input.tsx` controlado — o valor canônico é a string hex, o seletor nativo é só uma segunda entrada para o mesmo estado. Teste: hex inválido no campo de texto não derruba nem "conserta" o seletor; escolher no seletor normaliza o texto para `#rrggbb` minúsculo.
+- **Adaptação necessária:** o ctvitrine salva no `onBlur` via autosave; o boilerplate usa `useForm`, então o primitivo só emite `onChange`/`onBlur` e não sabe salvar. `HEX_PATTERN` e `DEFAULT_PRIMARY_COLOR` viram props com default.
+- **Risco · esforço:** **P · P.** Mas o valor só aparece quando existir algo configurável para colorir — hoje o boilerplate não tem branding por tenant. **Candidato de menor prioridade desta lista**; anoto para não se perder, não para a próxima fatia.
+- **Multi-fonte?** Não. Fonte única — é a única das quatro bases com configuração de marca pelo usuário.
+
+---
+
+### V6P-9 · O ctvitrine é a prova de que o `ui/table` do shadcn dá conta — e a regra do boilerplate manda o contrário
+
+- **Evidência:** `git grep -n "components/ui/table" 53d7d9a -- resources/js` → **3 páginas**, todas novas do domínio: `resources/js/pages/categories/index.tsx:10`, `resources/js/pages/items/index.tsx:8`, `resources/js/pages/metrics/index.tsx:3`. A listagem de itens usa o primitivo por inteiro (`resources/js/pages/items/index.tsx:275-345@53d7d9a`: `Table`/`TableHeader`/`TableRow`/`TableHead`/`TableBody`/`TableCell`, com larguras por coluna). Ao mesmo tempo o ctvitrine mantém o `@radix-ui/themes` nas telas **herdadas** do boilerplate — `resources/js/components/users/user-table-row.tsx:8`, `resources/js/components/permissions/role-users-table.tsx:8`, `resources/js/pages/users/index.tsx:23`. Ou seja: **fronteira limpa** — herdado fica no Themes, novo nasce em shadcn.
+- **Estado do boilerplate hoje:** o contrário, e por escrito. `origin/main:.ai/rules/js.md` traz a regra "**Tabelas com Table de @radix-ui/themes, não shadcn**", com a justificativa "não use o `components/ui/table.tsx` do shadcn, que existe mas não é adotado". Medido: `git grep -n "components/ui/table" origin/main -- resources/js` → **0 importadores** (primitivo morto, e a regra o admite); `git grep -n "@radix-ui/themes" origin/main -- resources/js` → **7 arquivos** (`app.tsx:7`, `data-table/table-header.tsx:3`, `permissions/role-users-table.tsx:9`, `users/user-table-row.tsx:8`, `layouts/permissions/layout.tsx:3`, `pages/users/index.tsx:22`, e um teste). A folha entra global em `origin/main:resources/css/app.css:5` (`@import '@radix-ui/themes/styles.css'`) e a guerra de override está confessada na linha 93 do mesmo arquivo ("Override Radix UI Themes default font family to use Aptos — MUST be after @radix-ui/themes import").
+- **O que absorver / o que travar:** **não é fatia de código, é decisão.** O que o ctvitrine adiciona ao dossiê é a evidência que faltava: alguém já rodou listagem de produção sobre o `ui/table` e não voltou atrás. O item concreto é reabrir a regra do `.ai/rules/js.md` com a fronteira do ctvitrine ("herdado fica; novo nasce em shadcn") ou, se a decisão for manter o Themes, **apagar** `ui/table.tsx` — porque hoje a regra defende manter um arquivo morto, o que é o pior dos dois mundos: o próximo agente lê o primitivo, assume que é o padrão da casa, e a regra só o corrige se ele a tiver lido antes.
+- **Adaptação necessária:** o `ui/table` do shadcn embrulha a tabela em `<div className="relative w-full overflow-auto">` (`origin/main:resources/js/components/ui/table.tsx:7`); as telas do boilerplate embrulham o cartão em `overflow-hidden` (`pages/users/index.tsx:142`), que **clipa** em vez de rolar. Adotar sem mexer nisso troca um defeito por outro. Casa com a V6P-1.
+- **Risco · esforço:** **G · G** se for migração; **P · P** se for só apagar o morto. A decisão é de ADR, não de fatia.
+- **Multi-fonte?** **4 de 4, e é o achado multi-fonte mais forte da rodada.** cuidari: `cuidari.md:2455` — 29 arquivos importam do Themes, 0 importam `ui/table`, "Dois sistemas de tabela coexistindo, um deles morto". ctfinance: `ctfinance.md:443` — "`ui/table.tsx` tem 0 usos … Virou `[proposta-adr]`", e `ctfinance.md:422` acrescenta o custo real: "`@radix-ui/themes` **redeclara `--color-background` sem layer** e sequestra `bg-background` em todo o app". spinmax: `spinmax.md:1352` documenta a mesma colisão **e a correção** (redeclarar `:root, .dark, .radix-themes { --color-background: var(--background) }` depois do import) — correção que **não existe** nem no boilerplate nem no ctvitrine (nos dois, `--color-background: var(--background)` está dentro do `@theme`, `app.css:28` e `app.css:32` respectivamente, antes do import que o sobrescreve). O ctvitrine é o único que já provou a saída pelo lado do shadcn.
+
+---
+
+### Nota de mão inversa (não é candidato — não há o que absorver)
+
+O contrato de anel de foco do boilerplate está **à frente e travado**. Rodando as duas regras de `origin/main:resources/js/test/styles/focus-ring.test.ts` contra os 26 primitivos do ctvitrine: **8 arquivos** ainda pintam o anel em opacidade fracionária (`badge`, `button`, `checkbox`, `input`, `navigation-menu`, `select`, `textarea`, `toggle`) e **0** apagam `outline-none` sem repor indicador. No boilerplate, `git grep -n "ring-ring/50" origin/main -- resources/` → **0 linhas**: a varredura foi completa, não parcial. Registro para o inverso — quando a `boilerplate-sync` chegar ao ctvitrine, estes 8 são fatia pronta, com o teste já escrito do lado de cá.
+
+---
+
+#### Medições
+
+Fonte sempre por SHA pinado; alvo sempre por `origin/main`. Prefixos: `CT=/Users/cristianomorgante/workspace/laravel/simplify-technology/ctvitrine`, `BP=/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate`.
+
+```bash
+# Diff da lista (26 × 30) e comparação byte a byte dos 25 comuns
+git -C $CT ls-tree -r 53d7d9a --name-only -- resources/js/components/ui/ | sort
+git -C $BP ls-tree -r origin/main --name-only -- resources/js/components/ui/ | sort
+# materialização em scratchpad via `git show` dos dois lados + `cmp -s` par a par
+#   → 14 SAME, 11 DIFF; `diff -u` de cada um dos 11
+
+# V6P-1 min-w-0
+git -C $CT show 53d7d9a:resources/js/components/ui/sidebar.tsx | grep -n "min-w-0\|SidebarInset"     # 307,309 + 387,456,643,686
+git -C $BP show origin/main:resources/js/components/ui/sidebar.tsx | grep -n "min-w-0\|SidebarInset" # 329 sem min-w-0; 412,481,668,711
+git -C $BP show origin/main:resources/js/components/ui/sidebar.tsx | grep -n "flex min-h-svh w-full" # 148
+
+# V6P-2 resíduos da poda
+for p in $(git -C $BP show origin/main:package.json | grep -oE '"@radix-ui/[a-z-]+"' | tr -d '"' | sort -u); do \
+  echo "$(git -C $BP grep -c "from '$p'" origin/main -- resources/js | wc -l)  $p"; done   # navigation-menu → 0, único
+git -C $BP grep -n "AppearanceToggleDropdown\|appearance-dropdown" origin/main -- resources/js  # só a definição, :7
+git -C $BP grep -n 'variant="header"' origin/main -- resources/js                               # 0 (só 2 comentários)
+git -C $CT grep -n "navigation-menu" 53d7d9a -- resources/js                                    # app-header.tsx:6 vivo
+
+# V6P-3 / V6P-8 superfície de upload e cor
+git -C $BP grep -n 'type="file"' origin/main -- resources/js        # 0
+git -C $BP grep -n "createObjectURL" origin/main -- resources/js    # 0
+git -C $BP grep -n 'type="color"' origin/main -- resources/js       # 0
+git -C $CT grep -ln 'type="file"' 53d7d9a -- resources/js           # 5 arquivos
+git -C $CT show 53d7d9a:resources/js/pages/site-settings/edit.tsx | sed -n '140,205p;285,345p;560,600p'
+
+# V6P-4 chips
+git -C $BP grep -in "chip\|tagsinput\|tag-input" origin/main -- resources/js   # 0
+git -C $CT show 53d7d9a:resources/js/components/items/color-chips-input.tsx
+
+# V6P-5 svg / lucide
+git -C $BP grep -ln "<svg" origin/main -- resources/js   # app-logo-icon.tsx, ui/placeholder-pattern.tsx
+git -C $CT grep -ln "<svg" 53d7d9a  -- resources/js      # ui/placeholder-pattern.tsx, whatsapp-icon.tsx, pages/metrics/index.tsx
+git -C $BP grep -l "from 'lucide-react'" origin/main -- resources/js | wc -l   # 59
+git -C $CT grep -l "from 'lucide-react'" 53d7d9a  -- resources/js | wc -l      # 89
+
+# V6P-6 ARIA de escolha exclusiva + inglês
+git -C $BP grep -n 'role="radiogroup"\|role="radio"\|aria-checked\|role="tablist"\|role="tab"' origin/main -- resources/js  # 0
+git -C $BP grep -nE '>(Light|Dark|System|Close|More|Toggle [A-Za-z]+|Save|Cancel|Delete|Search)<|label: .(Light|Dark|System).' origin/main -- resources/js | grep -v /test/  # 4
+git -C $BP grep -n "ui/toggle-group" origin/main -- resources/js   # date-range-filter.tsx:3 (único importador)
+git -C $CT grep -n "tabIndex\|onKeyDown" 53d7d9a -- resources/js/components/site/color-selector.tsx   # 0
+
+# V6P-7 regiões vivas
+git -C $BP grep -n 'aria-live\|role="status"\|role="alert"' origin/main -- resources/js | grep -v /test/   # 7 linhas, 0 role="status"
+git -C $BP ls-tree -r origin/main --name-only -- resources/js/test | wc -l   # 41
+
+# V6P-9 duas tabelas
+git -C $BP grep -n "components/ui/table" origin/main -- resources/js   # 0
+git -C $CT grep -n "components/ui/table" 53d7d9a  -- resources/js      # 3 páginas
+git -C $BP grep -n "@radix-ui/themes" origin/main -- resources/js      # 7 arquivos
+git -C $BP show origin/main:resources/css/app.css | grep -n "themes\|color-background"   # 5, 28, 93
+git -C $CT show 53d7d9a:resources/css/app.css   | grep -n "themes\|color-background"     # 5, 32, 97
+
+# Nota inversa — regras do focus-ring.test.ts aplicadas ao ctvitrine
+grep -l "ring-ring/" <scratchpad>/ct/*.tsx    # 8 arquivos
+git -C $BP grep -n "ring-ring/50" origin/main -- resources/   # 0
+```
+
+**Não medido (declarado):** reprodução visual do overflow da V6P-1 (sem browser/build, proibido nesta rodada); comportamento de anúncio real de leitor de tela em V6P-6 e V6P-7 (inferido do DOM, não observado); custo de bundle do `@radix-ui/themes` na V6P-9 (nenhum build rodado).
+
+### Lente REFUTAR — vereditos
+
+## Ref usado
+
+`origin/main` = **`beb848e`** (`git -C $BP rev-parse --short origin/main`) — duas commits à frente do `2965f8c` que o banner do `ctvitrine.md` registra como baseline do inventário. Toda medição abaixo é contra `beb848e`; a fonte, sempre `53d7d9a` por `git show`/`git grep`.
+
+---
+
+### V6P-1 — **SOBREVIVE (escopo corrigido)**
+
+**Fato: reproduz inteiro.** `git -C $CT show 53d7d9a:resources/js/components/ui/sidebar.tsx | grep -n "min-w-0"` → 307 (comentário), 309 (`"bg-background relative flex min-h-svh min-w-0 flex-1 flex-col"`), 387, 456, 643, 686. `git -C $BP show origin/main:.../sidebar.tsx | grep -n "min-w-0"` → 412, 481, 668, 711 — **nenhuma no `SidebarInset`**, cuja linha é `"bg-background relative flex min-h-svh flex-1 flex-col"`. O pai é flex de linha (`:148`, `flex min-h-svh w-full`), e li a cadeia inteira: `app-sidebar-layout.tsx:32` → `AppContent variant="sidebar"` → `app-content.tsx:10` `return <SidebarInset {...props}>`. Rodei também o `diff -u` completo do `sidebar.tsx`: são exatamente 5 hunks, 4 do boilerplate e este 1 do ctvitrine. A tabela de divergências do cabeçalho da frente também reproduz inteira (materializei os 26+30 arquivos e rodei `cmp -s` par a par: **14 SAME, 11 DIFF, 1 só-no-CT**).
+
+**Três correções de escopo, nenhuma fatal:**
+
+1. **O texto do comentário está errado pelo motivo certo e pelo motivo errado.** O caçador diz para trocar "tabelas" por "min-content largo" porque `ui/table` tem 0 importadores — verdade. Mas o que ele não mediu é que **as tabelas do boilerplate já rolam sozinhas**: `Table.Root` do `@radix-ui/themes` embrulha o `<table>` num `ScrollArea` do Radix (`node_modules/@radix-ui/themes/dist/esm/components/table.js`: `createElement("div",{className:"rt-TableRoot"…}, createElement(ScrollArea, null, createElement("table",{className:"rt-TableRootTable"…})))`). Ou seja, o caso agudo que o comentário da fonte descreve **não é o caso do boilerplate**; a classe entra como defesa genérica, e o comentário tem de dizer isso, não inventar um sintoma que ninguém observou.
+2. **Aplicar no call-site, não no arquivo vendorizado.** `origin/main:.ai/rules/js.md:45` escreve, sobre este arquivo exato: "nunca dentro de `ui/sidebar.tsx`, que é código shadcn e tem de continuar rastreável ao upstream: atributo de landmark entra por prop do call-site". `AppContent` já é o funil (`app-content.tsx:10`, `{...props}`) e `SidebarInset` já faz `cn(base, className)` — `className={cn('min-w-0', className)}` em `app-content.tsx` entrega o mesmo resultado sem gastar orçamento de divergência do vendorizado.
+3. **O guard-rail proposto é o errado.** Ler o `.tsx` e casar regex de className no `data-slot="sidebar-inset"` não distingue classe viva de classe em comentário — no ctvitrine o `min-w-0` aparece nas duas formas na mesma vizinhança. Como a mudança passa a ser no call-site, o teste certo é render jsdom: montar `<SidebarProvider><AppContent variant="sidebar"/></SidebarProvider>` e assertar `min-w-0` no `<main>` renderizado, com o `<main>` como controle positivo.
+
+**Prioridade:** baixa. É defesa de uma classe, sem sintoma reproduzido (a ressalva de honestidade do candidato está certa e deve permanecer no PR).
+
+---
+
+### V6P-2 — **SOBREVIVE (escopo corrigido, e não é harvest)**
+
+**Fatos: reproduzem, com um número errado.** Rodei o cruzamento eu mesmo, pacote a pacote, sobre os 13 `@radix-ui/react-*` de `origin/main:package.json:63-75`: `avatar 1 · checkbox 1 · collapsible 1 · dialog 2 · dropdown-menu 1 · label 1 · **navigation-menu 0** · select 1 · separator 1 · slot 4 · toggle 2 · toggle-group 1 · tooltip 1`, mais `@radix-ui/themes` com 7. `navigation-menu` é mesmo o único zero. **Correção:** são **14** entradas `@radix-ui/*` no `package.json`, não 13 — o candidato esqueceu o `themes`. `git -C $BP grep -n "AppearanceToggleDropdown\|appearance-dropdown" origin/main -- resources/js` devolve **só a linha 7 da própria definição**; `variant="header"` → **0 ocorrências**, nem em comentário (o candidato escreveu "0 fora de comentários", mas o grep é zero absoluto).
+
+**A correção que importa: isto não é um candidato de harvest.** Nada é absorvido do ctvitrine — lá o `navigation-menu` está **vivo** (`app-header.tsx:6`), então a fonte é o contra-exemplo, não a doadora. É uma fatia de higiene do próprio boilerplate, e deve ser rotulada assim para não competir por vaga com candidatos que trazem código.
+
+**Armadilha não medida pelo candidato:** `AppShell` e `AppContent` **têm `variant = 'header'` como default** (`app-shell.tsx:9`, `app-content.tsx:8`). Apagar o ramo `header` sem trocar o default quebra os dois componentes para qualquer chamada sem prop. A fatia é: apagar o ramo **e** eliminar a prop `variant` inteira (o único call-site já passa `"sidebar"` explicitamente), não "decidir sobre os ramos".
+
+**Escopo corrigido:** (a) remover `"@radix-ui/react-navigation-menu"` do `package.json`; (b) apagar `appearance-dropdown.tsx` — o que também mata a única string inglesa que um sweep `>Texto<` acha no front (ver V6P-6); (c) colapsar `AppShell`/`AppContent` para a única variante viva, removendo a prop; (d) o guard-rail de dependência-sem-importador vale, mas tem de varrer `resources/` inteiro (não só `resources/js`), senão o dia em que um pacote for consumido só por CSS ele nasce falso-positivo — `@radix-ui/themes` entra por `resources/css/app.css:5` **e** por `app.tsx:7`, e é o precedente exato.
+
+---
+
+### V6P-3 — **DERRUBADO**
+
+**Motivo em uma linha:** o boilerplate não tem superfície de upload em **nenhuma das duas pontas**, então o primitivo e o hook chegariam sem consumidor e sem contraparte de validação — e o próprio candidato escreve "**não** absorver sem o backend".
+
+Golpe (4), medido por mim: `git -C $BP grep -nE "UploadedFile|->store\(|storeAs|Storage::|putFile|temporaryUrl|'mimes" origin/main -- app routes` → **zero linhas**. Front idem (`type="file"` 0, `createObjectURL` 0, `accept="image` 0). O candidato mediu só o front e concluiu "falta um primitivo"; o que falta é a feature.
+
+Antecipo a defesa e a respondo: **não** derrubo por "primitivo sem call-site" — esse argumento não vale nesta casa, e verifiquei: `ui/currency-input`, `ui/masked-input` e `ui/form-field` já vivem em `origin/main` com **0 importadores fora de `resources/js/test/`** (`git -C $BP grep -ln "ui/<p>" origin/main -- resources/js | grep -v /test/`). Kit pode shipar primitivo antes do consumidor. O que separa este caso é outra coisa: `previewUrl ?? currentUrl ?? defaultUrl`, o botão "Remover" e o `accept` **codificam um contrato de servidor** (um `*_url` devolvido, uma rota de remoção, uma política de MIME) que o kit não tem e sobre o qual não há ADR. Shipar o campo é fixar política de upload pelo front — e o `spinmax.md:3444`/`:3536` já registrou que qualquer guard-rail aqui passa vácuo.
+
+O `use-object-url` sozinho tampouco salva: hook de revogação num repositório com **0 `createObjectURL`** é guarda de um vazamento inalcançável.
+
+**Reabrir quando** a primeira feature de upload entrar; aí o padrão de revogação da fonte (`edit.tsx:289-330`, três pontos, sempre por updater funcional) vem verbatim e junto com a regra de MIME/tamanho no FormRequest, numa fatia só.
+
+---
+
+### V6P-4 — **SOBREVIVE (escopo corrigido)**
+
+**Fatos: reproduzem.** `git -C $BP grep -in "chip\|tagsinput\|tag-input" origin/main -- resources/js` → **0 linhas**. Li o `color-chips-input.tsx@53d7d9a` inteiro: `mergeColor` case-insensitive (`:13-20`), Backspace no vazio (`:60-62`), `aria-label={`Remover cor ${color}`}` no X, e o comentário sobre o `onChange` único na colagem está lá, palavra por palavra.
+
+**Não derrubo por falta de consumidor** — medido acima, `currency-input`/`masked-input`/`form-field` já são precedente. É primitivo genuinamente genérico, sem dependência nova, testável.
+
+**Três correções, uma delas um bug que o candidato não viu:**
+
+1. **`aria-label` no `<Input>` interno sequestra o `<Label htmlFor>` do call-site.** O componente põe `id={id}` **e** `aria-label="Adicionar cor"` no mesmo input (`:88,:94`). `aria-label` vence `<label for>` no cálculo de nome acessível — quem embrulhar o primitivo num `FormField` com label "Cores" vai ouvir "Adicionar cor". Na absorção o `aria-label` tem de ser **prop opcional**, aplicado só quando não há `id`/label externo.
+2. **A colagem não é colagem.** Não há `onPaste`; o ramo dispara em qualquer `onChange` que contenha vírgula (`:44`). O comportamento final é o mesmo e o comentário sobre o closure obsoleto continua sendo a lição — mas o teste tem de ser escrito sobre `fireEvent.change` com string multi-segmento, não sobre um evento de paste, senão nasce testando outra coisa.
+3. As três adaptações que o candidato listou continuam válidas: tirar vocabulário de cor, trocar `focus-within:ring-ring/50` por `ring-ring` (o arquivo é um dos 9 do ctvitrine com anel fracionário — ver nota inversa), e acrescentar a região viva no idioma de `search-bar.tsx:78`. Acrescento: os chips deveriam sair como `<ul>/<li>`, não `<span>` soltos, para o leitor anunciar a contagem.
+
+**Escopo:** `ui/chips-input.tsx` + teste (colagem multi-segmento num `onChange` só; Backspace; dedup case-insensitive; nome acessível não sequestrado). Fonte única — o que é permitido, mas registre como tal.
+
+---
+
+### V6P-5 — **SOBREVIVE (escopo reduzido; duas contagens erradas)**
+
+**Erros factuais, ambos subestimando:**
+- "8 call-sites em 7 arquivos (… → 18 linhas)": `git -C $CT grep -n "WhatsappIcon" 53d7d9a -- resources/js | wc -l` → **27**; `git -C $CT grep -n "<WhatsappIcon" … | wc -l` → **12 usos**, em **9 arquivos**.
+- "bp: 59 arquivos importam `lucide-react` … ct: 89": `git grep -l "from 'lucide-react'" … | wc -l` → **53** no boilerplate e **83** no ctvitrine.
+
+Nenhum dos dois inverte a conclusão — erram para menos.
+
+**O que reproduz:** `git -C $BP grep -ln "<svg" origin/main -- resources/js` → exatamente 2 arquivos, e li os dois: `app-logo-icon.tsx:5` (`<svg {...props} viewBox="0 0 40 42" xmlns=…>`) e `ui/placeholder-pattern.tsx:11` (`<svg className={className} fill="none">`) — **nenhum com `aria-hidden`, `role` ou `<title>`**. `app-logo.tsx:7` põe "Simplify Starter Kit" ao lado, confirmando que o logo é decorativo. No ctvitrine são 3 arquivos e **1 infrator**, e é o `placeholder-pattern` byte-idêntico — confirmei que os dois `<svg>` de `pages/metrics/index.tsx` estão certos (`:220` com `aria-hidden="true"`, `:326` com `role="img"`), então a correção do infrator é do kit, como o candidato disse.
+
+**Corte:** a metade **(a)** — escrever em `.ai/rules/js.md` um contrato de "glifo de marca próprio" — é regra especulativa. O kit não tem glifo de marca, não tem WhatsApp, e não há sinal de que vá ter; regra para um caso que não existe é a mesma dívida que V6P-9 denuncia (texto que o próximo agente lê e obedece sem call-site). O `whatsapp-icon.tsx` em si é domínio de vitrine e não entra.
+
+**Escopo corrigido — só a metade (b), que é o valor real:** um `aria-hidden="true"` em cada um dos 2 `<svg>` + um teste node no molde exato de `focus-ring.test.ts` (que já varre a árvore com `readdirSync` e já tem o padrão de controle positivo) exigindo `aria-hidden` **ou** `role="img"` + nome. É PR de 3 linhas mais teste. A regra escrita, se entrar, é uma frase sobre `<svg>` inline em geral — não sobre marca.
+
+---
+
+### V6P-6 — **SOBREVIVE — o mais forte do lote (escopo corrigido)**
+
+**Tudo reproduz, e a peça-chave que o candidato só supôs eu confirmei.** `git -C $BP grep -n 'role="radiogroup"\|role="radio"\|aria-checked\|role="tablist"\|role="tab"' origin/main -- resources/js` → **0 linhas**; `aria-pressed` existe em **1** ponto só (`data-table/filter-toggle.tsx:22`). Li `appearance-tabs.tsx` inteiro: `<div>` sem papel, três `<button type="button">` cujo estado ativo é **só** `bg-white shadow-xs dark:bg-neutral-700` (`:23-27`), rótulos `'Light' / 'Dark' / 'System'` (`:10-12`). `ui/toggle-group.tsx` tem 1 importador (`date-range-filter.tsx:3`), com `aria-label="Atalhos de período"` em `:78`.
+
+**A confirmação que faltava:** o candidato assumiu que `ToggleGroup type="single"` traz o papel de graça. Verifiquei no dist instalado — `grep -o 'role: "…"\|aria-checked\|aria-pressed' node_modules/@radix-ui/react-toggle-group/dist/index.js` → `role: "radiogroup"`, `role: "radio"`, `aria-checked`, `aria-pressed`, `role: "toolbar"`. O primitivo entrega exatamente o par que falta, com foco itinerante do `RovingFocusGroup`. A proposta está certa pelo motivo certo.
+
+**Duas correções de precisão (nenhuma fatal):**
+1. **O nome acessível não está quebrado — o estado está.** O candidato escreve como se o botão fosse anônimo; os rótulos são texto visível dentro do `<button>`, então o nome existe. O defeito é só que "qual está ativo" não é exposto. Escreva assim no PR, senão o teste nasce medindo a coisa errada.
+2. **"única string de UI em inglês viva" precisa das duas regex, e o candidato só citou uma.** `git grep -nE '>(Light|Dark|System|Close|More|…)<'` acha **1** linha (`appearance-dropdown.tsx:27`, `Toggle theme`) — as três dos tabs **não** casam, porque vivem num array (`label: 'Light'`). Com o segundo padrão (`label: '…'`) aparecem as 3. Total 4, como ele diz; a evidência é que são duas medições, não uma.
+
+**Escopo corrigido:** (a) reescrever `appearance-tabs.tsx` sobre `ToggleGroup type="single"`, `aria-label="Tema"`, rótulos Claro/Escuro/Sistema, `onValueChange` ignorando string vazia; (b) teste de render exigindo, por opção, `getByRole('radio', { name: … })` com `aria-checked` correto no tema ativo; (c) a linha em `.ai/rules/js.md`. **Ordenação obrigatória:** esta fatia depende do (b) da V6P-2 — se `appearance-dropdown.tsx` continuar na árvore, `Toggle theme`/`Light`/`Dark`/`System` sobrevivem nele e qualquer guard-rail de pt-BR nasce vermelho por arquivo morto. Rode as duas juntas ou a V6P-2 primeiro.
+
+Nota: como na V6P-2, o ctvitrine não doa código aqui — o `appearance-tabs.tsx` de lá é o mesmo arquivo **menos** o `type="button"` (confirmei: `diff -u` = 1 linha; 1574 B × 1608 B, os 34 bytes que ele cita). Contribui o contra-exemplo do `ColorSelector`, e esse eu também confirmei: `role="radiogroup"`/`role="radio"`/`aria-checked` presentes, `tabIndex`/`onKeyDown` → **0 linhas**.
+
+---
+
+### V6P-7 — **DERRUBADO**
+
+**Motivo em uma linha:** o contrato **já tem teste** — dois — então a premissa central ("a regra existe escrita, o teste não") é falsa.
+
+`resources/js/test/components/data-table/search-bar.test.tsx:99` é literalmente `it('keeps the live region mounted even with nothing to say')`, com `liveRegion()` = `container.querySelector('[aria-live="polite"]')` e **7 asserções** cobrindo vazio → buscando → N resultados → nenhum → vazio de novo. `resources/js/test/components/input-error.test.tsx` trava `role="alert"` para o nó inserido dinamicamente, mais os casos de mensagem ausente e em branco. Esses são os **dois únicos pontos** onde o contrato se aplica no front — e os dois estão cobertos.
+
+**Segundo golpe, na medição:** `git -C $BP grep -n 'aria-live\|role="status"\|role="alert"' origin/main -- resources/js | grep -v /test/` devolve **11 linhas**, das quais **5 são código** (`search-bar.tsx:78`, `input-error.tsx:18`, `ui/alert.tsx:30`, `lib/toast-config.ts:53` e `:76`) e 6 são comentário. O candidato reporta "7 linhas". Nem o total nem a contagem de código bate.
+
+**Terceiro:** o que sobraria — um scan estático por regex sobre a árvore — o próprio candidato classifica como "heurística frágil" e já nasce precisando de duas isenções codificadas (`ui/alert.tsx`, `toast-config.ts`). Teste que precisa de allowlist no dia do nascimento, para cobrir um contrato já coberto por dois testes de render, é custo sem ganho. Golpe (1) + golpe (5).
+
+---
+
+### V6P-8 — **DERRUBADO (duplicado)**
+
+**Motivo em uma linha:** não é fonte única e não é candidato novo — o **ctfinance já tem um `ui/color-picker` catalogado** (`docs/harvest/v2/ctfinance.md:135`: "`color-picker` (17 presets + `<input type=color>` + hex validado)"), que é a forma melhor do mesmo item, e o candidato afirma o contrário ("Multi-fonte? **Não.** Fonte única — é a única das quatro bases com configuração de marca pelo usuário").
+
+O resto dos fatos reproduz (`git -C $BP grep -n 'type="color"' origin/main -- resources/js` → 0; o par no `edit.tsx:565-582@53d7d9a` está exatamente como citado, com o hex validado antes de alimentar o seletor nativo). Mas a doadora certa é a que já é primitivo `ui/` com presets, não o par inline acoplado ao `useSettingsAutosave`. E o próprio candidato se auto-rebaixa ("candidato de menor prioridade desta lista; anoto para não se perder").
+
+**Ação:** apagar V6P-8 da lista do ctvitrine e anexar ao verbete do `ui/color-picker` do dossiê do ctfinance a única coisa nova que o ctvitrine acrescenta — a justificativa escrita de por que o `aria-label` vai no seletor nativo e o `id`/`htmlFor` no campo hex (o `<Label>` nomeia o digitável; o nativo não é alvo do label).
+
+---
+
+### V6P-9 — **SOBREVIVE como `[proposta-adr]` — mas não é candidato novo, é evidência para uma proposta já aberta**
+
+**Fatos: reproduzem todos.** `git -C $BP grep -n "components/ui/table" origin/main -- resources/js` → **0**; `git -C $CT grep -n "components/ui/table" 53d7d9a -- resources/js` → **3 páginas** (`categories/index.tsx:10`, `items/index.tsx:8`, `metrics/index.tsx:3`), com as telas herdadas ainda no Themes (`users/user-table-row.tsx`, `permissions/role-users-table.tsx`, `pages/users/index.tsx`) — a fronteira limpa que ele descreve existe mesmo. `@radix-ui/themes` no boilerplate: **7 arquivos** (6 de aplicação + 1 teste). `app.css`: import na linha 5, `--color-background: var(--background)` dentro do `@theme` na 28, override de fonte na 93 — e no ctvitrine idem, linhas 5 e 32. A regra em `.ai/rules/js.md:17-18` está escrita palavra por palavra como citada, inclusive o "existe mas não é adotado".
+
+**Correção 1 — já é `[proposta-adr]` aberta.** `ctfinance.md:443`: "**`ui/table.tsx` tem 0 usos** … Virou `[proposta-adr]`". `cuidari.md:2455` mede a mesma coisa (29 × 0, "dois sistemas de tabela coexistindo, um deles morto"). Abrir V6P-9 como item próprio duplica a proposta; o correto é anexar a ela a evidência que só o ctvitrine tem — **um projeto rodou listagem de produção sobre o `ui/table` e não voltou atrás**, mantendo o herdado no Themes. Isso é novo e é o argumento mais forte já reunido.
+
+**Correção 2 — o custo de "só apagar o morto" caiu, e o candidato mediu com dado velho.** Ele herda de `ctfinance.md:135` a nota de que o `empty-state` do boilerplate "ainda depende de `@radix-ui/themes`". **Não depende mais**: li `origin/main:resources/js/components/empty-state.tsx` — imports são `ui/icon`, `lib/utils` e `lucide-react`, e o arquivo não aparece nos 7 do `grep @radix-ui/themes`. O que ainda amarra é textual: `.ai/rules/js.md:38-39` descreve o `EmptyState` em `<Table.Row>`/`<Table.Cell>`, que é API do Themes — a regra ficou para trás do código.
+
+**Correção 3 — a adaptação citada é real e continua valendo.** `origin/main:resources/js/components/ui/table.tsx:7` embrulha em `<div className="relative w-full overflow-auto">` e `pages/users/index.tsx:142` embrulha o cartão em `overflow-hidden` — confirmei os dois. Só que, como estabeleci na V6P-1, `Table.Root` do Themes já rola por dentro (`ScrollArea`), então essa adaptação é custo **da migração**, não da manutenção do status quo.
+
+**O item de fatia que está enterrado aqui e vale mais que o ADR:** a colisão de `--color-background`. Está confirmada nos dois lados (import do Themes na linha 5, `@theme` — não `@theme inline` — na 28/32), e o `spinmax.md:1352` documenta a correção de uma linha que **nem o boilerplate nem o ctvitrine têm**. Isso é fatia pequena, independente da decisão de tabela, e deve sair da sombra do V6P-9 como candidato próprio.
+
+**Escopo corrigido:** (a) anexar a evidência do ctvitrine à `[proposta-adr]` existente, sem abrir item novo; (b) destacar a redeclaração de `--color-background` como fatia própria, P·P; (c) sincronizar `.ai/rules/js.md:38-39` com o `empty-state` que já não usa Themes — isso é P·P e independe do ADR.
+
+---
+
+### Bloco extra — cabeçalho "Diff da lista" (não é candidato, mas é a base de tudo): **CONFIRMADO**
+
+Materializei os 26 arquivos do ctvitrine e os 30 do boilerplate em scratchpad por `git show` e rodei `cmp -s` par a par: **14 SAME, 11 DIFF, 1 só-no-CT (`navigation-menu.tsx`), 5 só-no-BP** — exatamente os números publicados. Rodei `diff -u` nos 11 e a tabela de naturezas reproduz item por item: `badge/checkbox/input/select/textarea/toggle` = só `ring-ring/50` → `ring-ring`; `breadcrumb` = "More" → "Mais"; `sheet` = "Close" → "Fechar"; `dialog` = só a remoção de um comentário de 2 linhas; `button` = anel + o bloco `loading`/`aria-busy`/`LoaderCircle`/`loadingText`; `sidebar` = 5 hunks, 4 do boilerplate + o `min-w-0`. A resposta à pergunta prioritária está certa: em 5 dos 6 o boilerplate está estritamente à frente, e o `min-w-0` é o único ponto invertido.
+
+### Bloco extra — "Nota de mão inversa": **CONFIRMADA, com uma contagem a mais**
+
+`git -C $BP grep -n "ring-ring/50" origin/main -- resources/` → **0 linhas**, a varredura é completa. No ctvitrine, contando `ring-ring/` arquivo a arquivo: **8 dentro de `components/ui/`** (`badge`, `button`, `checkbox`, `input`, `navigation-menu`, `select`, `textarea`, `toggle`) — o número que ele publicou. Mas `git -C $CT grep -l "ring-ring/" 53d7d9a -- resources/` devolve **9**: o nono é `components/items/color-chips-input.tsx`, o próprio componente da V6P-4. Quando a `boilerplate-sync` chegar ao ctvitrine, a fatia pronta é de 9 arquivos, não 8.
+
+### Lente RISCO — vereditos
+
+## V6P-1 · `min-w-0` no `SidebarInset`
+
+**Risco: MÉDIO** (o caçador disse P·P; o que ele não mediu é o que está *dentro* do `<main>`).
+
+**Regressão visual/comportamental — o ponto que falta no candidato.** `min-width:0` não é neutro: ele troca "o `<main>` cresce e a página rola na horizontal" por "o `<main>` fica preso no viewport e quem clipa é o filho". E o boilerplate clipa por padrão. Medido: `git -C $BP grep -n "overflow-hidden" origin/main -- resources/js | grep -v /test/` devolve **21 linhas**, das quais **8 são o cartão que embrulha listagem/formulário** (`pages/users/index.tsx:142`, `users/create.tsx:27`, `users/edit.tsx:28`, `users/permissions.tsx:100`, `users/show.tsx:36`, `permission-role/roles.tsx:133`, `settings/{appearance,password,profile}.tsx`). Cartão com `overflow-hidden` não rola — **corta**. Se a `Table.Root` do `@radix-ui/themes` não trouxer o próprio contêiner de rolagem, hoje as colunas extras são alcançáveis pela barra horizontal do documento e depois do `min-w-0` deixam de ser alcançáveis por qualquer meio. Isso é trocar feio por inacessível.
+
+**A mitigação (e ela é forte, o caçador tinha a evidência na mão e não a usou):** o ctvitrine roda a combinação inteira em produção. `git -C $CT grep -n "overflow-hidden|Table.Root" 53d7d9a -- resources/js/pages/users/index.tsx` → `:144` o mesmo cartão `overflow-hidden` e `:215` a mesma `Table.Root variant="surface"`, com o `min-w-0` ativo no `SidebarInset` (`:309`). A tela herdada do boilerplate, byte a byte a mesma estrutura, convive com a classe. Isso não é prova de renderização, mas é a melhor disponível sem browser.
+
+**Custo de gate — declare no PR.** Não há `pest-plugin-browser` (medido: `git show origin/main:composer.json` → `require-dev` tem `pestphp/pest ^5.1` e `pest-plugin-laravel ^5.0`, nenhum plugin de browser). O teste de estilo que o caçador propõe (ler o arquivo e exigir `min-w-0` no `data-slot="sidebar-inset"`) **trava a classe, não o efeito** — ele não sabe distinguir "rola dentro" de "some". Evidência possível e proporcional: (a) o teste de estilo com controle positivo, no molde de `focus-ring.test.ts`; (b) **antes** de mesclar, uma checagem manual de 2 minutos com a janela em 375 px em `/users` — a única pergunta é se a `Table.Root` do Themes tem `overflow-x:auto` própria; se não tiver, a fatia deixa de ser uma classe e passa a ser "classe + contêiner de rolagem nos 8 cartões", e aí o risco vira ALTO. **Não medi isso**: a folha do `@radix-ui/themes` mora em `node_modules` e `public/build` está no `.gitignore` (`git show origin/main:.gitignore` → `/public/build`), e leitura de disco está vedada nesta rodada.
+
+**Catraca que quebraria:** nenhuma. `navigation-landmarks.test.tsx` monta a árvore real (`AppSidebarLayout` → `AppContent` → `SidebarInset`) mas assere papéis e `aria-current`, não className; `sidebar-shortcut.test.tsx` mexe em outra região do arquivo. `git grep -n "sidebar-inset" origin/main -- resources/js` → só a definição (`ui/sidebar.tsx:332`) e o repasse (`app-content.tsx:10`). Conflito de merge também é improvável: o último commit a tocar `ui/sidebar.tsx` foi `7d9e928 [111]`, longe da linha 329.
+
+**Dados persistidos / segurança / a11y:** nada. Não muda foco, ordem de tabulação nem anúncio.
+
+**Correção do texto proposto:** o comentário deve dizer o gatilho real do boilerplate — as tabelas aqui são do `@radix-ui/themes` (`git grep -l "@radix-ui/themes" origin/main -- resources/js` → 7 arquivos; `components/ui/table` → **0 importadores**), então "conteúdo de min-content largo" está certo e "tabelas" está errado, como o candidato já diz.
+
+---
+
+## V6P-2 · Resíduos da poda do header
+
+**Risco: BAIXO para a dependência, MÉDIO para o resto — e a receita do guard-rail, como está escrita, é uma fábrica de falso positivo.**
+
+**O erro de fato mais importante do lote.** A medição do candidato usa `git grep -c "from '$p'"` — **aspas simples**. Os primitivos vendorizados do shadcn usam aspas **duplas**: `ui/toggle-group.tsx:2` é `import * as ToggleGroupPrimitive from "@radix-ui/react-toggle-group"`. Rodei a receita do candidato e ela acusa **13 pacotes com zero importador**, não 1. Rodando quote-agnóstico (`git -C $BP grep -lE "from .$p." origin/main -- resources/js`, um pacote por linha do `package.json`), o resultado real é: avatar 1, checkbox 1, collapsible 1, dialog 2, dropdown-menu 1, label 1, **navigation-menu 0**, select 1, separator 1, slot 4, toggle 2, toggle-group 1, tooltip 1, themes 7. **A conclusão do caçador está certa; a prova que ele publicou está errada** — e é exatamente essa prova que viraria o teste. Se o guard-rail nascer com a regex de aspas simples, ele nasce vermelho em 13 pacotes e alguém vai "consertar" desinstalando dependência viva.
+
+**Regressão comportamental — a armadilha dos ramos `variant="header"`.** `AppContent` e `AppShell` têm **um call-site cada**, os dois em `app-sidebar-layout.tsx:16,32`, os dois passando `variant="sidebar"` — e o **default de ambos é `'header'`** (`app-content.tsx:8`, `app-shell.tsx:9`). Apagar o ramo sem trocar o default deixa uma bomba: a próxima tela que montar `<AppContent>` sem prop cai num `<main>` que não é o alvo do skip-link (`href="#conteudo"` chega por `{...props}` no `SidebarInset`) e num shell sem `SidebarProvider` — os primitivos de `ui/sidebar` leem o contexto e estouram. Mitigação: na mesma fatia, ou tornar `variant` obrigatório, ou inverter o default para `'sidebar'` e apagar o ramo. Não deixe "apagar depois".
+
+**Custo de gate.** Sem browser, e nem precisa: é teste node puro. Mas atenção ao **terceiro** sweep estático em `resources/js/test/` — `focus-ring.test.ts` e `link-button-nesting.test.ts` já carregam **cópias literais** da mesma função `applicationSourceFiles()`. Um quarto copy-paste (V6P-2 + V6P-5 + V6P-7 propõem mais três) é dívida garantida: extraia `test/support/sources.ts` na primeira fatia que precisar dele.
+
+**Dados persistidos:** nada. Remover a dependência muda `pnpm-lock.yaml`, e o repo tem dependabot ativo em `npm-minor-patch` (`git log --oneline -5 origin/main -- package.json` → `d4fbdd0`, `02e4e2b`) — a fatia vai conflitar se ficar aberta.
+
+**a11y:** apagar `appearance-dropdown.tsx` é ganho líquido (some a única `sr-only` em inglês daquele arquivo). **Confirmei o zero:** `git grep -n "AppearanceToggleDropdown|appearance-dropdown" origin/main -- resources/js` devolve só a própria definição (`:7`).
+
+---
+
+## V6P-3 · Campo de imagem com `revokeObjectURL`
+
+**Risco: ALTO como está proposto. MÉDIO se reduzido a hook + regra escrita.**
+
+**A frente está fechada por outra lente, e o candidato cita a fonte sem obedecê-la.** `spinmax.md:3641` (lente RISCO DE ABSORÇÃO da rodada spinmax) já decidiu: *"o risco aqui não é absorver, é fingir que absorveu... Se virar item, que vire linha em `.ai/rules` ('upload nasce com disco privado, allowlist de MIME e URL assinada'), não teste."* E `spinmax.md:3758` acrescenta a forma correta para L12: `File::image()->max(...)`, não `'mimes:...|max:2048'` em string. Trazer o **front** sem backend cria a pior configuração: um primitivo de upload no kit, nenhuma rota que aceite arquivo, e um teste verde que cobre render e revogação — que o próximo agente lerá como "upload está coberto".
+
+**Custo de gate, concreto.** `jsdom` não implementa `URL.createObjectURL`/`revokeObjectURL`. `git show origin/main:resources/js/test/setup.ts` — o arquivo mocka `matchMedia`, `localStorage` e `ResizeObserver`, e **não** mocka `URL.*`. Ou seja, a fatia obrigatoriamente edita o setup **compartilhado pelos 41 arquivos de teste**; um mock mal feito lá vaza para a suíte inteira (o próprio arquivo documenta um episódio assim, o `ResizeObserver` não-construtível). Isole o mock no arquivo de teste do primitivo, não no `setup.ts`.
+
+**Regressão de idioma/arquitetura — divergência de primitivo.** O boilerplate **já tem** o dono da fiação de label/hint/erro: `ui/form-field.tsx` injeta `id`, `aria-describedby` (hint + erro) e `aria-invalid` no controle filho via `cloneElement`. O `BrandingImageField` do ctvitrine (`site-settings/edit.tsx:151-197@53d7d9a`) monta `<Label htmlFor>` + `<p>` de hint **sem `aria-describedby`** e um `<InputError>` solto — o hint nunca é anunciado. Absorver a forma da fonte forka o idioma da casa. O certo é `<FormField label hint error><ImageField …/></FormField>`, com o `ImageField` cuidando só de preview + seleção + remoção.
+
+**a11y adicional que a fonte não tem:** o botão "Remover" some (`{isCustom && …}`) — quem o acionou perde o foco para o `<body>` e nada é anunciado. Um `image-field` do kit precisa devolver o foco ao `<input type="file">` e ter uma linha de estado (o idioma do `search-bar.tsx:78`, região renderizada sempre).
+
+**Dados persistidos:** o formato gravado é caminho de arquivo — não cria compatibilidade aqui, mas anote a trap: sem backend, `previewUrl`/`currentUrl`/`defaultUrl` não têm de onde vir e o primitivo nasce sem consumidor. Primitivo sem call-site é como o `ui/table.tsx` acabou (V6P-9).
+
+**Mitigação:** cortar em dois. (1) **Agora:** `hooks/use-object-url.ts` + linha em `.ai/rules/js.md`/`app.md` com a política de upload na forma L12 — testável, pequeno, sem fingimento. (2) **Quando a primeira feature de upload existir:** o `ui/image-field.tsx` sobre `FormField`, com `focus-visible:ring-ring` (nunca `/50`) e o teste de revogação.
+
+---
+
+## V6P-4 · `ChipsInput`
+
+**Risco: MÉDIO. Cópia literal quebra catraca no primeiro commit.**
+
+**Catraca que quebra, medida:** `focus-ring.test.ts` reprova qualquer arquivo cujo corpo case `/ring-ring\//`. O `color-chips-input.tsx:67@53d7d9a` traz `focus-within:ring-ring/50`. Copiar e só depois lembrar do token deixa a suíte vermelha — o caçador já anotou a adaptação, e ela é **obrigatória, não opcional**. A justificativa está medida no próprio repo (comentário de `focus-ring.test.ts`): composto a 50% sobre branco, nenhum tom da família ciano da marca passa de ~3.08:1, contra os 3:1 exigidos pela SC 1.4.11 — a 50% o anel fica abaixo em toda a paleta útil.
+
+**Buraco novo na catraca, e este componente é o primeiro a explorá-lo.** O `<Input>` interno recebe `focus-visible:ring-0` (`:88@53d7d9a`), e o `outline-none` mora em `ui/input.tsx` — arquivo diferente. Como o sweep é **por arquivo**, a regra "quem apaga o outline repõe o indicador" não enxerga a composição: o chips-input desliga o anel do campo real e nada acusa. Aqui isso é aceitável (o anel migra para o `focus-within` do invólucro, em opacidade cheia), mas **precisa estar escrito no arquivo**, senão o próximo call-site copia `ring-0` sem o invólucro.
+
+**a11y — duas faltas, não uma.** Além da região viva que o caçador apontou (remover chip não anuncia nada), há **perda de foco**: o `<button aria-label="Remover cor X">` se destrói ao ser acionado e o foco cai no `<body>`. Mover o foco para o chip seguinte, ou para o campo, é parte do primitivo. Sem isso o teclado fica órfão a cada remoção.
+
+**Hazard não medido, para virar teste:** `onBlur={() => add(draft)}` no campo + `onClick={removeAt(index)}` no X compõem duas chamadas de `onChange` no mesmo gesto (blur dispara antes do click), a segunda calculada a partir do `value` do render. Se o React despachar o click com o fiber já atualizado, não há bug; se não, o rascunho recém-promovido a chip é perdido. **Não reproduzi.** O teste que vale: digitar "Azul", clicar no X de um chip existente, e exigir que "Azul" sobreviva.
+
+**Custo de gate:** baixo e real — jsdom cobre tudo (colagem multi-valor num único `onChange`, Backspace, dedup case-insensitive, foco pós-remoção). É dos poucos candidatos do lote com gate verdadeiro, sem browser.
+
+**Dados persistidos:** `string[]` — o formato é o mesmo que a tela já mandaria. Sem trap.
+
+---
+
+## V6P-5 · Contrato do glifo de marca + sweep de `<svg>`
+
+**Risco: BAIXO. É o candidato mais seguro do lote — com uma correção de fato e uma armadilha de escopo.**
+
+**Correção de fato.** `git -C $CT grep -c "WhatsappIcon" 53d7d9a -- resources/js` → **27 ocorrências em 10 arquivos** (9 consumidores + a definição), não "8 call-sites em 7 arquivos / 18 linhas". Os consumidores: `site/boutique/{footer,item-card,menu-drawer,trust-bar}`, `site/site-footer`, `pages/site/{boutique/item,home,item,landing}`. O erro é a favor do candidato, mas continua sendo erro publicado.
+
+**As contagens de lucide, essas, reproduzem** — quote-agnóstico (`grep -lE "from .lucide-react."`): bp **59**, ct **89**. (A variante com aspas simples dá 53/83; o caçador acertou o número, então usou a forma certa aqui e a errada na V6P-2.)
+
+**Regressão a11y — a única armadilha real.** Adicionar `aria-hidden="true"` a `app-logo-icon.tsx` é seguro **porque o nome está ao lado**: `app-logo.tsx:7` renderiza o ícone e logo depois o texto "Simplify Starter Kit", e o ícone tem exatamente **1 consumidor** (`git grep -n "AppLogoIcon" origin/main -- resources/js`). Se o consumidor fosse um link só-ícone, o mesmo atributo apagaria o nome acessível da marca. A regra escrita tem de dizer *decorativo quando há nome ao lado*, e não "todo SVG leva aria-hidden".
+
+**Escopo do sweep — bom, e eu verifiquei.** `git grep -ln "<svg" origin/main -- resources/views` → **0**, e o repo tem só **2** arquivos de view. Então um sweep restrito a `resources/js` é completo hoje. E ele não precisa entender lucide: o `Button.test.tsx:55-61` já prova que o `lucide-react@1.x` injeta `aria-hidden="true"` sozinho quando o ícone não recebe prop de a11y — teste verde no repo, não suposição minha.
+
+**Custo de gate:** nenhum problema — node puro, dois infratores conhecidos hoje (`app-logo-icon.tsx:5`, `ui/placeholder-pattern.tsx:11`) servindo de controle. Reaproveite o `applicationSourceFiles()` extraído (ver V6P-2), não copie pela terceira vez.
+
+**Dados persistidos / contraste:** nada.
+
+---
+
+## V6P-6 · `appearance-tabs` sobre `ToggleGroup`
+
+**Risco: MÉDIO — e a premissa de medição está errada, embora a conclusão sobreviva.**
+
+**O que refuto.** `git grep -n 'role="radiogroup"|role="radio"|aria-checked' origin/main -- resources/js` → 0 linhas é uma medição de **string no fonte**, e o candidato a lê como "o front não tem semântica de rádio". Tem: o Radix `ToggleGroup type="single"` **emite `role="radio"` em tempo de execução**, e a prova está dentro do próprio repo — `resources/js/test/components/data-table/date-range-filter.test.tsx:21` faz `screen.getByRole('radio', { name: '7 dias' })` e `:32-33` assere `data-state` on/off. O grep não enxerga o que o primitivo renderiza. A conclusão continua de pé (o `appearance-tabs.tsx` é uma `<div>` de três `<button>` sem papel nem estado, distinguidos só por `bg-white`), mas escrita assim a evidência convida à conclusão oposta: "o kit não sabe fazer rádio". Ele sabe, tem 1 call-site fazendo, e é justamente esse o argumento.
+
+**Regressão visual — a única de verdade no lote, e ela não tem catraca.** A troca não é neutra: hoje o controle é uma pílula `bg-neutral-100 dark:bg-neutral-800` com item ativo `bg-white shadow-xs`; `toggleVariants` pinta `data-[state=on]:bg-accent data-[state=on]:text-accent-foreground` e, com `variant="outline"`, `border border-input`. Muda aparência **e** paleta (de `neutral-*` cru para token semântico — a direção que `.ai/rules/js.md` e o commit `79c0a3b [7]` pedem, mas ainda assim uma mudança visível). **Não existe teste cobrindo `appearance-tabs`** — dos 41 arquivos de `resources/js/test/` nenhum o menciona, e o arquivo só foi tocado duas vezes na história (`git log --oneline -5 origin/main -- resources/js/components/appearance-tabs.tsx` → `e549737 [77]`, `087a158`). Sem `pest-plugin-browser`, a prova possível é: teste de componente Vitest (nome acessível pt-BR por opção + `data-state=on` no tema ativo, no molde exato de `date-range-filter.test.tsx`) **mais screenshot antes/depois no PR** — diga isso explicitamente na descrição, é uma tela que o time olha todo dia.
+
+**Contraste, calculado.** O estado ativo passa a ser `--accent`/`--accent-foreground`, e esse par **já está na tabela travada** de `theme-tokens.test.ts` (`['accent', '--accent-foreground', '--accent']`, exigido ≥ 4.5:1 nos dois temas). Ou seja, a reescrita **entra debaixo de uma catraca de contraste que a versão atual escapava** (`bg-white` + `text-neutral-500` não são tokens e ninguém os mede). Ganho líquido, sem cálculo novo da minha parte — a catraca já roda.
+
+**Dados persistidos:** `useAppearance` grava `'light'|'dark'|'system'` em `localStorage` **e** em cookie (`hooks/use-appearance.tsx`: `setCookie` + `applyTheme`). A fatia troca só o rótulo visível; **não toque no `value`**, senão a preferência gravada de todo mundo vira inválida e o `document.documentElement.classList.toggle('dark')` deixa de casar no primeiro render (com SSR, flash de tema). Essa é a trap de migração do candidato, e ele não a anotou.
+
+**ESLint:** `react/button-has-type: 'error'` (`eslint.config.js:58`) só alcança `<button>` literal — `ToggleGroupItem` passa sem ele. O `type="button"` que a fatia `[77]` acrescentou some junto com a `<div>`, e isso é esperado, não regressão.
+
+---
+
+## V6P-7 · Guard-rail de região viva
+
+**Risco: MÉDIO — e a afirmação central sobre a cobertura atual é falsa.**
+
+**O que refuto, com o comando.** *"nenhum dos 41 arquivos de `resources/js/test/` cobre este contrato"* — cobre. `git show origin/main:resources/js/test/components/data-table/search-bar.test.tsx` traz o bloco *"SearchBar — a busca anuncia o desfecho"* com **6 casos**, e o primeiro deles é literalmente o contrato: `it('keeps the live region mounted even with nothing to say')` (`:99`), que assere região presente **e** vazia. O outro lado (`role="alert"` em nó inserido) tem `input-error.test.tsx:16-59`, com 5 casos incluindo a ligação `aria-describedby`. O que **não** existe é um sweep **de repositório**; dizer que o contrato está descoberto é diferente de dizer que está descoberto *fora dos dois componentes que o implementam*, e só a segunda é verdadeira.
+
+Isso muda o valor da fatia: ela não fecha um buraco, ela impede que o buraco **volte** em componente novo. Continua valendo — só não é urgente e não deve ser vendida como cobertura ausente.
+
+**Risco próprio do teste: heurística frágil, e este é o pior candidato do lote nesse quesito.** As duas regras propostas ("o atributo tem de estar no mesmo componente que também renderiza o caso vazio") não são decidíveis por regex sobre TSX com qualquer confiabilidade — um `aria-live` dentro de um `&&` e um dentro de um `return` antecipado são indistinguíveis para uma expressão regular sem parser. O resultado provável é um teste que passa vazio (regex não casa) ou que reprova código correto. Compare com os sweeps que **funcionam** no repo: `link-button-nesting.test.ts` procura um padrão sintático fechado (`<Link…><Button`), e `focus-ring.test.ts` procura uma **classe literal**. Os dois medem presença de string, não estrutura de fluxo.
+
+**Mitigação concreta:** trocar o alvo. Em vez de tentar provar "a região preexiste", assere o **inventário**: a lista de arquivos que contêm `aria-live`/`role="status"` é exatamente a lista conhecida (hoje `data-table/search-bar.tsx`, `input-error.tsx`, `ui/alert.tsx`, `lib/toast-config.ts` — 7 linhas, medidas com `git grep -n 'aria-live|role="status"|role="alert"' origin/main -- resources/js | grep -v /test/`), e qualquer arquivo novo que entre nela **falha até ganhar teste de componente próprio**. É a mesma mecânica de `MORTOS_CONHECIDOS` do `focus-ring.test.ts`: lista explícita, cobrada quando fica obsoleta. Isso é decidível, tem controle positivo natural e não vira adivinhação sintática.
+
+**As duas isenções que o caçador pediu ficam de graça** nesse formato (`ui/alert.tsx` e `lib/toast-config.ts` já estão na lista).
+
+**Nada a portar do ctvitrine, e ainda bem:** o `SaveIndicator` que serve de evidência (`site-settings/edit.tsx:121-150@53d7d9a`) também usa `text-emerald-600 dark:text-emerald-400` e `text-destructive` — o segundo cai na dívida já registrada em `theme-tokens.test.ts` (`destructive` no escuro em 3.67:1, travado como catraca de não-piorar). Absorver o componente traria a dívida junto; absorver só a lição, não.
+
+---
+
+## V6P-8 · Par `<input type="color">` + hex
+
+**Risco: ALTO se absorvido como está, por um motivo que o candidato não vê. E "fonte única" é falso.**
+
+**Refuto o multi-fonte.** `docs/harvest/v2/ctfinance.md:135` lista, entre os 8 primitivos `ui/` exclusivos do ctfinance: **`color-picker` (17 presets + `<input type=color>` + hex validado)**. São **2 de 4** bases, e a outra tem a versão melhor — com paleta curada. Se esta fatia acontecer algum dia, a fonte é o ctfinance, não o par ad-hoc do ctvitrine.
+
+**O risco que ninguém anotou: cor escolhida pelo usuário fura a catraca de contraste.** `theme-tokens.test.ts` garante, em build, que `--primary`/`--primary-foreground` atinge 4.5:1 nos **dois** temas — e o repo levou uma fatia inteira (`1e88a7d [69]`) para conquistar isso, com o comentário registrando que a correção quase introduziu uma regressão ao derrubar o par para 3.13:1 no escuro. Um `primary_color` gravado por lojista e injetado em runtime **anula a garantia**: a suíte continua verde e o app deployado pode estar em 1.5:1. Não existe verificação de contraste em runtime em lugar nenhum do kit (`git grep -in "contrast|luminance" origin/main -- resources/js | grep -v /test/` → nada).
+
+**Mitigação obrigatória, se um dia entrar:** ou paleta de presets validados no mesmo teste que valida os tokens (o caminho do ctfinance), ou cálculo de contraste no `save` — servidor, não só cliente — recusando/avisando abaixo de 4.5:1 contra o foreground pareado. Um `<input type="color">` livre sem nenhum dos dois é uma porta para tornar decorativa a catraca mais cara que este repo pagou.
+
+**a11y do par em si:** correto na fonte (`aria-label` no seletor nativo porque o `<Label htmlFor>` nomeia o campo de texto), e o `HEX_PATTERN.test(...)` antes do `value` evita o descarte silencioso do valor inválido pelo controle nativo. Nada a corrigir aí.
+
+**Dados persistidos:** grava `#rrggbb`. Se entrar, normalize para minúsculas **na escrita**, senão a comparação com preset e o teste de igualdade viram caça-fantasma. Trap anotada.
+
+**Veredito operacional:** concordo com o caçador que é o de menor prioridade — mas pela razão errada. Não é "falta o que colorir": é que a fatia correta é uma política de contraste, e essa é maior que o primitivo.
+
+---
+
+## V6P-9 · Duas tabelas (`ui/table` morto × `@radix-ui/themes`)
+
+**Risco: ALTO para a migração, BAIXO para apagar o morto — e o lado CSS tem DUAS catracas na frente que o candidato não viu.**
+
+**Catraca 1, que reprova o remédio importado do spinmax.** O candidato propõe (via `spinmax.md:1352`) redeclarar `:root, .dark, .radix-themes { --color-background: var(--background) }` depois do import. Isso **falha o teste** no primeiro `pnpm ci:test`: `theme-tokens.test.ts` tem `it('não declara nenhum --color-* fora do bloco @theme')`, que remove o corpo do `@theme` do CSS e reprova qualquer `^\s*--color-[\w-]+\s*:` remanescente. A forma do spinmax é exatamente a forma proibida aqui. Não é detalhe: é a catraca da fatia `[69]`, escrita para impedir o bug que custou meses.
+
+**Catraca 2, que reprova o outro remédio.** O caminho `@theme` → `@theme inline` (o mecanismo que `ctfinance.md` identificou) foi **medido pela lente da rodada ctfinance**: pós-correção, `bg-primary` + `text-primary-foreground` no escuro cai de 11.4:1 para **3.13:1** e reprova o AA da tabela de pares. Ou seja: qualquer versão desta fatia é "uma palavra + recalibração das duas paletas", não uma linha.
+
+**E a regra da casa já escolheu um terceiro caminho.** `.ai/rules/css.md`, seção *"Folha de terceiro entra em layer"*, registra a dívida com nome e sobrenome (*"`@radix-ui/themes/styles.css` redeclara `--color-background` e sequestra `bg-background` no app inteiro — dívida registrada, ainda não paga"*) e prescreve `@import ... layer(...)` com ordem declarada. Qualquer ADR nova tem de conversar com esse parágrafo, não passar por cima dele.
+
+**Sobre a decisão em si — o candidato está certo no diagnóstico.** Medido: `ui/table` com **0 importadores** no bp e **3 páginas** no ct (`categories/index.tsx:10`, `items/index.tsx:8`, `metrics/index.tsx:3`); `@radix-ui/themes` com **7 arquivos** nos dois. A fronteira do ctvitrine ("herdado fica no Themes, novo nasce em shadcn") é real: `ct users/index.tsx:144,215` mantém o cartão `overflow-hidden` + `Table.Root variant="surface"` enquanto `items/index.tsx:121,275` usa o `<Table>` shadcn dentro do **mesmo** cartão `overflow-hidden`. E o `ui/table.tsx` do shadcn embrulha em `<div className="relative w-full overflow-auto">` (`ui/table.tsx:7`) — o que, aliás, é a razão de a V6P-1 ser mais segura no ctvitrine do que seria aqui: lá as tabelas novas trazem o próprio contêiner de rolagem; aqui as do Themes talvez não.
+
+**Custo de gate:** migrar tabela é a fatia com **menos** gate possível — sem `pest-plugin-browser`, a única evidência é `user-table-row.test.tsx` (que testa a linha, não o layout) mais inspeção manual. Uma migração de 7 arquivos sem prova visual é irrevisável, e a lente da rodada ctfinance já cravou o princípio para um caso irmão: *"acoplar um risco de cascata a uma reescrita de componente torna a PR irrevisável"*.
+
+**Recomendação:** dividir em três, e só a primeira é fatia.
+1. **Agora, P·P:** apagar `ui/table.tsx` (0 importadores) **ou** — se a intenção for adotá-lo — riscar a regra do `.ai/rules/js.md` no mesmo commit. Manter arquivo morto defendido por uma regra é o pior dos dois mundos, e nisso o caçador está inteiramente certo.
+2. **ADR (`docs/adr/0007-…`, o diretório já existe com 6 ADRs):** fronteira Themes × shadcn, com a evidência do ctvitrine anexada.
+3. **Só depois, e nunca junto:** o layer/`@theme inline` do `--color-background`, com recalibração de paleta e a tabela de contraste atualizada no mesmo commit.
+
+---
+
+## Nota de mão inversa (não é candidato)
+
+**Risco de absorção: NULO — nada entra.** Registro só que a medição reproduz do lado de cá: `git -C $BP grep -n "ring-ring/50" origin/main -- resources/` → **0 linhas**, e a catraca que a mantém em zero é `focus-ring.test.ts` com **controle positivo** (`sources.length > 50` e ≥ 8 arquivos com `focus-visible:ring-ring`), o que impede que ela passe vácuo se o glob quebrar. Quando a `boilerplate-sync` for ao ctvitrine, os 8 arquivos que ainda pintam `/50` entram com o teste pronto — e a mesma lista serve de gate lá. É o único item do lote com prova completa dos dois lados.
+
+### Lente ATUALIDADE — vereditos
+
+## V6P-1 · `min-w-0` no `SidebarInset`
+
+**Veredito: ATUAL.**
+
+`min-w-0` não foi substituído por nada nativo no Tailwind 4.3. A doc de `min-width` do Tailwind 4.x lista `min-w-0` como utilitário corrente e ainda usa exatamente este caso como exemplo canônico de responsividade (`<ResponsiveDesign property="min-width" defaultClass="w-24 min-w-full" featuredClass="min-w-0" />`, `src/docs/min-width.mdx`, via `search-docs` do Boost em `tailwindcss@4.x`). Não há `@utility`, variante ou default de v4 que zere `min-width:auto` em flex item — continua sendo comportamento do CSS, não do framework.
+
+Duas ressalvas de atualidade, nenhuma derruba o candidato:
+
+- Se o problema real for rolagem lateral de conteúdo largo, o Tailwind 4 traz **container queries nativas** (`@container` / `@max-*`, sem plugin — eram plugin em v3). Isso muda como você *reage* à largura, não a trava de encolhimento. `min-w-0` continua sendo o pré-requisito, não o substituto.
+- **Não medi** se o `sidebar.tsx` upstream do shadcn já traz `min-w-0` no `SidebarInset` hoje. Se trouxer, a modernização é sincronizar o bloco com o upstream em vez de aplicar uma linha solta — mas isso é decisão de manutenção, não de versão. Registro como não medido.
+
+O único ajuste que faço no plano: o guard-rail proposto (`readFileSync` + regex sobre a className do `data-slot="sidebar-inset"`) é frágil pelo motivo que explico em V6P-7 — `@testing-library/react@16.3.2` + `jsdom@30.0.1` estão instalados e permitem asserção sobre o DOM renderizado.
+
+---
+
+## V6P-2 · Resíduo da poda: `@radix-ui/react-navigation-menu` sem importador + `appearance-dropdown.tsx` morto
+
+**Veredito: ATUAL COM MODERNIZAÇÃO — e uma refutação de fato.**
+
+**Refutação:** remover `"@radix-ui/react-navigation-menu": "^1.2.22"` do `package.json` **não tira o pacote da árvore de instalação**. Ele continua entrando como dependência transitiva:
+
+```
+node_modules/.pnpm/radix-ui@1.6.7_.../node_modules/radix-ui/package.json
+  → 55 dependências, entre elas @radix-ui/react-navigation-menu
+```
+Comando: `node -e "…require('./node_modules/radix-ui/package.json').dependencies…"` no diretório `.pnpm` (o umbrella `radix-ui@1.6.7` vem de `@radix-ui/themes@3.3.0`, cujas deps são `@radix-ui/colors` + `radix-ui` — medido com `require('./node_modules/@radix-ui/themes/package.json')`). Instalado hoje: `@radix-ui/react-navigation-menu@1.2.22`. Ou seja: a linha "remover dependência sem importador não muda bundle, só o lockfile" está certa quanto ao bundle e **errada quanto ao efeito** — o pacote fica, e o ganho é só de higiene declarativa enquanto `@radix-ui/themes` existir. Isso amarra V6P-2 a V6P-9.
+
+**Modernização, e é ela que vale mais que a poda:** o alvo declara **13** `@radix-ui/react-*` individuais, e o shadcn já migrou para o pacote único `radix-ui` — que, como acabei de medir, **já está instalado** transitivamente. Doc do shadcn (`ui.shadcn.com/docs/cli` e changelogs `2025-06-radix-ui` / `2026-02-radix-ui`):
+
+```diff
+- import * as DialogPrimitive from "@radix-ui/react-dialog"
++ import { Dialog as DialogPrimitive } from "radix-ui"
+```
+com migração automatizada: `npx shadcn@latest migrate radix`. Isso troca 13 entradas de `dependencies` por 1 e faz o problema do candidato (dependência órfã em `@radix-ui/*`) **deixar de existir por construção** — não há mais o que cruzar. O guard-rail proposto (cruzar `@radix-ui/*` de `dependencies` com os imports) vira desnecessário no mesmo movimento; um guard-rail genérico de dependência sem importador é trabalho do `knip`, não de teste caseiro (o ESLint 10 instalado não tem regra para isso, e `eslint.config.js@origin/main` não carrega nenhum plugin de import/deps — medido: `git show origin/main:eslint.config.js`).
+
+`appearance-dropdown.tsx`: nada de versão o afeta. Apagar segue válido — e cai em V6P-6.
+
+---
+
+## V6P-3 · Campo de imagem com preview e disciplina de `revokeObjectURL`
+
+**Veredito: ATUAL COM MODERNIZAÇÃO.**
+
+Nada no React 19.2.8 substitui o par `createObjectURL`/`revokeObjectURL`; não existe API nativa de preview de `File`. O ciclo de vida continua sendo responsabilidade do autor, e o hook `use-object-url` proposto é a forma certa. Isso está ATUAL.
+
+O que muda na versão do alvo é **o transporte**, e a adaptação (3) do candidato ("não absorver sem o backend") fica mais forte com nome próprio:
+
+- `@inertiajs/react@3.6.1` (instalado — `require('./node_modules/@inertiajs/react/package.json')`) já expõe o componente `<Form>` (`node_modules/@inertiajs/react/types/Form.d.ts`, com `useFormContext`) e `useForm().progress: Progress | null` (`types/useForm.d.ts:14`). A doc do Inertia 3.x é explícita: *"When making requests or form submissions that include files, Inertia will automatically convert the request data into a `FormData` object. This works with the `<Form>` component, `useForm` helper, and manual router submissions"* (`inertiajs.com/docs/v3/the-basics/forms`, via `search-docs`). Conclusão prática: o primitivo **não deve** montar `FormData` nem barra de progresso próprios — quem já paga por isso é o Inertia 3. O alvo hoje usa `useForm` em 11 arquivos e `<Form>` em 8 pontos (`git grep -l "useForm" origin/main -- resources/js | wc -l` → 11; `git grep -n "<Form" origin/main -- resources/js | wc -l` → 8), então os dois caminhos já existem na casa.
+- Estética do `<input type="file">`: o Tailwind 4 tem a variante `file:` nativa e o reset do alvo já contempla `::file-selector-button` (`origin/main:resources/css/app.css`, bloco `@layer base` com `::file-selector-button` na lista de seletores). Nada de `@tailwindcss/forms` — não está nas deps.
+
+Ou seja: o campo do ctvitrine é atual, mas ele nasceu acoplado a um autosave caseiro; no alvo o acoplamento correto é o `<Form>`/`useForm` do Inertia 3.6, não um autosave portado junto.
+
+---
+
+## V6P-4 · `ColorChipsInput` → `ui/chips-input.tsx`
+
+**Veredito: ATUAL.**
+
+Nenhum primitivo do stack instalado cobre entrada por chips. Os 13 `@radix-ui/react-*` declarados não incluem tags/chips input, e o umbrella `radix-ui@1.6.7` (55 primitivos, medido acima) também não tem — Radix Primitives não publica TagsInput. `@radix-ui/themes@3.3.0` também não. `@headlessui/react@2.2.10` idem. Não há substituto nativo em React 19 nem em Tailwind 4 para o comportamento.
+
+O comentário sobre closure obsoleto continua **verdadeiro no React 19.2**: `value`/`onChange` de componente controlado não ganharam nenhuma semântica nova; chamar `onChange` N vezes dentro do mesmo evento lê o mesmo `value` capturado. O batching automático (que já vinha do 18) não muda isso — batching agrupa renders, não corrige a leitura do closure. O teste que o candidato propõe (um único `onChange` com todos os segmentos) é o teste certo e continua sendo o único que pega a regressão.
+
+Ressalva de escopo: `focus-within:ring-ring/50 → ring-ring` é contrato do alvo, não questão de versão — o modificador `/50` é nativo e válido no Tailwind 4; a proibição é de contraste, não de atualidade.
+
+---
+
+## V6P-5 · Ícone de marca próprio + guard-rail de `<svg>`
+
+**Veredito: ATUAL COM MODERNIZAÇÃO — a premissa se sustenta, a implementação proposta está uma major atrás.**
+
+**A premissa está confirmada na versão do alvo.** `lucide-react@1.31.0` (instalado) traz **4050** ícones e nenhum de marca — `ls node_modules/lucide-react/dist/esm/icons/ | grep -iE "facebook|twitter|instagram|github|linkedin|youtube|slack|whatsapp|apple|google"` devolve **um único** arquivo, `apple.mjs`, que é a fruta. O ctvitrine estava em `0.475.0` e o alvo pulou para `1.31.0`; a política de marcas não mudou. Glifo próprio continua necessário.
+
+**Três coisas mudaram no lucide 1.x e derrubam partes do plano:**
+
+1. **`aria-hidden` já é automático.** `node_modules/lucide-react/dist/esm/Icon.mjs`:
+   ```js
+   ...!children && !hasA11yProp(rest) && { "aria-hidden": "true" },
+   ```
+   com `hasA11yProp` (`shared/src/utils/hasA11yProp.mjs`) considerando qualquer prop `aria-*`, `role` ou `title`. Então "embutir `aria-hidden`" só é regra para SVG escrito à mão — os 59 arquivos que importam `lucide-react` já estão cobertos sem fazer nada.
+2. **Existe uma fábrica oficial para glifo próprio:** `lucide-react` exporta `Icon` (`dist/esm/lucide-react.mjs:1780` → `export { default as Icon } from './Icon.mjs'`), `createLucideIcon` e — novidade da 1.x — `LucideProvider`/`useLucideContext` (`dist/esm/context.mjs`), que dá default de `size`/`color`/`strokeWidth`/`className` para a árvore toda. O jeito atual de escrever o `WhatsappIcon` no alvo é `createLucideIcon('whatsapp', iconNode)`, não um `<svg>` avulso: ele herda tamanho, cor, `aria-hidden` e o provider de graça. Ressalva medida: `defaultAttributes.mjs` é `fill:"none", stroke:"currentColor", strokeWidth:2` — glifo **sólido** como o do WhatsApp precisa sobrescrever `fill="currentColor" stroke="none"` no call-site ou no wrapper.
+3. **Colisão de nome viva no alvo:** `origin/main:resources/js/components/ui/icon.tsx` define um `Icon` local cuja prop se chama `iconNode` e recebe **um componente** (`LucideIcon | null`). No lucide 1.31 existe um `Icon` exportado cuja prop `iconNode` recebe **um array `[tag, attrs][]`**. Mesmo nome, mesma prop, significados diferentes, no mesmo projeto. Se a regra em `.ai/rules/js.md` for escrita, ela tem que resolver isso — ou o `ui/icon.tsx` vira wrapper do `Icon` do lucide, ou muda de nome.
+
+O guard-rail (`<svg>` precisa de `aria-hidden` ou `role="img"`+nome) continua válido e os 2 infratores medidos continuam infratores (`app-logo-icon.tsx:5`, `ui/placeholder-pattern.tsx:11` — confirmei os dois com `git show origin/main:`). Só não invente que ele cobre lucide: não cobre e não precisa.
+
+---
+
+## V6P-6 · `appearance-tabs.tsx` sobre `ui/toggle-group`
+
+**Veredito: ATUAL COM MODERNIZAÇÃO — o remédio está certo, duas afirmações do candidato estão erradas.**
+
+**A escolha do primitivo está confirmada na versão instalada.** `@radix-ui/react-toggle-group@1.1.19` (`node_modules/@radix-ui/react-toggle-group/dist/index.mjs`):
+
+```js
+:24   return jsx(ToggleGroupImplSingle, { role: "radiogroup", ...singleProps, ref: forwardedRef });
+:151  const singleProps = { role: "radio", "aria-checked": props.pressed, "aria-pressed": void 0 };
+```
+mais 10 ocorrências de `roving` no mesmo bundle (tabulação móvel). Com `type="single"` o Radix entrega raiz `role="radiogroup"`, itens `role="radio"` + `aria-checked`, e **anula `aria-pressed` de propósito**. É exatamente o par papel+estado+operação de teclado que o `ColorSelector` do ctvitrine prometeu e não entregou.
+
+**Erro 1 — a medição.** `git grep 'role="radiogroup"|role="radio"|aria-checked' origin/main -- resources/js → 0` é grep de **fonte**, não de DOM. O DOM do alvo já tem os três: o próprio teste do projeto, que passa no CI, consulta por eles — `origin/main:resources/js/test/components/data-table/date-range-filter.test.tsx:21,32,33,42`, `screen.getByRole('radio', { name: '7 dias' })`. Escrever "0 linhas em todo o front" e concluir que nada anuncia estado é conclusão falsa para o `date-range-filter`; ela vale só para o `appearance-tabs`, que é `<div>` + `<button>` na unha (confirmado: `git show origin/main:resources/js/components/appearance-tabs.tsx`, linhas 16-18, estado só em `bg-white shadow-xs`).
+
+**Erro 2 — o teste proposto.** "exigir o estado de pressão correto" leva a asserir `aria-pressed`, que o Radix **apaga** em `type="single"`. A asserção certa é `getByRole('radio', { name: 'Claro' })` + `toHaveAttribute('aria-checked', 'true')`. Nota de manutenção: o teste que já existe assere `data-state="on"` (linha 32) — atributo de implementação; o novo deve asserir o estado ARIA, que é o contrato público.
+
+Rótulos `'Light' | 'Dark' | 'System'` → `Claro | Escuro | Sistema`: correto e sem relação com versão.
+
+Duas notas de atualidade que o candidato não levanta e que valem para o mesmo arquivo: o alvo **não tem `eslint-plugin-jsx-a11y`** (`git grep -n "jsx-a11y" origin/main` → 0 acertos; `eslint.config.js@origin/main` carrega só `js`, `@typescript-eslint`, `react`, `react-hooks`, `prettier`), então nada estático protege esse padrão hoje. E o `.dark` é aplicado em `document.documentElement` (`origin/main:resources/js/hooks/use-appearance.tsx:25`) — relevante para V6P-9.
+
+---
+
+## V6P-7 · `role="status"` em nó que remonta
+
+**Veredito: ATUAL COM MODERNIZAÇÃO — o diagnóstico está certo, o instrumento proposto é o errado para esta versão do stack.**
+
+O contrato ("região viva precisa preexistir à mudança") não foi superado por nada: React 19.2 não tem primitivo de anúncio, e `aria-live` continua sendo do DOM. O `SaveIndicator` do ctvitrine é defeito real e o alvo está certo nos dois pontos onde a regra se aplica. Isso está ATUAL.
+
+**Refutação de fato:** "**Zero `role="status"`**" é, de novo, artefato de grep de fonte. `react-hot-toast@2.6.0` (instalado) injeta `role:"status"` + `aria-live:"polite"` por default — medido em `node_modules/react-hot-toast/dist/index.mjs` (1 × `role:"status"`, 1 × `aria-live`, 1 × `"polite"`, 2 × `ariaProps`) — e o **próprio alvo documenta isso** em `origin/main:resources/js/lib/toast-config.ts:45-49`: *"`ariaProps` sobrescreve o default da lib (`role: 'status'`, `aria-live: 'polite'`, em `react-hot-toast@2.6.0`)"*. Todo toast de sucesso/info do alvo renderiza `role="status"` em nó que **é montado na hora do anúncio** — e funciona, porque o container do `Toaster` preexiste. Um guard-rail que proíba "`role="status"` em retorno condicional" precisa entender essa diferença, e regex não entende.
+
+**Modernização:** o próprio candidato admite o risco ("o risco é o teste virar heurística frágil de regex"). Na versão do alvo esse risco é evitável: `@testing-library/react@16.3.2`, `@testing-library/jest-dom@7.0.1`, `jsdom@30.0.1` e `vitest@4.1.10` estão instalados, e 41 arquivos de teste já existem. O contrato é sobre **DOM renderizado**, então o teste deve renderizar cada componente candidato em dois estados e exigir que o nó com `aria-live` seja o **mesmo nó** antes e depois (comparar identidade do elemento entre `rerender`s) — asserção que não tem falso positivo nem precisa de lista de isenção para `ui/alert.tsx` e `toast-config.ts`. A lista de isenções que o candidato descreve é sintoma de o instrumento estar errado, não requisito.
+
+---
+
+## V6P-8 · `<input type="color">` pareado com campo hex
+
+**Veredito: ATUAL COM MODERNIZAÇÃO.**
+
+`<input type="color">` não foi superado por nada — não há primitivo de cor em Radix, Radix Themes ou Headless UI no que está instalado. O pareamento com campo hex e o `aria-label` próprio no seletor (porque o `<Label>` aponta para o campo digitável) continuam corretos. ATUAL nessa parte.
+
+Duas correções de atualidade no plano de teste e no plano de uso:
+
+1. **Metade do teste proposto testa o navegador, não o componente.** "escolher no seletor normaliza o texto para `#rrggbb` minúsculo" é o *value sanitization algorithm* do próprio `input[type=color]` no HTML: o `value` é sempre um simple color em minúsculas — o elemento não tem como devolver outra coisa. O que vale testar é o inverso, que é código seu: hex inválido digitado **não** derruba nem "conserta" o seletor (o fallback `HEX_PATTERN.test(...) ? … : DEFAULT`), e o `onChange` do seletor propaga para o estado canônico. Vale registrar também que o `input[type=color]` ganhou `alpha`/`colorspace` no HTML recente — **não medi** suporte nos navegadores-alvo do projeto e o caso de branding não precisa de alfa, então fica como nota.
+2. **A prioridade baixa está certa, mas o pré-requisito mudou de nome.** O candidato diz que o valor só aparece "quando existir algo configurável para colorir". Na versão do alvo isso é barato e nativo: Tailwind 4.3 resolve branding por tenant com `@theme inline` + a variável crua sobrescrita em `:root`/`style` — a doc de Colors do `tailwindcss@4.x` traz o padrão literal (`:root { --acme-canvas-color: … }` + `@theme inline { --color-canvas: var(--acme-canvas-color); }`). Sem `inline`, a cor por tenant não se propaga direito — que é o mesmo defeito da V6P-9. Ou seja: V6P-8 não é independente; ele **depende** de a V6P-9 ser resolvida primeiro.
+
+---
+
+## V6P-9 · `ui/table` do shadcn × `@radix-ui/themes` — e a colisão de `--color-background`
+
+**Veredito: ATUAL COM MODERNIZAÇÃO, e é o achado mais forte do lote pela minha lente. A alternativa nativa tem nome, está documentada na versão do alvo, e a correção que o candidato cita com aprovação (a do spinmax) é a OBSOLETA.**
+
+**O diagnóstico do candidato está certo e eu consegui estreitá-lo a um token só.** Cruzando os `--color-*` declarados por `@radix-ui/themes@3.3.0` com os declarados no bloco `@theme` de `origin/main:resources/css/app.css` (script Python sobre `node_modules/@radix-ui/themes/styles.css` + `git show origin/main:resources/css/app.css`):
+
+```
+radix --color-* : 7
+@theme --color-*: 32
+INTERSEÇÃO   : ['--color-background']   ← uma, exatamente uma
+  :where(.radix-themes)                      → --color-background: white
+  :is(.dark, .dark-theme), …                 → --color-background: var(--gray-1)
+```
+`grep -c "@layer" node_modules/@radix-ui/themes/styles.css` → **0**: a folha inteira é sem layer. E o Tailwind 4.3.3 põe o `@theme` em layer — `node_modules/tailwindcss/index.css` abre com `@layer theme, base, components, utilities;` e `@layer theme { @theme default { … } }`. Declaração sem layer vence declaração em layer.
+
+**A consequência, e ela é maior do que "cor de fundo de tabela":** o segundo seletor da Radix é `:is(.dark, .dark-theme)`, que casa o `<html class="dark">` — o mesmo elemento que `:root` casa, e `.dark` é aplicado justamente ali (`origin/main:resources/js/hooks/use-appearance.tsx:25`, `document.documentElement.classList.toggle('dark', isDark)`). Então **no tema escuro** `--color-background` no root vale `var(--gray-1)` = `#111111` (medido na folha da Radix), não `var(--background)` = `var(--brand-navy-dark)` = `#0f2a44` (`app.css:170`). São 15 usos de `bg-background`/`text-background`/`border-background` em 11 arquivos (`git grep -o … origin/main -- resources/js resources/css | wc -l` → 15), incluindo `body` (`app.css`, `@layer base`), `ui/sidebar.tsx` (3) e `ui/dialog.tsx`. No tema claro não aparece, porque a Radix só declara `white` sob `:where(.radix-themes)` e `--background` do alvo já é `white` — o defeito é **invisível de dia**. E `<Theme>` embrulha o app inteiro (`origin/main:resources/js/app.tsx:27-39`).
+
+**O agravante que fecha o círculo:** `origin/main:resources/js/test/styles/theme-tokens.test.ts` existe **exatamente por causa desta classe de bug**. O docblock dele diz, com todas as letras: *"`--color-primary` estava declarado DUAS vezes … Declaração sem layer vence declaração em `@layer` … `text-primary` no escuro dava 1.28:1"*. Só que o teste lê **apenas** `resources/css/app.css` (`readFileSync(resolve(import.meta.dirname, '../../../css/app.css'))`). A folha da Radix entra na mesma cascata pelo `@import` da linha 5 e é invisível para o guard-rail. O time já pagou por este bug uma vez, escreveu o teste, e a última colisão restante está no ponto cego dele.
+
+**A alternativa nativa, com o trecho que prova.** Doc de Colors do `tailwindcss@4.x` (`src/docs/colors.mdx`, seção *Referencing other variables*, via `search-docs` do Boost):
+
+> Use `@theme inline` when defining colors that reference other colors:
+> ```css
+> :root { --acme-canvas-color: oklch(0.967 0.003 264.542); }
+> [data-theme="dark"] { --acme-canvas-color: oklch(0.21 0.034 264.665); }
+> @theme inline { --color-canvas: var(--acme-canvas-color); }
+> ```
+
+O bloco `@theme` do alvo tem 32 tokens no formato `--color-X: var(--X)` — é **literalmente** o caso que a doc descreve, e está escrito sem `inline`. Com `@theme inline`, o utilitário compila para `background-color: var(--background)` em vez de `var(--color-background)`: a Radix pode redeclarar `--color-background` à vontade que não sequestra mais nada, e o bug do `--color-primary` que o teste guarda deixa de ser possível **por construção**, para os 32 tokens de uma vez. Uma palavra.
+
+**O que isso reclassifica:**
+- A correção do spinmax citada como referência (`:root, .dark, .radix-themes { --color-background: var(--background) }` — `spinmax.md:1352`) é **OBSOLETA** na versão do alvo: é remendo por especificidade, tem que ser mantido em sincronia com os seletores internos da Radix (que já são três: `:where(.radix-themes)`, `:is(.dark,.dark-theme)` e o descendente), e o `app.css` do alvo já mostra o custo desse caminho — `[data-radix-theme]` com `!important` na linha 93 e o bloco de 11 seletores encadeados de `.rt-TableHeader` mais adiante. Não replique esse padrão.
+- O item continua sendo decisão de ADR quanto a `ui/table` × Themes, mas **para de ser só isso**: a colisão de `--color-background` tem correção de uma palavra, independente da decisão de tabela, e deve sair na frente dela.
+- `min-w-0` (V6P-1) e a adaptação do `overflow-hidden` que o candidato levanta seguem válidas e ortogonais.
+
+**Não medido, declarado:** não rodei build nem browser (proibido nesta rodada). A cadeia da cascata está medida arquivo a arquivo (layer da Radix = 0, layer do Tailwind = `theme`, seletores, valores, ponto de aplicação do `.dark`); a renderização de `#111111` no escuro é inferência dessa cadeia, corroborada pelo precedente do `--color-primary` que o próprio projeto já reproduziu e travou.
+
+---
+
+## Nota transversal (não é candidato)
+
+O contrato de anel de foco não tem componente de atualidade: `ring-ring/50` não é legado de Tailwind 3 — o modificador de opacidade `/50` é nativo e válido no Tailwind 4.3, e os 8 arquivos do ctvitrine que o usam estão sintaticamente atuais. A regra do alvo é de **contraste**, não de versão, e a fatia inversa continua de pé pelo mérito dela.
+
+Uma pendência de atualidade que o lote não cobre e que toca todos os primitivos de `components/ui/`: `origin/main:resources/css/app.css:7` carrega `@plugin 'tailwindcss-animate'`, e `tailwindcss-animate@1.0.7` é plugin **JS de Tailwind v3** (`peerDependencies: { "tailwindcss": ">=3.0.0 || insiders" }`, `theme("transitionDuration")`, `theme("opacity")`, `theme("scale")`, `theme("rotate")`). Verifiquei antes de acusar: **ele não está quebrado** — o Tailwind 4.3.3 embute uma tabela de compatibilidade v3 (`node_modules/tailwindcss/dist/chunk-C2OYBFIH.mjs` traz `transitionDuration`, `opacity`, `rotate`, `scale`), então as 12 classes numéricas realmente usadas (`fade-in-0` ×7, `fade-out-0` ×7, `zoom-in-95` ×5, `zoom-out-95` ×5, `slide-in-from-*-2` ×16, `fade-in-50` ×1 — `git grep -oh … origin/main -- resources/js/components/ui resources/js/pages | sort | uniq -c`) compilam. Mas o pacote está **deprecado pelo shadcn desde 19/03/2025** em favor de `tw-animate-css`, com migração de uma linha (`ui.shadcn.com/docs/tailwind-v4`, via context7):
+
+```diff
+- @plugin 'tailwindcss-animate';
++ @import "tw-animate-css";
+```
+
+É dependência de um caminho de compatibilidade que a próxima major do Tailwind pode remover. Vale como item separado — não pertence a nenhum dos 9.
+
+---
+
+## Caçador 3 — telas de referência, densidade, skeleton, empty state, microinteração
+
+# Caçador 3 · ctvitrine `53d7d9a` — telas de referência, densidade, skeleton, empty state, microinteração
+
+Baseline do alvo: `origin/main` = **`beb848ea509bf6682c9e31f10611ad7ab489392e`** (não `2965f8c`, que é o baseline do inventário — quatro fatias entraram desde então: #103, #105, #107, #111). Toda contagem abaixo foi re-medida contra esse SHA.
+
+**Resposta curta às cinco perguntas da frente, antes dos candidatos:**
+
+- **Densidade/hierarquia:** a casca de listagem (`gap-3 p-4 md:gap-4 md:p-6` → card `bg-card border-border/40 rounded-lg shadow-sm` → header `bg-muted/20` → filtros → tabela) é **byte-a-byte o mesmo ancestral** nos dois. `dashboard.tsx` é idêntico nos dois (`PlaceholderPattern`). Não há densidade a colher; há **duas** decisões de composição a colher (V6D-1, V6D-9).
+- **Skeleton:** o boilerplate tem o primitivo e **zero** uso de aplicação; o `SidebarMenuSkeleton` é export morto. O ctvitrine usa `Skeleton` em exatamente 2 lugares, com uma disciplina que vale regra (V6D-1).
+- **Empty state / botão em envio:** o boilerplate está **à frente** — E14/E15 e E28 já superaram o que a fonte tem (a fonte ainda carrega o `type="row"` que o E14 removeu). O que sobra é a **trava** do follow-up de E28 (V6D-10).
+- **Animação:** o vocabulário é o mesmo (`duration-200` 111×fonte / 87×boilerplate, mesmas `ease-*`). O gênero-F32 que restou não está no CSS: está na **blade** (V6D-3) e num **componente morto** (V6D-6).
+- **Imagens:** V6D-4. A assimetria do crítico se confirma e é maior do que 2,28 MB.
+
+---
+
+### V6D-1 · `Skeleton` é primitivo sem um único uso no boilerplate; o ctvitrine mostra o critério de quando ele vale
+
+- **Evidência:** `resources/js/pages/items/studio.tsx:1105-1106@53d7d9a` e `:1127-1128@53d7d9a`
+  ```tsx
+  {analyzing && form.category_id === '' ? (
+      <Skeleton className="h-9 w-full" />
+  ) : (
+      <Select value={form.category_id} …>
+  ```
+  O skeleton substitui **um valor específico que um processo assíncrono está preenchendo**, e só enquanto o campo está vazio — nunca cobre a tela, nunca substitui um campo que a pessoa já digitou. É a única aparição de `Skeleton` fora de `ui/` na fonte inteira (`git grep "Skeleton" 53d7d9a -- resources/js` → 14 linhas: 11 em `ui/sidebar.tsx`, 1 import + 2 usos em `studio.tsx`).
+- **Estado do boilerplate hoje:** `resources/js/components/ui/skeleton.tsx@origin/main` é **byte-a-byte igual** ao da fonte. `git grep -n "Skeleton" origin/main -- resources/js | grep -v "components/ui/"` → **0 linhas**. `git grep -n "SidebarMenuSkeleton" origin/main -- resources/js | grep -v "components/ui/sidebar.tsx"` → **0 linhas** (definido em `ui/sidebar.tsx:624`, exportado em `:739`, nunca chamado). O boilerplate tem 1 `animate-pulse`, e é o do próprio primitivo.
+- **O que absorver / o que travar:** não é código a portar — o boilerplate não tem tela com preenchimento assíncrono. O ativo é a **regra**, em `.ai/rules/js.md`: *skeleton representa um valor identificado que está chegando, com a mesma altura do controle que vai substituir (`h-9` casa o `SelectTrigger`); não é cortina de tela nem substitui campo já preenchido; tela sem valor chegando usa `EmptyState`, não skeleton.* Junto, decidir o `SidebarMenuSkeleton`: usar ou podar (mesma família do E19).
+- **Adaptação necessária:** nenhuma no primitivo. A regra precisa dizer o que fazer no boilerplate hoje — que é **nada**, e é esse o ponto: hoje há um primitivo publicado sem contrato de uso, e o primeiro que o usar vai inventar o critério.
+- **Risco · esforço:** P · P. Regra + (opcional) poda de 20 linhas do `ui/sidebar.tsx`.
+- **Multi-fonte?** O `ui/skeleton.tsx` de 14 linhas aparece igual no spinmax (`spinmax.md:1178`) e no cuidari (`cuidari.md:2453`). Nenhum dos inventários registrou uso de aplicação em nenhum dos três.
+
+---
+
+### V6D-2 · A blade raiz do boilerplate não linka favicon nenhum, e o `public/` carrega 6 arquivos de ícone que nada referencia
+
+- **Evidência:** `resources/views/app.blade.php:8-21@53d7d9a` — bloco condicional, com o motivo escrito:
+  ```blade
+  @php($faviconUrl = data_get($page, 'props.branding.favicon_url'))
+  @if ($faviconUrl)
+      <link rel="icon" href="{{ $faviconUrl }}" >
+      <link rel="apple-touch-icon" href="{{ $faviconUrl }}" >
+  @else
+      <link rel="icon" href="/favicon.ico?v=2" sizes="any" >
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" >
+      … (32x32, 16x16, apple-touch-icon 180x180)
+  @endif
+  <meta name="theme-color" content="{{ $meta['theme_color'] ?? '#0f2a44' }}" >
+  ```
+- **Estado do boilerplate hoje:** `git -C $B grep -rn 'rel="icon"' origin/main -- resources app` → **0 linhas**. `git -C $B grep -rln "android-chrome" origin/main` → **0**. `git -C $B grep -rn "webmanifest\|manifest.json" origin/main` → **0**. Ainda assim `git -C $B ls-tree -r origin/main --name-only -- public` lista `android-chrome-192x192.png`, `android-chrome-512x512.png` (89.170 B), `apple-touch-icon.png`, `favicon-16x16.png`, `favicon-32x32.png`, `favicon.ico` — **seis arquivos, zero referência**. A aba mostra o que o browser adivinhar de `/favicon.ico` (que existe, então funciona por acidente do caminho default; os outros cinco são peso morto). Sem `theme-color`, sem `<meta name="description">`, sem OG.
+- **Extra medido no mesmo diretório:** `public/fonts/woff2/aptos/aptos-extrabold-italic 2.woff2` e `aptos-extrabold-italic.woff2` são o **mesmo blob** (`fc88540ed885152d200bf22f8f759258f78538b1`, 78.980 B cada) no `origin/main` do boilerplate — 22 arquivos em `public/fonts` contra **21** `url(` em `resources/css/_fonts.css`; a sobra é exatamente o arquivo com ` 2` no nome. O crítico do inventário achou isso na **fonte**; o boilerplate tem o mesmo blob duplicado.
+- **O que absorver / o que travar:** (i) linkar os ícones que já estão versionados, na ordem que a fonte usa; (ii) podar o par duplicado de woff2 e os ícones que sobrarem sem link; (iii) travar com um teste no molde de `resources/js/test/lib/impersonation-call-sites.test.ts` (`@vitest-environment node`, lê a árvore): *todo arquivo em `public/` fora de `vendor/` é referenciado por `resources/` ou está numa allowlist explícita*. Esse mesmo teste pega a fonte duplicada, os ícones órfãos e o próximo PNG que entrar sem uso.
+- **Adaptação necessária:** o `branding.favicon_url` da fonte vem de `SiteSetting` (white-label por instância) — o boilerplate não tem esse conceito. Trazer só o ramo `@else` (lista fixa) + `theme-color` espelhando `--brand-navy-dark`, com o literal justificado como o `<style>` inline já é (`.ai/rules/views.md`, "Blade que pinta sem o `app.css` usa literal, e o literal espelha o token").
+- **Risco · esforço:** P · P.
+- **Multi-fonte?** Sim: o spinmax tem `public/site.webmanifest` completo (`spinmax.md:1859`) e o ctvitrine tem o bloco condicional. **Dois derivados resolveram; o boilerplate é o único dos três sem nenhum link de ícone.**
+
+---
+
+### V6D-3 · `preconnect` para `fonts.bunny.net` na blade dos dois — nenhum byte sai por lá (mesmo gênero do F32, fora do CSS)
+
+- **Evidência:** `resources/views/app.blade.php:138@53d7d9a` → `<link rel="preconnect" href="https://fonts.bunny.net" >`. Na fonte, `resources/css/_fonts.css` declara 34 `@font-face` e **toda** `url()` é same-origin `/fonts/woff2/…`.
+- **Estado do boilerplate hoje:** `resources/views/app.blade.php:67@origin/main`, linha idêntica. `git -C $B grep -rn "bunny.net\|fonts.googleapis\|gstatic" origin/main -- resources` → **1 linha, e é a própria `preconnect`**. As 21 `url()` de `resources/css/_fonts.css` são todas `/fonts/woff2/…`. Sobra herdada do starter kit, que servia Instrument Sans da bunny antes de o projeto auto-hospedar as fontes.
+- **O que absorver / o que travar:** deletar a linha. A regra é o que interessa e ela já existe em espírito no `.ai/rules/css.md` ("Antes de escrever CSS contra markup de terceiro, confirme no `dist/` da lib que o gancho existe") — falta a metade `<head>`: *dica de rede (`preconnect`/`dns-prefetch`/`preload`) só entra com um consumidor demonstrável na árvore; `preconnect` para host que ninguém busca abre socket TLS a cada navegação e some do radar.* Trava barata: um caso no teste-de-blade equivalente ao de `views` (`.ai/rules/views.md` já tem 3 regras) ou dentro do mesmo teste-de-árvore de V6D-2.
+- **Adaptação necessária:** nenhuma — é uma remoção de uma linha.
+- **Risco · esforço:** P · P. O único risco é a folha do `@radix-ui/themes` puxar algo de terceiro; medi só `resources/`, não o `dist/` do pacote — **não medi o vendor**, e isso precisa de uma confirmação antes do commit.
+- **Multi-fonte?** **Sim, já registrado**: `spinmax.md:2792` chegou à mesma conclusão por outro caminho (frente de CSP) — *"`app.blade.php:59` tem `preconnect` para `https://fonts.bunny.net`, mas grep em `resources/css/` e `resources/views/` não encontra nenhum fetch real"*. Este é o terceiro projeto com a linha. O crédito é de lá; o que acrescento é que ela também está viva no **boilerplate** e que a poda é independente da fatia de CSP.
+
+---
+
+### V6D-4 · 44 `<img>` na fonte, **zero** com `width`/`height`, e o servidor comprime o upload da lojista enquanto a landing serve 6,7 MiB de PNG cru
+
+- **Evidência:** `git -C $R grep -n -E '^\s+(width|height)=' 53d7d9a -- resources/js` → **0 linhas**, contra 44 `<img` (`git grep -o "<img" 53d7d9a -- resources/js | wc -l`). O dimensionamento é feito por wrapper (`aspect-square` 16×, `aspect-video` 3×, `aspect-[3/4]` 2×, `aspect-[2/1]` 2×, `aspect-[4/3]` 1×), o que resolve CLS **onde existe wrapper** e não resolve onde não existe. `loading=` aparece em **12** das 44 (7 `lazy`, 5 `eager`); `decoding=` em 5; `fetchpriority` em **0**.
+  A assimetria: `app/Services/ImageOptimizer.php@53d7d9a` reduz o upload do lojista a `maxDimension = 1600` / `quality = 82`, JPEG progressivo, EXIF assado, metadado removido. E `resources/js/pages/site/landing.tsx:905-909@53d7d9a` renderiza os 4 mocks **sem `loading`, sem dimensão**:
+  ```tsx
+  <img src={piece.img} alt={piece.name}
+       className={cn('h-full w-full object-contain', sold && 'opacity-60 grayscale')} />
+  ```
+  Pesos medidos por `git ls-tree -r -l 53d7d9a -- public`: `jaqueta.png` **2.276.766 B**, `bolsa.png` **1.792.437**, `vestido.png` **1.527.070**, `tenis.png` **1.463.039** — **7.059.312 B (6,73 MiB) só nesse grid**; mais `logo-loja-ana.png` 919.986 (2×, `:849` e `:865`, sem `loading`). Total único de `public/img/mock` = **8.192.613 B (7,81 MiB)**. A única imagem da landing com `loading="lazy"` é `painel-metricas.png` (`:558`), que é a **menor** delas (213.315 B).
+- **Estado do boilerplate hoje:** 4 `<img>` vivos, todos em `layouts/auth/*` (`auth-card-layout.tsx:24`, `auth-simple-layout.tsx:23`, `auth-split-layout.tsx:18` e `:42`), todos com `loading="eager" decoding="async"` e **nenhum** com `width`/`height` — o `<img src="/logo-simplify.png" className="h-10 w-10 object-contain">` de `auth-simple-layout.tsx:23-30` carrega um PNG de **116.077 B** para desenhar 40×40 CSS px. Mais um `<img>` comentado em `components/app-logo.tsx:11`. `aspect-*`: 8 ocorrências. Nenhuma regra em `.ai/rules` fala de imagem (`css.md` tem 5 seções, nenhuma; `views.md` tem 3, nenhuma; `js.md` não tem).
+- **O que absorver / o que travar:** o guard-rail, não o código. Regra em `.ai/rules/js.md` + teste de call-site no molde de `impersonation-call-sites.test.ts`: *todo `<img>` em `resources/js` declara `width` **e** `height` (ou vive dentro de um wrapper `aspect-*`/dimensão fixa **no mesmo arquivo**) e um `loading` explícito — `eager` só acima da dobra, e nesse caso com `fetchpriority="high"`.* Segundo caso do mesmo teste, que é o achado que a fonte torna óbvio: **binário em `public/` acima de um teto (p.ex. 200 KB) precisa de allowlist com justificativa** — foi exatamente o que faltou para 7,81 MiB de mock entrarem no repo de um produto que tem um `ImageOptimizer`.
+- **Adaptação necessária:** o boilerplate só precisa de 4 correções (`width`/`height` nos logos de auth) para o teste nascer verde; o teto de peso pega o `logo-simplify.png` de 116 KB de cara, então ou ele entra na allowlist ou é reduzido no mesmo commit. Decidir isso é parte da fatia.
+- **Risco · esforço:** P · M. O risco é o teste virar ruidoso com `<img>` de wrapper legítimo — por isso a regra aceita `aspect-*` no mesmo arquivo, e por isso o teto de `public/` precisa de allowlist e não de proibição.
+- **Multi-fonte?** Não medi imagens nos outros três inventários; `grep "loading=\"lazy\"\|ImageOptimizer\|CLS"` em `cuidari.md`, `spinmax.md` e `ctfinance.md` → **0 linhas**. O tema é inédito na rodada.
+
+---
+
+### V6D-5 · Os pares `--success` / `--warning` / `--info` não são só classe morta: **três deles reprovam contraste**, então exportá-los como estão entrega um par a 2,15:1
+
+Emenda a um achado já registrado (`ctfinance.md:420`), não candidato novo — mas o achado de lá, **como está escrito, leva a um conserto errado**.
+
+- **Evidência:** `resources/css/app.css:135-140@53d7d9a` (`:root`) e `:186-191@53d7d9a` (`.dark`) — a fonte declara os seis tokens com os **mesmos hex** do boilerplate. Consumo real na fonte: só `border-left: 4px solid var(--success)` / `color: var(--success)` no CSS de toast (`:635`, `:641`, `:657`, `:663`, `:668`, `:674`) e `resources/js/lib/toast-config.ts`.
+- **Estado do boilerplate hoje:** `resources/css/app.css:135-140` (`:root`) e `:189-194` (`.dark`). O bloco `@theme` (`:14-70`) mapeia 26 `--color-*` e **nenhum** deles é `success`/`warning`/`info` — logo `bg-success`/`text-warning` não existem. Consumidores: `app.css:636`, `:648`, `:654` (`border-left`) e `lib/toast-config.ts`. A tabela de contraste em `resources/js/test/styles/theme-tokens.test.ts:127-134` tem **6 linhas** — `primary`, `secondary`, `accent`, `muted`, `card`, `background/foreground` — e o comentário acima dela diz *"A tabela é o contrato. Um par novo entra aqui junto com o token."* Os três pares semânticos são **anteriores** à tabela e nunca entraram.
+- **O fato novo — contraste medido** (script em `…/scratchpad/contrast.py`, WCAG 2.x relative luminance):
+
+  | par | valores | razão | AA 4.5 | 3:1 |
+  |---|---|---|---|---|
+  | claro `--success` / `--success-foreground` | `#16a34a` × `#ffffff` | **3,30:1** | ✗ | ✓ |
+  | claro `--warning` / `--warning-foreground` | `#f59e0b` × `#ffffff` | **2,15:1** | ✗ | **✗** |
+  | claro `--info` / `--info-foreground` | `#0ea5e9` × `#ffffff` | **2,77:1** | ✗ | **✗** |
+  | escuro `--success` / `--success-foreground` | `#22c55e` × `#ffffff` | **2,28:1** | ✗ | **✗** |
+  | escuro `--warning` / `--warning-foreground` | `#fbbf24` × `#0f2a44` | 8,77:1 | ✓ | ✓ |
+  | escuro `--info` / `--info-foreground` | `#38bdf8` × `#0f2a44` | 6,83:1 | ✓ | ✓ |
+
+- **O que absorver / o que travar:** o conserto **não** é "exportar os seis para o `@theme`" — isso publicaria `bg-warning text-warning-foreground` a 2,15:1 e faria o próprio `.ai/rules/css.md` ("Par de token que vira texto tem contraste medido") mentir. A ordem correta é: (1) acrescentar as 3 linhas na tabela do `theme-tokens.test.ts` e vê-la **falhar**; (2) escolher os pares — o padrão do escuro (`--X` claro + `--X-foreground` = navy) já passa e é a saída óbvia para o claro também (foreground escuro sobre fundo claro de estado, no molde de `bg-emerald-100 text-emerald-800` que o app já pinta na mão); (3) só então exportar para o `@theme` e trocar os literais. É exatamente a armadilha que o comentário do próprio teste descreve ("a segunda [guarda] é a que teria pego a regressão que o CONSERTO quase introduziu").
+- **Adaptação necessária:** o `ctfinance.md:420` cita `users/user-actions-menu.tsx:125` escrevendo `text-success` descartado — **não reproduzi**: `git -C $B grep -rn "text-success" origin/main -- resources/js` → **0 linhas** no `origin/main` de hoje. Ou o arquivo mudou desde `2965f8c`, ou o call-site é do ctfinance e não do boilerplate. Quem pegar a fatia precisa re-medir antes de citar.
+- **Risco · esforço:** M · M. Mexer em token de estado toca o CSS de toast (`border-left`) e é onde a fatia F32 acabou de passar.
+- **Multi-fonte?** Sim — **já registrado no ctfinance**. Os hex são idênticos na fonte, o que confirma que os seis tokens são herança comum e não invenção de ninguém.
+
+---
+
+### V6D-6 · `layout/page-header.tsx` + `page-info.tsx`: subárvore morta cuja única prop exclusiva monta classe Tailwind por interpolação — e o ctvitrine tem a versão **viva e sem a prop**
+
+Terceira confirmação de um achado já registrado (`ctfinance.md:379` e `:448`). Traz um fato que os dois anteriores não tinham.
+
+- **Evidência:** `resources/js/components/layout/page-header.tsx@53d7d9a` é o **mesmo componente sem `iconGradient`** — o ícone é `bg-primary/10 text-primary`, token puro. E ele tem **call site**: `resources/js/pages/metrics/index.tsx:653` e `resources/js/pages/metrics/report.tsx:49`. Varredura de classe interpolada na fonte inteira:
+  `git -C $R grep -rn -E '(bg|text|border|from|to|via|ring|fill|stroke|grid-cols|w|h|size|p[xytblr]?|m[xytblr]?|gap)-\$\{' 53d7d9a -- resources/js` → **0 linhas**.
+- **Estado do boilerplate hoje:** `resources/js/components/layout/page-header.tsx:41@origin/main`
+  ```tsx
+  ? `bg-gradient-to-br from-${iconGradient.from} to-${iconGradient.to} text-white shadow-sm`
+  ```
+  A **mesma varredura** no boilerplate retorna **exatamente essa linha e mais nenhuma**. `git -C $B grep -rn "iconGradient" origin/main` → 4 linhas, **todas dentro do próprio arquivo**. `git -C $B grep -rn "PageHeader" origin/main -- resources/js | grep -v "components/layout/page-header.tsx"` → **0 linhas**. E `git -C $B grep -rn "PageInfo" origin/main -- resources/js | grep -v "page-info.tsx"` → **3 linhas, todas em `page-header.tsx`**: `page-info.tsx` só é alcançável através do componente morto. São **dois** arquivos mortos, não um. Controle: `git -C $B grep -rnE "(from|to)-[a-z]+-[0-9]{2,3}" origin/main -- resources/js` **fora** de `page-header.tsx` mostra que gradiente estático existe e funciona (`user-table-row.tsx:41`, `role-users-table.tsx:75`) — o problema é só a interpolação.
+- **O que absorver / o que travar:** o fato novo é **qual é a forma certa**. As três fontes convergem: cuidari tem cópia diff-0 (morta, com a prop), ctfinance tem o mesmo bug (morto), **ctvitrine é o único com o componente vivo — e é o único sem `iconGradient`**. Isso decide a fatia: não é "consertar o gradiente", é **remover a prop** e decidir entre podar a subárvore ou dar-lhe os call sites que a fonte lhe dá. Guard-rail que fecha a família inteira: caso no `link-button-nesting.test.ts` (ou irmão novo) que falha em qualquer `` `…-${…}` `` com prefixo de utilitário Tailwind — hoje pegaria exatamente 1 linha, e é a certa.
+- **Adaptação necessária:** se a decisão for manter, os call sites de referência (`metrics/*`) não existem aqui; o candidato natural é `pages/users/index.tsx:145-152`, que hoje monta o cabeçalho à mão com `<UserPlus>` + `<h2>` + `PageInfo`-equivalente inline.
+- **Risco · esforço:** P · P (poda) ou M (adoção).
+- **Multi-fonte?** **3 de 3** — ctfinance (registrado), cuidari (`cuidari.md:2445`, diff 0), ctvitrine (variante viva). Multi-fonte confirmada com desempate.
+
+---
+
+### V6D-7 · Autosave campo-a-campo com indicador de estado — e o mecanismo do Inertia que o torna possível (o boilerplate não faz **um** partial reload)
+
+- **Evidência:** `resources/js/hooks/use-settings-autosave.ts:37-70@53d7d9a`
+  ```ts
+  router.post(route('site-settings.update'), fields, {
+      preserveState: true, preserveScroll: true,
+      only: ['settings'],
+      async: true,
+      forceFormData: options.forceFormData ?? false,
+      …
+      onFinish: () => { inFlight.current -= 1;
+          if (inFlight.current === 0) setSaveState(roundHadError.current ? 'error' : 'saved'); … }
+  ```
+  Três decisões, cada uma com o motivo escrito no docblock (`:17-32`): **(1)** um campo por vez em POST parcial, porque `validated()` omite chave ausente — *"um save de texto nunca reescreve a logo; a corrida de 'logo some' fica impossível"*; **(2)** `only: ['settings']` corta o flash de sucesso da resposta (senão vira toast fantasma na próxima navegação) **mas os erros de validação furam o filtro porque são `Inertia::always`**; **(3)** `async: true` porque a fila síncrona do Inertia abortaria o save em voo ao disparar o campo seguinte. Mais o contador `inFlight` — o estado só assenta quando o último request volta.
+  A saída visual é `pages/site-settings/edit.tsx:118-149@53d7d9a`, `SaveIndicator`, com o comentário que é o achado de UX: *"'Salvo' é estado, não evento: fica até a próxima edição"*. Os três estados não-idle carregam `role="status" aria-live="polite"` (`:128`, `:137`, `:145`).
+- **Estado do boilerplate hoje:** `git -C $B grep -rn "only: \[" origin/main -- resources/js` → **0 linhas**. `git -C $B grep -rn "async: true" origin/main -- resources/js` → 0. Todo formulário é `useForm` + botão + toast de flash. `git -C $B grep -rn 'role="status"' origin/main -- resources/js | grep -v test` → 0 (existe `aria-live` em `data-table/search-bar.tsx:78` e `input-error.tsx`, sem `role="status"`).
+- **O que absorver / o que travar:** o **hook não** — ele é do domínio de um form white-label específico. O que absorve é o **contrato do partial reload**, como regra em `.ai/rules/js.md`, porque ele já é falso-amigo aqui: o boilerplate acabou de fazer o `flash` do `share()` virar `Inertia::always()` (candidato E13 do ctfinance) — ou seja, **no boilerplate `only:` não corta o flash**, ele fura o filtro igual aos erros. A regra tem de dizer as duas metades: *`only:` filtra o que **não** é `always`; conferir no `share()` antes de contar com o corte; visita de autosave usa `async: true` para não abortar a anterior; estado de salvamento é do formulário inteiro e só assenta com o contador de requisições em voo em zero.* E o `SaveIndicator` é absorvível quase verbatim: 30 linhas, 4 estados, `role="status"` — é o irmão do `Button loading` (E28) para form que não tem botão.
+- **Adaptação necessária:** o indicador precisa de um dono. Sem tela de form longo no boilerplate, ele nasce sem call site — o mesmo defeito de V6D-6. Ou entra junto com uma tela que o use, ou entra como regra+exemplo em `.ai/rules`, não como componente.
+- **Risco · esforço:** M · M. O risco alto é publicar `useSettingsAutosave` genérico: `only: ['settings']` é o nome de uma prop **daquele** controller, e o comportamento muda com o `share()` do projeto.
+- **Multi-fonte?** Sim, com correção já registrada: o ctfinance tem autosave no wizard de onboarding (`ctfinance.md:133`) e a lente de lá derrubou uma parte — *"`replace: true` no autosave é desnecessário: o Inertia 3.6.1 já faz replace sozinho"* (`ctfinance.md:332`). O ctvitrine **não** usa `replace: true`, o que é consistente. Antes de fixar contrato, cruzar com o wizard do ctfinance.
+
+---
+
+### V6D-8 · O quarto estado do assíncrono: "está demorando mais que o normal", com prazo do cliente e botão de retentar
+
+- **Evidência:** `resources/js/components/items/studio-photo.tsx:13-19@53d7d9a` — a prop e o porquê:
+  ```
+  /**
+   * A foto está em "processing" há mais tempo do que o razoável (prazo do
+   * cliente). Antes disso a lojista ficava presa num spinner eterno quando o
+   * job morria sem avisar; aqui devolvemos o controle e o botão de retentar.
+   */
+  stalled?: boolean;
+  ```
+  A máquina de estados (`:38-41`) separa `processing` de `stuck` — `const stuck = photo.ai_status === 'processing' && stalled` — e o ramo `stuck` (`:57-64`) troca o spinner por texto + "Tentar de novo". O prazo é do **cliente**, não do servidor: `pages/items/studio.tsx:45` `const STALL_DEADLINE_MS = 3 * 60_000;`, `:48` `STALL_TICK_MS = 15_000`, `:225` `setInterval(() => setClock(Date.now()), STALL_TICK_MS)`, `:234` `clock - since > STALL_DEADLINE_MS`. O polling que alimenta isso tem os outros dois freios: `:35` `POLL_BACKOFF = [3000, 5000, 10_000, 15_000]` e `:38` `POLL_MAX_FAILURES = 3`.
+  No mesmo arquivo, duas decisões de toque que vão juntas: `:21-23` `min-h-11 min-w-11` (*"44px: é o alvo de toque mínimo confortável no celular, que é onde este fluxo acontece de verdade"*) e `:27-29` `BAR_ON_DEMAND = 'opacity-0 group-hover:opacity-100 focus-within:opacity-100 [@media(hover:none)]:opacity-100'` (*"em celular não existe hover: sem o `[@media(hover:none)]` a lojista nunca alcançaria o botão de retentar"*). Terceiro detalhe: o selo de `failed` é **permanente** (`:79-84`), *"o erro do fundo não pode depender de a lojista passar o dedo por cima"*.
+- **Estado do boilerplate hoje:** nada assíncrono de longa duração — `git -C $B grep -rn "setInterval\|IntersectionObserver\|poll" origin/main -- resources/js | grep -v test` → 0. O `Button loading` (E28, `ui/button.tsx:74-100`) **não tem prazo**: `loading={processing}` fica girando enquanto a promessa não voltar, indefinidamente. `git -C $B grep -rn "hover:none\|pointer:coarse" origin/main -- resources` → **0**; `git -C $B grep -rn "min-h-11\|min-w-11\|min-h-\[44px\]" origin/main -- resources/js` → **0**.
+- **O que absorver / o que travar:** regra, não código — o boilerplate não tem onde pendurar. Em `.ai/rules/js.md`: *estado indeterminado tem prazo. Passado o prazo do cliente, a tela para de fingir: diz que demorou e oferece a saída (retentar/cancelar). Polling tem backoff crescente, teto de falhas consecutivas e pausa em aba oculta. Afordância só-em-hover precisa de `focus-within:` **e** `[@media(hover:none)]`, ou some no celular. Sinal de erro persiste; não depende de hover.* As duas últimas frases pagam sozinhas a regra: o boilerplate tem 1 afordância só-em-hover (`ui/sidebar.tsx:594`) e ela se salva por outro caminho (`md:opacity-0`, ou seja, sempre visível abaixo de `md`) — **por sorte do breakpoint, não por desenho**; a próxima não terá.
+- **Adaptação necessária:** o piso de 44px é AAA (WCAG 2.5.5), não AA — o boilerplate hoje usa `size="icon"` = `size-9` (36px) e `h-8 w-8` (32px), que **passam** o mínimo AA de 24px (2.5.8). Escrever a regra como "violação" seria falso; escrever como piso de ergonomia para fluxo de celular é o que a fonte de fato justifica.
+- **Risco · esforço:** P · P (regra). G se alguém tentar implementar prazo genérico no `Button`.
+- **Multi-fonte?** Parcialmente já coberto: `ctfinance.md:314` registra **E16 — "sem variante mobile-card e sem piso de alvo de toque"**. O prazo/`stalled` e o `[@media(hover:none)]` são inéditos; o piso de toque é reforço de E16.
+
+---
+
+### V6D-9 · Duas famílias de layout por enum — **veredito: o mecanismo é portável, a costura com a blade não é**
+
+- **Evidência:** `app/Enum/SiteLayout.php@53d7d9a` — 2 cases, e três métodos que valem cada um por si:
+  ```php
+  public static function fromSetting(?string $value): self
+  { return self::tryFrom((string) $value) ?? self::CLASSIC; }   // null/typo nunca lança
+  public static function options(): array                        // alimenta o select do admin
+  public function homePage(): string  { …'site/home' : 'site/boutique/home'; }
+  public function itemPage(): string  { …'site/item' : 'site/boutique/item'; }
+  ```
+  Consumo: `app/Http/Controllers/Site/HomeController.php:56` e `app/Http/Controllers/Site/ShowItemController.php:63` (`if ($layout === SiteLayout::BOUTIQUE)`), `Inertia::render($layout->homePage(), $props)`; `SiteSetting.php:87-89` e `:163`; `UpdateSiteLayoutRequest.php:28` (`Rule::enum`). Cobertura: 5 arquivos em `tests/Feature/Layout/` (`SiteLayoutTest`, `BoutiquePropsTest`, `SellerRoutingTest`, `UpdateLayoutTest`, `DemoLayoutTest`).
+- **O que julgo, com a evidência:**
+  1. **Portável e bom:** `fromSetting()` degradando em silêncio + `options()` alimentando o select + `Rule::enum` na escrita — o enum é a única fonte de verdade do conjunto, do banco ao `<Select>`. É o mesmo formato que o boilerplate já usa em `App\Enum\Roles`/`Permissions`.
+  2. **A rachadura está fora do enum.** O nome do componente Inertia vaza para a blade como prefixo de string: `resources/views/app.blade.php:134@53d7d9a` → `@if (str_starts_with($page['component'] ?? '', 'site/boutique/'))`. Renomear a pasta `site/boutique/` quebra o preload de fonte **sem erro** — o enum não sabe da blade e a blade não sabe do enum. Um `SiteLayout::assetPrefix()` fecharia isso, e não existe.
+  3. **O contrato de props diverge por branch e nada o cobre.** `HomeController.php:56-70` injeta `banners`, `featured`, `categoryCards`, `sellers` **só** no ramo BOUTIQUE (com um comentário defendendo a economia, que é legítima). Do lado TS, `pages/site/boutique/home.tsx:22-30` declara `BoutiqueHomeProps` **local, com todos os campos obrigatórios**, e `pages/site/home.tsx` declara o dele. Não há tipo compartilhado que exprima "estas props existem se e só se o layout é X" — é o mesmo gênero do contrato `share()` ↔ `types/` do `CLAUDE.md`, só que por enum em vez de por middleware.
+- **Estado do boilerplate hoje:** uma única família (`layouts/app-layout.tsx` → `app/app-sidebar-layout.tsx`; `app/app-header-layout.tsx` existe e está morto — já registrado em `ctfinance.md:352`). `git -C $B grep -rn "withViewData" origin/main -- app` → **0 linhas**: nem o mecanismo de `$page['component']` chegar à blade como dado existe aqui (só o `@vite` já o usa, `app.blade.php:71`).
+- **O que absorver / o que travar:** **não** absorver a tematização por instância — é acoplamento ao domínio de vitrine e o boilerplate não tem multi-tenant. Absorver a **forma do enum de variação** (`fromSetting` tolerante + `options()` + `Rule::enum`) como padrão em `.ai/rules/enum.md`, e travar as duas rachaduras como regra: *(i) enum que resolve nome de componente Inertia resolve **todos** os derivados desse nome (prefixo de asset, chave de preload) — nada de `str_starts_with` sobre o nome literal fora do enum; (ii) branch de props por variante exige um tipo TS que exprima a união, ou um teste que renderize a variante magra e prove que a página não quebra.*
+- **Adaptação necessária:** nenhuma hoje — não há segunda família. É regra preventiva; o custo de escrevê-la é o único custo.
+- **Risco · esforço:** P · P.
+- **Multi-fonte?** Não. Nenhum outro derivado tem duas famílias de layout alternadas (`grep -il "SiteLayout" cuidari.md spinmax.md ctfinance.md` → 0).
+
+---
+
+### V6D-10 · Listagem em cards no mobile — reforço de E16, com a implementação de referência
+
+Terceira confirmação de `ctfinance.md:314` (**E16**). Vale por trazer o arquivo pronto.
+
+- **Evidência:** `resources/js/pages/items/index.tsx:200-201@53d7d9a`
+  ```tsx
+  {/* Mobile: cards (a tabela de 7 colunas não cabe no celular) */}
+  <ul className="divide-border/60 divide-y md:hidden">
+  ```
+  e `:274` `<div className="hidden md:block"><Table>…`. Render **duplo**, não coluna escondida: no card cabem foto, nome, categoria, contagem de fotos, preço, badge de publicação, `<Select>` de status inline e os 3 botões de ação. Fora do `layouts/settings/layout.tsx` (que é herança), `md:hidden` aparece na fonte em exatamente 2 telas: `pages/items/index.tsx` e `pages/categories/index.tsx`.
+- **Estado do boilerplate hoje:** estratégia oposta — esconde **uma** coluna. `pages/users/index.tsx:223` `className={\`… ${column.key === 'mobile' ? 'hidden md:table-cell' : ''}\`}` e `components/users/user-table-row.tsx:50` `<Table.Cell className="hidden md:table-cell">`. `git -C $B grep -rn "md:hidden" origin/main -- resources/js` → **1 linha**, e é o `<Separator className="my-6 md:hidden" />` de `layouts/settings/layout.tsx:55`. Ou seja: no celular a listagem de usuários é uma tabela de 5 colunas com scroll horizontal (`ui/table.tsx:7` embrulha em `overflow-auto`), e a coluna sacrificada é o **celular** da pessoa.
+- **O que absorver / o que travar:** a variante card em `pages/users/index.tsx`, com o comentário de motivo, e um teste de render que prove que as duas variantes expõem os mesmos dados (senão o mobile vira uma tela com menos informação e ninguém percebe).
+- **Adaptação necessária:** o boilerplate usa `@radix-ui/themes` `Table.Root` e a fonte usa o `ui/table.tsx` do shadcn — a variante card não toca nem um nem outro (é `<ul>`), então convive.
+- **Risco · esforço:** P · M.
+- **Multi-fonte?** Sim, **já registrado** (E16, ctfinance). Este bloco só entrega o arquivo de referência.
+
+---
+
+### V6D-11 · O follow-up de E28 tem regra e **não tem trava**: 3 idiomas de spinner convivendo, e a fonte prova que o idioma replica sozinho
+
+- **Evidência:** os 10 arquivos com o spinner artesanal `div.animate-spin.rounded-full.border-2.border-current.border-t-transparent` são **os mesmos dez** nos dois projetos (`git grep -rln "border-t-transparent"`): `add-permission-dialog.tsx`, `assign-role-user.tsx`, `data-table/search-bar.tsx`, `delete-confirmation-dialog.tsx`, `user-form.tsx`, `users/filter-panel.tsx`, `pages/permission-role/roles.tsx`, `pages/settings/password.tsx`, `pages/settings/profile.tsx`, `pages/users/permissions.tsx`. Idênticos em `53d7d9a` e em `origin/main` — é ancestral comum, e ninguém o corrigiu em lugar nenhum.
+- **Estado do boilerplate hoje (medido em `beb848e`):**
+  - `<Button … loading=…>` → **2** call sites (`components/delete-user.tsx:114`, `ui/confirm-dialog.tsx:70`);
+  - `<Button … disabled={processing}>` com `{processing && <LoaderCircle …>}` dentro → **6**, todos em `pages/auth/*` (`confirm-password:49`, `forgot-password:55`, `login:103`, `register:104`, `reset-password:81`, `verify-email:33`);
+  - `<Button … disabled={processing}>` com o spinner-`div` dentro → **3** (`assign-role-user.tsx:192-199`, `delete-confirmation-dialog.tsx:227-241`, `user-form.tsx:362-370`);
+  - `aria-busy` fora de `ui/button.tsx` → **0** (`git grep "aria-busy" origin/main -- resources/js | grep -v test` → 3 linhas, todas em `ui/button.tsx` / comentário do `confirm-dialog`).
+  A regra existe: `.ai/rules/js.md`, seção *"Botão em envio usa `loading`, não `disabled`"*, adicionada em `a418f41`. E o próprio corpo do commit registra a dívida: *"Migrar os 8 spinners artesanais de botão e os 6 `LoaderCircle` das páginas de auth para `loading` é follow-up e não bloqueia."* **Isto não é descoberta minha** — a fatia nomeou o que deixou para trás. O que é novo é: passados #106, #107, #108, #111, os 9 continuam lá, e **nada falha** se um décimo aparecer. `resources/js/test/components/Button.test.tsx` tem 10 casos (`describe('estado de envio')` + `describe('asChild')`) e todos testam o primitivo, nenhum testa call site.
+- **O que absorver / o que travar:** o modelo já está no repo: `resources/js/test/lib/impersonation-call-sites.test.ts` — `@vitest-environment node`, varre `resources/js` menos `test/`, e afirma um contrato de posse (*"as rotas de impersonation só são nomeadas dentro do módulo"*), com um caso de controle (`it('actually reads the frontend source tree')`) que impede o teste de passar vazio. O irmão: *nenhum arquivo fora de `ui/button.tsx` monta indicador de envio próprio dentro de um `<Button>`* — `animate-spin`/`LoaderCircle` como filho de `<Button>` é violação; fora de `<Button>` (spinner de busca, de tela) segue livre. Nasce **vermelho com 9 ofensores**, então a fatia é o teste **mais** a migração — que é justamente o follow-up prometido, agora com data.
+- **Adaptação necessária:** 3 dos 9 trocam o rótulo enquanto enviam ("Salvando…", "Excluindo…", "Removendo…") — isso é `loadingText`, que o `Button` já tem (`ui/button.tsx:66`). Não há nada a inventar.
+- **Risco · esforço:** P · M. 9 arquivos, mudança mecânica, cada um já coberto por teste de componente.
+- **Multi-fonte?** Sim, e é o ponto: os 10 arquivos do spinner artesanal são idênticos em ctvitrine `53d7d9a` e boilerplate `origin/main`, e o `ui/button.tsx` da fonte é o shadcn cru (sem `loading`, sem `aria-busy`). O idioma não é bug de um projeto — é o default que todo derivado herda e nenhum corrige. Sem trava no boilerplate, ele volta.
+
+---
+
+#### Medições
+
+`R=/Users/cristianomorgante/workspace/laravel/simplify-technology/ctvitrine` · `B=/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate` · fonte sempre `53d7d9a`, alvo sempre `origin/main` (= `beb848ea509bf6682c9e31f10611ad7ab489392e`, resolvido por `git -C $B rev-parse origin/main`).
+
+```bash
+# --- V6D-1 skeleton
+git -C $R grep -n "Skeleton" 53d7d9a -- resources/js | wc -l                      # 14
+git -C $B grep -n "Skeleton" origin/main -- resources/js | grep -v "components/ui/" # 0 linhas
+git -C $B grep -n "SidebarMenuSkeleton" origin/main -- resources/js \
+  | grep -v "components/ui/sidebar.tsx"                                            # 0 linhas
+git -C $B show origin/main:resources/js/components/ui/skeleton.tsx                 # idêntico à fonte
+
+# --- V6D-2 favicon / ícones órfãos / fonte duplicada
+git -C $B grep -rn 'rel="icon"' origin/main -- resources app                       # 0
+git -C $B grep -rln "android-chrome" origin/main                                   # 0
+git -C $B grep -rn "webmanifest\|manifest.json" origin/main                        # 0
+git -C $B ls-tree -r origin/main --name-only -- public | grep -vE "fonts|vendor"   # 6 ícones + logo/robots/index/.htaccess
+git -C $B ls-tree -r origin/main --name-only -- public/fonts | wc -l               # 22
+git -C $B show origin/main:resources/css/_fonts.css | grep -c "url("               # 21
+git -C $B ls-tree -r -l origin/main -- public/fonts | grep "extrabold-italic"      # 2 entradas, mesmo blob fc88540e…, 78980 B
+git -C $R show 53d7d9a:resources/views/app.blade.php | grep -n 'rel="icon"'        # linhas 12,15,16,17,18
+
+# --- V6D-3 preconnect morto
+git -C $B grep -rn "bunny.net\|fonts.googleapis\|gstatic" origin/main -- resources # 1 linha: app.blade.php:67
+git -C $B show origin/main:resources/css/_fonts.css | grep -o "url([^)]*)" | sort -u # 21, todas /fonts/woff2/…
+git -C $R show 53d7d9a:resources/views/app.blade.php | grep -n "preconnect"        # 138
+
+# --- V6D-4 imagens
+git -C $R grep -o "<img" 53d7d9a -- resources/js | wc -l                           # 44
+git -C $R grep -n -E '^\s+(width|height)=' 53d7d9a -- resources/js                 # 0 linhas
+git -C $R grep -n "loading=" 53d7d9a -- resources/js | wc -l                       # 12
+git -C $R grep -n "decoding=" 53d7d9a -- resources/js | wc -l                      # 5
+git -C $R grep -n "fetchpriority\|fetchPriority" 53d7d9a -- resources/js           # 0
+git -C $R grep -rhoE "aspect-\[[^]\"']*\]|aspect-[a-z]+" 53d7d9a -- resources/js \
+  | sort | uniq -c                                                                 # square16 video3 [3/4]2 [2/1]2 [4/3]1
+git -C $R ls-tree -r -l 53d7d9a -- public | sort -k4 -nr | head -6                 # jaqueta 2276766 · bolsa 1792437 · vestido 1527070 · tenis 1463039 · logo.png 1060662 · logo-loja-ana 919986
+git -C $R grep -n "img/mock" 53d7d9a -- resources/js                               # 9 call sites, linhas 260,262,263,264,555,602,849,865,959
+git -C $B grep -n "<img" origin/main -- resources/js                               # 4 vivos + 1 comentado
+git -C $B grep -n "loading=\|decoding=" origin/main -- resources/js                # 8 (auth) + 2 (Button loading)
+git -C $B ls-tree -r -l origin/main -- public | sort -k4 -nr | head -3             # log-viewer/app.js 463466 · logo-simplify.png 116077 · android-chrome-512 89170
+
+# --- V6D-5 tokens semânticos + contraste
+git -C $B show origin/main:resources/css/app.css | grep -n -- "--success\|--warning\|--info"   # :root 135-140, .dark 189-194, toast 636/648/654
+git -C $B show origin/main:resources/css/app.css | awk '/^@theme/{f=1} f{print NR": "$0} f&&/^}/{exit}' \
+  | grep -c "color-success\|color-warning\|color-info"                             # 0
+git -C $B show origin/main:resources/js/test/styles/theme-tokens.test.ts | sed -n '127,134p'   # tabela: 6 pares, nenhum semântico
+git -C $R show 53d7d9a:resources/css/app.css | grep -n -- "--success\|--warning\|--info"       # mesmos hex
+python3 …/scratchpad/contrast.py                                                   # 3.30 / 2.15 / 2.77 / 2.28 / 8.77 / 6.83
+git -C $B grep -rn "text-success" origin/main -- resources/js                      # 0 — NÃO reproduz ctfinance.md:420
+
+# --- V6D-6 page-header morto + classe interpolada
+git -C $B grep -rn -E '(bg|text|border|from|to|via|ring|fill|stroke|grid-cols|w|h|size|p[xytblr]?|m[xytblr]?|gap)-\$\{' \
+  origin/main -- resources/js                                                      # 1 linha: page-header.tsx:41
+git -C $R grep -rn -E '(bg|text|border|from|to|…)-\$\{' 53d7d9a -- resources/js    # 0 linhas
+git -C $B grep -rn "PageHeader" origin/main -- resources/js | grep -v "layout/page-header.tsx"  # 0
+git -C $B grep -rn "PageInfo"   origin/main -- resources/js | grep -v "page-info.tsx"           # 3, todas em page-header.tsx
+git -C $R grep -rn "<PageHeader" 53d7d9a -- resources/js                           # metrics/index.tsx:653 · metrics/report.tsx:49
+git -C $B grep -rn "iconGradient" origin/main                                      # 4, todas no próprio arquivo
+
+# --- V6D-7 autosave / partial reload
+git -C $B grep -rn "only: \[" origin/main -- resources/js                          # 0
+git -C $B grep -rn "async: true" origin/main -- resources/js                       # 0
+git -C $R grep -rn "only: \[" 53d7d9a -- resources/js                              # item-form:197 · photo-ai-controls:51 · use-settings-autosave:43
+git -C $B grep -rn 'role="status"' origin/main -- resources/js | grep -v test      # 0
+git -C $R grep -rn 'role="status"' 53d7d9a -- resources/js                         # site-settings/edit.tsx:128,137,145
+
+# --- V6D-8 stalled / toque / hover
+git -C $B grep -rn "hover:none\|pointer:coarse" origin/main -- resources           # 0
+git -C $B grep -rn "min-h-11\|min-w-11\|min-h-\[44px\]" origin/main -- resources/js # 0
+git -C $B grep -rn "setInterval\|IntersectionObserver" origin/main -- resources/js | grep -v test  # 0
+git -C $B grep -rn "group-hover" origin/main -- resources/js                       # 4 (a única só-em-hover é ui/sidebar.tsx:594, salva por md:opacity-0)
+git -C $R show 53d7d9a:resources/js/pages/items/studio.tsx | grep -n "POLL_BACKOFF\|POLL_MAX_FAILURES\|STALL_"  # 35,38,45,48,225,234
+
+# --- V6D-9 SiteLayout
+git -C $R grep -n "SiteLayout" 53d7d9a -- app resources routes config              # 17 linhas
+git -C $R grep -rln "SiteLayout\|boutique" 53d7d9a -- tests                        # 9 arquivos (5 em tests/Feature/Layout)
+git -C $R show 53d7d9a:resources/views/app.blade.php | grep -n "str_starts_with"   # 134
+git -C $B grep -rn "withViewData" origin/main -- app                               # 0
+
+# --- V6D-10 mobile card
+git -C $R show 53d7d9a:resources/js/pages/items/index.tsx | grep -n "md:hidden\|hidden md:block"  # 201, 274
+git -C $B grep -rn "md:hidden" origin/main -- resources/js                         # 1 (settings/layout.tsx:55)
+git -C $B show origin/main:resources/js/pages/users/index.tsx | sed -n '223p'      # hidden md:table-cell
+
+# --- V6D-11 spinners
+git -C $B grep -rlE "border-t-transparent" origin/main -- resources/js             # 10 arquivos
+git -C $R grep -rlE "border-t-transparent" 53d7d9a -- resources/js                 # os MESMOS 10
+git -C $B grep -rn -E '<Button[^>]*loading=' origin/main -- resources/js | wc -l   # 1 (mais 1 multilinha = 2 total)
+git -C $B grep -rn -E '<Button[^>]*disabled=\{(processing|form\.processing)\}' origin/main -- resources/js | wc -l  # 6
+git -C $B grep -rn "aria-busy" origin/main -- resources/js | grep -v test          # 3, todas em ui/button.tsx / comentário
+git -C $B log -1 --format=%B a418f41                                               # "…é follow-up e não bloqueia"
+git -C $B show origin/main:resources/js/test/components/Button.test.tsx | grep -c "it("  # 10, nenhum de call site
+
+# --- animação (varredura da frente)
+git -C $R show 53d7d9a:resources/css/app.css | grep -n "@keyframes\|animation:"    # 2 keyframes (slideInRight/slideOutRight) — F32 já podou os do boilerplate
+git -C $B show origin/main:resources/css/app.css | grep -n "@keyframes\|animation:" # só o comentário :675
+git -C $R grep -ohn "animate-[a-z0-9-]*" 53d7d9a -- resources/js | sed 's/.*\(animate-[a-z0-9-]*\)/\1/' | sort | uniq -c  # spin47 in15 out12 pulse1 ping1
+git -C $B grep -ohn "animate-[a-z0-9-]*" origin/main -- resources/js | …           # spin18 in9 out8 pulse1
+git -C $R grep -rn "prefers-reduced-motion\|motion-reduce\|motion-safe" 53d7d9a -- resources   # 0
+git -C $B grep -rn "prefers-reduced-motion\|motion-reduce\|motion-safe" origin/main -- resources # 0  (já registrado: ctfinance.md:195 D6, represado)
+
+# --- densidade (para provar que NÃO há candidato)
+git -C $B show origin/main:resources/js/pages/dashboard.tsx  # byte-a-byte igual a 53d7d9a:resources/js/pages/dashboard.tsx
+git -C $R grep -rhoE "(bg|text|from|to|border|ring|shadow)-(cyan|blue|indigo|violet|sky)-[0-9]{2,3}" 53d7d9a -- resources/js | wc -l  # 264
+git -C $B grep -rhoE "…" origin/main -- resources/js | wc -l                       # 254 — mesmas 26 telas herdadas; as 12 telas NOVAS da fonte têm 0 cyan/blue
+```
+
+**Não medido, e assumido como dívida de quem pegar a fatia:** (i) se `@radix-ui/themes/styles.css` no `dist/` puxa algum host externo — abri só `resources/`, não `node_modules/` (afeta V6D-3); (ii) o peso real dos 5 woff2 pré-carregados **é** justificado no boilerplate — `app.css:370-393` força Montserrat em `html body h1/h2/h3` e `:459-472` força Merriweather em `.text-muted-foreground`, ambos presentes nas telas de auth, então **não existe over-preload** e qualquer candidato nesse sentido seria falso; (iii) não abri `pages/site/landing.tsx` inteiro (1483 linhas) — as citações são das 9 linhas de `<img>` que o grep devolveu.
+
+### Lente REFUTAR — vereditos
+
+# V6D-1 · DERRUBADO
+
+**Golpe (5) — fato falso, e (4) regra sem consumidor.**
+
+A contagem está errada. `git -C $R grep -n "Skeleton" 53d7d9a -- resources/js` devolve **10 linhas, não 14** — e a decomposição alegada ("11 em `ui/sidebar.tsx`") é falsa: são **5** em `ui/sidebar.tsx` (`:16`, `:599`, `:619`, `:624`, `:714`), **2** em `ui/skeleton.tsx` (`:4`, `:14`) e **3** em `studio.tsx` (`:8`, `:1106`, `:1128`). A conclusão de fundo ("única aparição fora de `ui/` é `studio.tsx`, 1 import + 2 usos") sobrevive à correção; o número não.
+
+O golpe que mata é outro. O ativo declarado é uma **regra**, e a própria candidatura admite que o alvo "não tem tela com preenchimento assíncrono". Confirmei que é pior que isso: `git -C $B grep -rn "Deferred|Inertia::defer|Inertia::optional" origin/main -- resources/js app` → **0 linhas**. Não existe nem o mecanismo que produziria o consumidor. E o contrato que a candidatura diz faltar **já está escrito**, só que noutro arquivo: `.ai/rules/controllers.md:18` prescreve `Inertia::defer(fn () => ..., 'grupo')` "com skeleton no `<Deferred>`". Publicar uma segunda regra de skeleton em `js.md` para um primitivo com 0 usos, num repo cujo único mecanismo gerador tem 0 usos e já é regrado, é escrever doutrina contra o vazio.
+
+O que resta é verdadeiro e trivial: `SidebarMenuSkeleton` é export morto (definido em `ui/sidebar.tsx:624`, exportado em `:739`, `git -C $B grep -n "SidebarMenuSkeleton" origin/main -- resources/js | grep -v "components/ui/sidebar.tsx"` → **0**), e o único `animate-pulse` do alvo é o do próprio primitivo. Isso é uma poda de ~20 linhas que pertence à família do **E19**, não uma fatia própria.
+
+Comandos: `git -C $R grep -n "Skeleton" 53d7d9a -- resources/js` (10) · `git -C $B grep -rn "Deferred\|Inertia::defer\|Inertia::optional" origin/main -- resources/js app` (0) · `git -C $B show origin/main:.ai/rules/controllers.md | sed -n 18p`.
+
+---
+
+# V6D-2 · SOBREVIVE (com escopo corrigido)
+
+**Passa (1)–(5), mas o escopo proposto porta um 404.**
+
+Reproduzi tudo: `git -C $B grep -rn 'rel="icon"' origin/main -- resources app` → **0**; nenhum `theme-color`, `description` ou OG na blade (li `origin/main:resources/views/app.blade.php:1-90` inteira — o `<head>` vai de `charset` a `@inertiaHead` sem uma tag de ícone). O `public/` do alvo tem exatamente 11 arquivos fora de `fonts/` e `vendor/`, seis deles ícones sem referência nenhuma. E o par duplicado de woff2 confirma-se com blob idêntico: `fc88540ed885152d200bf22f8f759258f78538b1`, 78.980 B, em `aptos-extrabold-italic 2.woff2` e `aptos-extrabold-italic.woff2` — 22 arquivos em `public/fonts` contra 21 `url(` em `_fonts.css`.
+
+**Escopo corrigido — três coisas que a candidatura erra:**
+
+1. **Não porte o ramo `@else` como está.** Ele linka `/favicon.svg` (`app.blade.php:16@53d7d9a`) e o alvo **não tem** esse arquivo: `git -C $B ls-tree -r origin/main --name-only -- public` lista `logo.svg`, não `favicon.svg`. Cópia literal = um 404 novo a cada navegação, que é o mesmo gênero de defeito do V6D-3.
+2. **O `@else` não resolve 2 dos 6 ícones.** `android-chrome-192x192.png` e `android-chrome-512x512.png` não são linkados por `<link rel="icon">` em fonte nenhuma — o consumidor deles é `site.webmanifest`, que o spinmax tem e o ctvitrine não. Ou a fatia acrescenta o manifest, ou poda os dois; senão o teste que ela mesma propõe nasce vermelho por culpa dela.
+3. **O teste precisa de allowlist desde a primeira linha**, não como refinamento: `public/index.php`, `public/.htaccess`, `public/robots.txt` e `public/vendor/log-viewer/*` (463.466 B de JS + 78.863 B de CSS publicados pelo pacote) jamais serão referenciados por `resources/`.
+
+Com isso, é P·P e vale. Recomendação de fatiamento: **funde com V6D-3** — são a mesma varredura de `<head>` + `public/`, e separá-las paga o custo de duas fatias para uma revisão só.
+
+Comandos: `git -C $B ls-tree -r origin/main --name-only -- public | grep -vE "fonts|vendor"` · `git -C $B ls-tree -r -l origin/main -- public/fonts | grep extrabold-italic` · `git -C $B ls-tree -r -l origin/main -- public | grep -v fonts | sort -k4 -nr`.
+
+---
+
+# V6D-3 · SOBREVIVE (e a dívida que ele declarou está paga)
+
+Nenhum golpe pega. Reproduzido: `git -C $B grep -rn "bunny.net\|fonts.googleapis\|gstatic" origin/main -- resources` → **1 linha, `app.blade.php:67`, e é a própria `preconnect`**. As `url()` de `_fonts.css` são todas `/fonts/woff2/…` (`grep -o "url([^)]*)" | grep -v "/fonts/"` → vazio).
+
+**Fechei a dívida que a candidatura deixou aberta** ("não medi o vendor"): `resources/css/app.css:5` importa `@radix-ui/themes/styles.css`, e `grep -rhoE "https?://[a-zA-Z0-9./-]+" node_modules/@radix-ui/themes/*.css` sobre os 812.667 B da folha → **zero ocorrências**. Não há host externo em lugar nenhum da cadeia de CSS. A `preconnect` abre handshake TLS para um host que ninguém busca, sem ressalva.
+
+Escopo corrigido: é **uma linha deletada**, não uma fatia. Vá junto com V6D-2, e a meia-regra de `<head>` entra em `.ai/rules/views.md` (que hoje tem 3 seções, nenhuma sobre dica de rede) como quarta seção — não em `css.md`.
+
+Comandos: os dois greps acima + `ls -la $B/node_modules/@radix-ui/themes/styles.css`.
+
+---
+
+# V6D-4 · SOBREVIVE (com metade do escopo cortada)
+
+**Todos os números batem, um a um.** Fonte: 44 `<img`, `^\s+(width|height)=` → **0** (as únicas 3 ocorrências de `width=`/`height=` em `resources/js` são `<pattern>`/`<rect>` de SVG em `placeholder-pattern.tsx` e um `<Box width>` do Radix — nenhuma num `<img>`); `loading=` em 12; `fetchpriority` em 0. Pesos: `jaqueta.png` 2.276.766 · `bolsa.png` 1.792.437 · `vestido.png` 1.527.070 · `tenis.png` 1.463.039 = **7.059.312 B**, e `git ls-tree -r -l 53d7d9a -- public/img/mock | awk '{s+=$4} END{print s}'` → **8.192.613 B**, exatamente os 7,81 MiB alegados. Alvo: 4 `<img>` vivos + 1 comentado, todos `/logo-simplify.png` (**116.077 B**) com `loading="eager" decoding="async" draggable={false}` e **nenhuma** dimensão; `.ai/rules` tem 0 regra de imagem (css.md 5 seções, views.md 3, js.md 21 — nenhuma).
+
+**Escopo corrigido:**
+
+- **Fica:** o teto de peso em `public/` com allowlist. É o achado com consequência real (116 KB de PNG para desenhar 40 CSS px) e é **o mesmo teste do V6D-2** — não escreva dois.
+- **Fica, reduzido:** `width`+`height` **ou** wrapper `aspect-*` no mesmo arquivo. Quatro correções, todas no mesmo logo.
+- **Cai:** a exigência de `fetchpriority="high"` acoplada a `loading="eager"`. Não é defeito medido em lugar nenhum — a fonte tem 5 `eager` e 0 `fetchpriority`, o alvo tem 4 e 0, e nenhuma medida de LCP foi feita em nenhum dos dois. Regra que inventa obrigação sem evidência é o gênero que a rodada 1 já pagou caro.
+- **Cai:** o argumento de CLS. Um logo de 40×40 dentro de flex container não move layout; o valor do `width`/`height` aqui é higiene preventiva para as telas futuras, e é assim que a regra tem de ser escrita — não como conserto de um defeito que o alvo não tem.
+
+Sobrando isso, é P·P e cabe no mesmo PR do V6D-2/V6D-3.
+
+---
+
+# V6D-5 · SOBREVIVE — e o próprio candidato se auto-refuta a favor
+
+**Os seis números de contraste reproduzem ao centésimo** (script próprio, luminância relativa WCAG 2.x): 3,30 · 2,15 · 2,77 · 2,28 · 8,77 · 6,83. `@theme` (`app.css:14-70`) mapeia 26 `--color-*` e **nenhum** semântico; a tabela de `theme-tokens.test.ts:126-134` tem 6 pares e nenhum deles é `success`/`warning`/`info`. Não há `@utility` nem qualquer outra definição — `git -C $B grep -rn "@utility" origin/main -- resources/css` → 0.
+
+**Mas a "adaptação necessária" está factualmente errada, e o erro reforça o candidato.** A candidatura afirma `git -C $B grep -rn "text-success" origin/main -- resources/js` → 0 linhas, e "não reproduz `ctfinance.md:420`". Rodei o mesmo comando: **1 linha**, `resources/js/components/users/user-actions-menu.tsx:126` —
+```tsx
+user.is_active ? 'text-destructive focus:text-destructive' : 'text-success focus:text-success',
+```
+O ctfinance errou a linha (`:125` vs `:126`); o call site é real. Como `--color-success` não existe no `@theme`, `text-success` **não gera utilitário nenhum**: o item "ativar usuário" do menu está hoje sem cor declarada, nos dois temas, e ninguém percebe porque herda a cor do menu.
+
+**Segundo fato que ninguém mediu:** o par não é hipotético — já renderiza. `lib/toast-config.ts:37-38` passa `iconTheme: { primary: 'var(--success)', secondary: 'var(--success-foreground)' }`. No tema escuro isso é `#22c55e` × `#ffffff` = **2,28:1**, abaixo até do piso **não-textual** de 3:1 (WCAG 1.4.11) — é um ícone de confirmação que já está no ar reprovando contraste, não um risco futuro.
+
+**Escopo corrigido (a ordem da candidatura está certa, os fatos é que estavam frouxos):** (1) as 3 linhas na tabela do `theme-tokens.test.ts` primeiro, e vê-la falhar; (2) escolher os pares — o padrão do escuro (`--X` claro + foreground navy) já passa e é a saída óbvia; (3) só então exportar ao `@theme` e trocar os literais; (4) **e** o call site vivo de `user-actions-menu.tsx:126` entra na mesma fatia, porque é a prova de que "classe morta" já virou "classe escrita por alguém que achou que existia". Risco M·M confirmado — toca o CSS de toast (`app.css:636/648/654`) onde a F32 acabou de passar.
+
+---
+
+# V6D-6 · SOBREVIVE (intacto — é o único que não precisou de correção)
+
+Reproduzi cada afirmação:
+
+- `git -C $B grep -rn -E '(bg|text|border|from|to|via|ring|fill|stroke|grid-cols|w|h|size|p[xytblr]?|m[xytblr]?|gap)-\$\{' origin/main -- resources/js` → **exatamente 1 linha**, `components/layout/page-header.tsx:41`.
+- A mesma varredura em `53d7d9a` → **0 linhas**.
+- `PageHeader` fora do próprio arquivo → **0**. `PageInfo` → 3 linhas, todas em `page-header.tsx` (+ a definição em `components/page-info.tsx`). `iconGradient` → 4, todas no próprio arquivo. **Dois arquivos mortos**, confirmado.
+- Nenhum dos dois é tocado por teste: `git -C $B grep -rln "PageInfo\|PageHeader" origin/main -- resources/js/test` → **0 arquivos**.
+- A variante da fonte é viva e sem a prop: li `53d7d9a:resources/js/components/layout/page-header.tsx` inteiro — o ramo do ícone é `className="bg-primary/10 text-primary flex h-10 w-10 …"`, sem `cn()` condicional, sem `iconGradient` no tipo; call sites em `metrics/index.tsx:653` e `metrics/report.tsx:49`.
+
+Uma correção de nome, não de fato: o segundo arquivo é `resources/js/components/page-info.tsx`, não `components/layout/page-info.tsx` — o título do candidato induz ao caminho errado.
+
+O desempate 3-de-3 é o ativo real e está certo: a decisão não é "consertar o gradiente", é **remover a prop**. Guard-rail no molde de `link-button-nesting.test.ts` (que eu li: `@vitest-environment node`, varre `resources/js` menos `test/`, com caso de controle) pega hoje 1 linha e é a certa. P·P na poda.
+
+---
+
+# V6D-7 · DERRUBADO
+
+**Golpe (5): o mecanismo central alegado sobre o alvo é falso.**
+
+A candidatura constrói a regra em cima de: *"o boilerplate acabou de fazer o `flash` do `share()` virar `Inertia::always()` — ou seja, no boilerplate `only:` não corta o flash, ele fura o filtro igual aos erros."*
+
+Nada disso é verdade em `beb848e`:
+
+- `git -C $B grep -rn "always(" origin/main -- app` → **0 linhas**. Não existe `Inertia::always` no projeto.
+- Li `share()` inteiro (`HandleInertiaRequests.php:29-72`): as chaves são `name`, `quote`, `auth`, `ziggy`. **`flash` não é prop.** Não está lá, nem como `always`, nem como nada.
+- O alvo migrou para o flash **nativo do Inertia 3**, que viaja **fora de `props`**: `resources/js/lib/flash.ts:9` — *"O flash nativo do Inertia 3 vive no OBJETO DE PÁGINA (irmão de `component`…)"* — consumido por um único `router.on('flash', …)` em `app.tsx:4`, com 13 `Inertia::flash()` do lado servidor.
+
+Ou seja: `only:` nunca filtrou o flash no alvo em direção nenhuma, porque flash não é prop no alvo. A regra proposta ensinaria um mecanismo inexistente — exatamente o defeito que a rodada 1 pagou. E o `only: ['settings']` da fonte funciona pelo motivo oposto ao alegado: o docblock de `use-settings-autosave.ts:23-26` diz que ali o flash **é** array puro de prop (`->with('success')`) e por isso é cortado. Os dois projetos estão em regimes diferentes e a candidatura fundiu os dois.
+
+Golpe (4) por cima: o `SaveIndicator` é reconhecido pela própria candidatura como órfão ("nasce sem call site — o mesmo defeito do V6D-6"), e `role="status"` no alvo é 0 hoje.
+
+O que é verdade e pode ser reciclado noutro lugar: `only: []` e `async: true` são **0** no alvo (reproduzido), e uma regra sobre `only:` versus props sempre-presentes tem valor — mas ela precisa ser escrita a partir de `lib/flash.ts`, não de um `Inertia::always()` que não existe.
+
+---
+
+# V6D-8 · SOBREVIVE (com ~um quarto do escopo)
+
+Li `53d7d9a:resources/js/components/items/studio-photo.tsx:1-95`: as citações são **literais e corretas** — o docblock de `stalled`, `const stuck = photo.ai_status === 'processing' && stalled`, o `PILL` com `min-h-11 min-w-11` e o comentário dos 44px, o `BAR_ON_DEMAND` com `[@media(hover:none)]:opacity-100`, e o selo `failed` permanente com o comentário "não pode depender de a lojista passar o dedo por cima". Alvo: `hover:none|pointer:coarse` → **0**, `min-h-11|min-w-11|min-h-[44px]` → **0**, `setInterval|IntersectionObserver` → **0**, `group-hover` → **4**.
+
+**O que cai (golpe 4, regra sem superfície):** prazo do cliente, `POLL_BACKOFF`, teto de falhas, pausa em aba oculta. O alvo não tem **nada** assíncrono de longa duração — é o mesmo vazio pelo qual derrubei o V6D-1, e seria incoerente aceitar aqui. A candidatura ainda avisa, corretamente, que implementar prazo genérico no `Button` é risco G. Não escreva a regra do prazo antes de existir a primeira tela que espera.
+
+**O que cai (golpe 5, enquadramento falso):** o piso de 44px. A própria candidatura reconhece que é AAA (2.5.5) e que `size-9`/`h-8 w-8` passam o mínimo AA de 24px (2.5.8). Escrever isso como piso do boilerplate cria dívida de refatoração em todo `size="icon"` do repo — e já está registrado como **E16** no ctfinance de qualquer forma.
+
+**O que sobrevive, e é a fatia inteira:** duas frases em `.ai/rules/js.md`, na família da seção 56 ("Papel interativo só em elemento que o teclado alcança"):
+> *Afordância só-em-hover precisa de `focus-within:` **e** `[@media(hover:none)]:`, ou desaparece no celular. Sinal de erro é permanente; não depende de hover.*
+
+Essa metade tem superfície real: das 4 ocorrências de `group-hover` do alvo, três são decorativas (`scale-105`, `text-cyan-600`) e uma é afordância de verdade — `ui/sidebar.tsx:594`, que só não some no celular porque leva `md:opacity-0` no fim da string, isto é, **por acidente de breakpoint**. Um `group-hover/menu-item:opacity-100` sem essa cauda quebraria em silêncio. P·P.
+
+---
+
+# V6D-9 · DERRUBADO
+
+**Golpe (1) na metade portável + golpe (5) na justificativa da outra metade.**
+
+A "forma do enum de variação" que ele propõe absorver **já é regra vigente**. `git -C $B show origin/main:.ai/rules/enum.md` diz, textualmente: *"Todo enum expõe `label()` via match retornando rótulo em pt-BR; listas para UI saem de um `options()` estático com pares value/label."* Dois dos três métodos elogiados (`options()`, `label()`) já estão normatizados; `Rule::enum` na escrita é padrão do framework. Sobra só `fromSetting()` — degradação tolerante de valor nulo/typo — e mesmo isso o alvo já pratica em espírito (`Permissions.php:60`, `IndexController.php:42`, `RoleFilterService.php:124` usam `tryFrom(...)?->x() ?? fallback`).
+
+**E o fato usado para justificar a regra preventiva é falso.** A candidatura escreve: *"nem o mecanismo de `$page['component']` chegar à blade como dado existe aqui"*, apoiada em `withViewData` → 0. `withViewData` é irrelevante: a root view do Inertia **sempre** recebe `$page`, e o alvo já o consome — `resources/views/app.blade.php`, linha do `@vite`:
+```blade
+@vite(['resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+```
+Um `str_starts_with($page['component'] ?? '', …)` funcionaria hoje, sem nenhum mecanismo novo. A premissa "não dá para fazer aqui" não se sustenta.
+
+Resta uma regra preventiva (golpe 3/4) sobre alternância de famílias de layout por enum — algo que o alvo não tem, não planeja, e cuja fonte é confessadamente white-label por instância. A própria candidatura fecha com "não há segunda família; é regra preventiva". Não é fatia.
+
+A observação sobre a rachadura `enum ↔ blade` (renomear `site/boutique/` quebra o preload em silêncio) é uma boa **crítica do ctvitrine** e vale registro no inventário dele. Não vira regra do boilerplate.
+
+---
+
+# V6D-10 · DERRUBADO como fatia (reforço de E16, não candidato)
+
+Não há erro de fato — reproduzi tudo: `md:hidden` no alvo → **1 linha**, `layouts/settings/layout.tsx:55`; `pages/users/index.tsx:130` define `{ key: 'mobile', label: 'Celular', icon: Phone }` e `:223` a esconde com `hidden md:table-cell`; a fonte faz render duplo em `items/index.tsx:201` (`<ul className="divide-border/60 divide-y md:hidden">`) e `:274` (`<div className="hidden md:block">`).
+
+Mas a própria candidatura declara o veredito: *"Terceira confirmação de `ctfinance.md:314` (E16). (…) Este bloco só entrega o arquivo de referência."* Isso é **evidência anexa a um candidato já registrado**, não um candidato novo. Abrir V6D-10 como fatia própria duplica E16 e faz a rodada contar o mesmo achado duas vezes — que é precisamente o gênero de inflação que esta lente existe para cortar.
+
+Redirecionamento: cole `53d7d9a:resources/js/pages/items/index.tsx:200-273` como implementação de referência **dentro do E16**, com o dado que de fato acrescenta — que a coluna sacrificada no alvo é o **celular da pessoa**, e que a estratégia de render duplo (`<ul>` fora de `Table`) convive com o `Table.Root` do `@radix-ui/themes` sem tocá-lo.
+
+---
+
+# V6D-11 · SOBREVIVE (intacto; é o candidato mais forte do lote)
+
+Não achei um único fato para derrubar. Verificações independentes:
+
+- `git -C $B grep -rl "border-t-transparent" origin/main -- resources/js` e `git -C $R grep -rl "border-t-transparent" 53d7d9a -- resources/js` devolvem **as mesmas 10 rotas**, na mesma ordem. Ancestral comum confirmado.
+- `<Button … loading=…>` → **2** call sites reais (`components/delete-user.tsx:114`, `ui/confirm-dialog.tsx:70`). As outras 4 ocorrências de `loading=` são `loading="eager"` de `<img>` nos layouts de auth — a candidatura não caiu nessa armadilha e contou certo.
+- `LoaderCircle` fora de `ui/button.tsx` → **6**, todos em `pages/auth/*` nas linhas exatas alegadas (`confirm-password:50`, `forgot-password:56`, `login:104`, `register:105`, `reset-password:82`, `verify-email:34` — desvio de ±1 linha em relação ao alegado, irrelevante).
+- Os **3** spinner-`div` dentro de `<Button>` estão onde ele diz, e os rótulos que a candidatura promete cobrir com `loadingText` são literais: `assign-role-user.tsx:201` "Atribuindo...", `delete-confirmation-dialog.tsx:240` "Removendo..."/"Excluindo...", `user-form.tsx:370` "Salvando...".
+- `aria-busy` fora de `ui/button.tsx` → **0**. A regra existe (`.ai/rules/js.md:65-66`, li o texto) e menciona `loadingText`. `Button.test.tsx` tem 10 `it(` e nenhum de call site.
+- O molde existe e é exatamente o descrito: li `test/lib/impersonation-call-sites.test.ts` — `@vitest-environment node`, `applicationSourceFiles()` recursivo excluindo `test/`, e o caso de controle `it('actually reads the frontend source tree')` com `toBeGreaterThan(50)`.
+
+Sem conflito de ADR, sem acoplamento a domínio, 9 ofensores mecânicos com cobertura de componente já existente. **Escopo corrigido (mínimo):** o teste deve mirar *filho de `<Button>`*, não `animate-spin` em geral — `data-table/search-bar.tsx`, `users/filter-panel.tsx`, `add-permission-dialog.tsx`, `pages/permission-role/roles.tsx`, `pages/settings/*`, `pages/users/permissions.tsx` usam o mesmo `div` **fora** de botão, e nenhum deles é ofensor. Sem esse recorte o teste nasce com 10 vermelhos em vez de 9 e a fatia incha para reescrever spinners de busca que estão corretos.
+
+Um reparo de crédito, não de fato: a candidatura já se declara não-descobridora ("a fatia nomeou o que deixou para trás", `a418f41`). O que ela acrescenta e sustenta é: passadas quatro fatias, os 9 continuam lá e **nada falha se um décimo aparecer**. É esse o ativo.
+
+---
+
+## Placar
+
+| ID | Veredito |
+|---|---|
+| V6D-1 | **DERRUBADO** — contagem errada (10, não 14) e regra sem consumidor: `Deferred` tem 0 usos e `controllers.md:18` já regra o único mecanismo gerador. |
+| V6D-2 | **SOBREVIVE** — mas o `@else` da fonte linka `/favicon.svg`, que o alvo não tem; e não cobre os 2 `android-chrome-*`. |
+| V6D-3 | **SOBREVIVE** — dívida de vendor paga por mim: 0 host externo em `@radix-ui/themes/*.css`. Funde com V6D-2. |
+| V6D-4 | **SOBREVIVE** — números exatos; cai a exigência de `fetchpriority` (sem evidência) e o argumento de CLS; teto de `public/` é o mesmo teste do V6D-2. |
+| V6D-5 | **SOBREVIVE, reforçado** — os 6 contrastes reproduzem, mas a auto-refutação está errada: `text-success` vive em `user-actions-menu.tsx:126`, e o par escuro 2,28:1 **já renderiza** no ícone do toast. |
+| V6D-6 | **SOBREVIVE intacto** — 1 linha de interpolação no repo, 2 arquivos mortos, 0 testes, desempate 3-de-3 confirmado. |
+| V6D-7 | **DERRUBADO** — `Inertia::always` não existe no alvo e `flash` não é prop: o alvo usa flash nativo do Inertia 3 no objeto de página. A regra ensinaria um mecanismo inexistente. |
+| V6D-8 | **SOBREVIVE** — só a metade hover/`[@media(hover:none)]` + erro persistente. Prazo/polling caem (0 superfície); 44px cai (AAA mal enquadrado, e já é E16). |
+| V6D-9 | **DERRUBADO** — `options()`/`label()` já são regra em `.ai/rules/enum.md`, e o `$page['component']` já chega à blade do alvo (linha do `@vite`); `withViewData` é irrelevante. |
+| V6D-10 | **DERRUBADO como fatia** — é evidência do E16 já registrado, por confissão da própria candidatura. |
+| V6D-11 | **SOBREVIVE intacto** — o mais forte do lote; recortar o teste para *filho de `<Button>`* (9 ofensores, não 10). |
+
+**5 sobrevivem (2 intactos, 3 com escopo cortado), 4 derrubados, 1 rebaixado a evidência.** Erros factuais verificáveis em **4 de 11** candidaturas: V6D-1 (contagem), V6D-5 (auto-refutação falsa — a favor), V6D-7 (mecanismo central), V6D-9 (`$page` na blade + regra já vigente).
+
+Baselines usados: fonte `53d7d9a591decc55575ff9f2c1f8fd1fe6fcead7`, alvo `beb848ea509bf6682c9e31f10611ad7ab489392e` (ambos resolvidos por `rev-parse`, não assumidos). Script de contraste em `/private/tmp/claude-501/-Users-cristianomorgante-workspace-laravel-simplify-technology-boilerplate/d8004fea-fc6c-4549-80cd-c5c1639cda27/scratchpad/ct.py`. **Não medido por mim:** o `dist/` de pacotes que não `@radix-ui/themes`; o conteúdo de `pages/site/landing.tsx` além das linhas devolvidas pelo grep de `<img>`.
+
+### Lente RISCO — vereditos
+
+# V6D-1 · Skeleton sem contrato de uso
+
+**Risco: BAIXO para a regra, MÉDIO se alguém a implementar hoje.**
+
+Confirmei o estado do alvo: `git -C $B show origin/main:resources/js/components/ui/skeleton.tsx` → 14 linhas, `bg-primary/10 animate-pulse rounded-md`; `git -C $B grep -n "Skeleton" origin/main -- resources/js | grep -v components/ui/` → 0; `git -C $B grep -rn "SidebarMenuAction\|SidebarMenuSkeleton" origin/main -- resources/js | grep -v ui/sidebar.tsx` → **0 para os dois** (o `SidebarMenuAction` que o V6D-8 cita também é morto). E `h-9` de fato casa o `SelectTrigger` do alvo (`ui/select.tsx:34` tem `flex h-9 w-full`).
+
+O que quebra:
+
+1. **Catraca nenhuma é tocada.** Nada em `resources/js/test/styles/` (focus-ring, theme-tokens) olha `animate-pulse` ou `bg-primary/10`. Regra + poda de 20 linhas do `ui/sidebar.tsx` passa por `ci:check` sem drama.
+2. **A troca da fonte tem dois defeitos de a11y que a regra, como escrita, propaga.** Em `53d7d9a:resources/js/pages/items/studio.tsx:1101-1120` o `<Skeleton>` substitui o `<Select id="category_id">` mas o `<Label htmlFor="category_id">` fica apontando para um id que sumiu da árvore; e o skeleton não tem `aria-busy`, `role="status"` nem nada — para leitor de tela o campo simplesmente **não existe** enquanto a IA pensa, sem anúncio de que algo está chegando. Isso colide de frente com a linha do `.ai/rules/js.md` que a fatia #101 acabou de escrever ("é a mudança de conteúdo de uma **região preexistente** que dispara o anúncio").
+3. **Primeiro `animate-pulse` de tela real, num repo com zero controle de movimento.** Medido: `git -C $B grep -rn "prefers-reduced-motion\|motion-reduce\|motion-safe" origin/main -- resources` → **0 linhas** (D6 represado). Hoje o único `animate-pulse` é o do primitivo não usado, então a dívida é teórica; o primeiro call site a torna visível.
+
+**Mitigação concreta:** a regra tem de incluir as duas metades que a fonte não tem — (i) o contêiner que troca controle por skeleton carrega `aria-busy="true"` e o `<Label>` continua apontando para algo (ou o controle fica montado e `disabled`, que é a alternativa mais barata e não perde o foco); (ii) skeleton entra no mesmo commit que a decisão de `motion-reduce`, ou a regra registra explicitamente que herda D6.
+
+**Custo de gate:** não há prova visual possível sem `pest-plugin-browser` (confirmado ausente: `composer.json` `require-dev` tem só `pestphp/pest` e `pest-plugin-laravel`). A evidência disponível é o teste de árvore no molde de `focus-ring.test.ts`: *arquivo que importa `Skeleton` fora de `ui/` declara `aria-busy` no mesmo bloco* — nasce verde e barato. Para a poda do `SidebarMenuSkeleton`, o gate é o próprio `tsc`/ESLint (export removido, nenhum importador).
+
+---
+
+# V6D-2 · Favicon não linkado + ícones órfãos
+
+**Risco: MÉDIO — e o candidato, absorvido literalmente, produz um 404 em toda página.**
+
+O achado se confirma e cresce. Medido:
+
+```
+git -C $B grep -rn 'rel="icon"' origin/main -- resources app        # 0
+git -C $B ls-tree -r -l origin/main -- public | grep -v public/fonts
+git -C $B ls-tree -r -l origin/main -- public/fonts                 # 22 arquivos
+git -C $B show origin/main:resources/css/_fonts.css | grep -c "url(" # 21
+```
+
+- Os 6 ícones existem e ninguém os referencia. **Sétimo órfão que o candidato não contou:** `public/logo.svg`, 26.580 B, `git -C $B grep -rn "logo.svg" origin/main` → **0 linhas** em qualquer lugar do repo.
+- O par de woff2 duplicado se confirma byte a byte: `aptos-extrabold-italic 2.woff2` e `aptos-extrabold-italic.woff2` são o blob `fc88540ed885152d200bf22f8f759258f78538b1`, 78.980 B cada; `comm` entre as 21 `url()` e os 22 arquivos devolve exatamente o arquivo com ` 2`.
+- **Correção de um número do candidato:** ele não afirmou, mas cuidado com `grep -c "@font-face"` = 32 em `_fonts.css` — 11 dessas ocorrências estão dentro do comentário `https://developer.mozilla.org/…/CSS/@font-face/font-display`. São 21 `@font-face` reais para 21 `url()`. Não há `@font-face` morto.
+
+O que quebra:
+
+1. **Copiar o ramo `@else` da fonte assinada dá 404.** A fonte linka `/favicon.svg?v=2` (`53d7d9a:resources/views/app.blade.php:16`) e o boilerplate **não tem `favicon.svg`** — a listagem de `public/` acima é completa. Trazer as 5 linhas verbatim adiciona uma requisição falhada em cada navegação, que é o gênero oposto do que a fatia quer consertar.
+2. **`theme-color` cria um terceiro literal de tema fora do `app.css`.** `.ai/rules/views.md` ("Superfície nova pintada fora do `app.css` entra nesse teste no mesmo commit") e `tests/Unit/Theme/InlineThemeBackgroundTest.php` cobrem hoje **dois** arquivos por `<style>` inline. Um `<meta name="theme-color" content="#0f2a44">` é um quarto lugar onde `--brand-navy-dark` está escrito à mão e o teste **não** o alcança (ele lê `themeStyleBlock()`, que casa `<style>…</style>`, e o `<meta name="color-scheme">` por `str_contains`). Além disso, um `theme-color` navy único pinta o cromo do celular de escuro para quem está no tema **claro**.
+3. **O teste de árvore proposto quebra `ci:check` no primeiro dia.** `public/build` é gitignorado (`.gitignore:5`) mas existe em disco em qualquer máquina que já construiu — aqui, 53 arquivos, incluindo `app-BKlgUCP1.css` (824.001 B) e `dist-EVQzBvcd.js`. `find $B/public -type f | wc -l` → **96** contra 43 rastreados. `ci:check` é `ci:lint && ci:test && ci:build`, então o Vitest roda **antes** do build da mesma invocação — mas o `public/build` da rodada anterior já está lá. Um teste "todo arquivo em `public/` fora de `vendor/` é referenciado" reprova em 53 arquivos de build, mais `index.php`, `.htaccess`, `robots.txt`.
+
+**Mitigação concreta:** (a) trazer só os 5 links que correspondem a arquivos que existem — `.ico`, `32x32`, `16x16`, `apple-touch-icon` — e **decidir** sobre `android-chrome-*` (que só servem com `site.webmanifest`, que o spinmax tem e este não): ou entra o manifest, ou os dois PNGs são podados; (b) `theme-color` só com `media="(prefers-color-scheme: dark)"` + um par claro, e a linha entra no `InlineThemeBackgroundTest` no mesmo commit (o teste já tem o helper `appCssToken()` pronto); (c) o teste de árvore nasce com exclusão explícita de `build/`, `hot/`, `storage/`, `vendor/` e uma allowlist de `index.php|.htaccess|robots.txt` — sem isso é vermelho garantido.
+
+**Custo de gate:** o link do favicon em si não tem prova automatizável barata (é aba de browser). A prova possível é o teste de árvore acima (que cobre o órfão, não a aparência) mais uma asserção no molde do `InlineThemeBackgroundTest`: *todo `href` de `<link rel="icon">` aponta para arquivo existente em `public/`* — essa **é** verificável e é justamente a que teria pego o `/favicon.svg`.
+
+---
+
+# V6D-3 · `preconnect` para `fonts.bunny.net`
+
+**Risco: BAIXO. É a fatia mais segura do lote, e fechei a dívida que o próprio candidato declarou.**
+
+O candidato deixou como "não medido" se o `dist/` do `@radix-ui/themes` puxa host externo. **Medi**, e no lugar certo — o CSS já construído, que é a soma de tudo:
+
+```
+grep -ohE "https?://[a-zA-Z0-9.-]+" $B/public/build/assets/*.css | sort | uniq -c
+# 1 https://tailwindcss.com   (comentário)
+grep -ohE "url\(['\"]?(https?:)?//[^)]*" $B/public/build/assets/*.css   # vazio
+grep -c "fonts.googleapis\|gstatic\|bunny" $B/node_modules/@radix-ui/themes/styles.css  # 0
+```
+
+824 KB de CSS construído, **zero** `url()` fora de origem. Não existe consumidor de terceiro host em lugar nenhum da folha. A remoção é segura.
+
+O que quebra: **nada.** A linha é `resources/views/app.blade.php:67`, isolada entre os `preload` de fonte e o `@routes`. `InlineThemeBackgroundTest` lê o primeiro bloco `<style>` (que está acima) e faz `str_contains` por `name="color-scheme"` — nenhum dos dois toca a linha. Nenhum teste de front lê a blade.
+
+**Mitigação:** só uma, de escrita da regra. A regra proposta ("dica de rede só com consumidor demonstrável") vale, mas note que os **5 `preload` de fonte logo acima são o contraexemplo legítimo** e a regra tem de deixar isso claro, senão a próxima pessoa poda os `preload` junto: `app.css:370-393` força Montserrat em `h1/h2/h3` e `:459-472` força Merriweather em `.text-muted-foreground`, ambos presentes nas telas de auth. O candidato já registrou isso no rodapé; tem de subir para o corpo da regra.
+
+**Custo de gate:** trivial e real — caso no `InlineThemeBackgroundTest` (Pest, já lê a blade em disco): *todo host em `preconnect`/`dns-prefetch` da blade aparece em pelo menos uma `url()` de `resources/css/`*. Nasce verde depois da poda e reprova na volta.
+
+---
+
+# V6D-4 · `<img>` sem dimensão e binário pesado em `public/`
+
+**Risco: BAIXO para as 4 correções, ALTO para o teto de peso em `public/` como proposto.**
+
+Reproduzi o lado do alvo e acrescentei a medição que faltava:
+
+```
+git -C $B grep -n "<img" origin/main -- resources/js       # 4 vivos + 1 comentado (app-logo.tsx:11)
+git -C $B grep -rhoE "aspect-[a-z\[]+[^ \"']*" origin/main -- resources/js | sort | uniq -c
+#   5 aspect-square   3 aspect-video   (= 8, confere)
+git -C $B cat-file blob origin/main:public/logo-simplify.png | file -
+# PNG image data, 2084 x 2120, 8-bit/color RGBA
+```
+
+**O fato novo é a razão do desperdício:** `logo-simplify.png` tem **2084×2120 px** e é desenhado a `h-10 w-10` (40 px) em `auth-simple-layout.tsx:23` e `auth-split-layout.tsx:42`, e a `h-7 w-7` (28 px) em `auth-split-layout.tsx:18`. São ~52× de sobreamostragem linear em 116.077 B, na primeira tela que qualquer pessoa vê. Isso sozinho justifica a fatia — e note que **não é** o teto de peso que pega isso: é a razão dimensão-renderizada/dimensão-intrínseca.
+
+O que quebra:
+
+1. **`width`/`height` nos 4 logos: nada.** As quatro têm dimensão por CSS (`h-10 w-10 object-contain`), então o atributo só fornece a razão de aspecto para o reserva de espaço; o CSS continua ganhando. Sem regressão visual. (Cuidado de detalhe: o PNG **não é quadrado** — 2084×2120. Declarar `width={40} height={40}` mente a razão intrínseca; com `object-contain` e ambas as dimensões travadas por CSS o resultado na tela é idêntico, mas se alguém depois soltar uma das dimensões, o `aspect-ratio` implícito vira 1:1 e distorce. Declare `width={2084} height={2120}` ou reduza o arquivo primeiro.)
+2. **`eager` + `fetchpriority="high"` como regra tem um caso que a regra não cobre.** `auth-split-layout.tsx` renderiza **duas** cópias do logo: uma dentro de `hidden … lg:flex` e outra dentro de `lg:hidden`. As duas são `loading="eager"`. Ou seja: em toda largura, uma delas está em `display:none` e ainda assim é buscada, e a regra "eager só acima da dobra" não sabe distinguir. Escrita como está, ela ou fica muda para esse caso ou vira ruído.
+3. **O teto de 200 KB em `public/` reprova o `ci:check` de qualquer máquina que já tenha construído.** Medido em disco: `find $B/public -type f -size +200k` → `public/build/assets/app-BKlgUCP1.css`, `public/build/assets/dist-EVQzBvcd.js` e `public/vendor/log-viewer/app.js` (463.466 B). Dois dos três são artefato de build gitignorado; o terceiro é saída de `vendor:publish` que volta a cada `artisan vendor:publish --tag=log-viewer-assets`. Se o teste ler o disco (é a única forma, como faz `impersonation-call-sites.test.ts`), ele tem de excluir `build/`, `hot/`, `storage/` e `vendor/` **e** a allowlist tem de ser por caminho, não por hash — senão o próximo `vendor:publish` derruba o CI com um diff que ninguém escreveu.
+
+**Mitigação concreta:** partir a fatia em duas. (a) **Barata e sem risco:** reduzir `logo-simplify.png` para 96×96 (ou trocar por SVG — `public/logo.svg` já está lá, órfão) e pôr `width`/`height` nos 4 call sites; isso resolve o peso sem regra nenhuma. (b) **A regra**, se entrar, mira a razão e não o peso absoluto: *`<img>` declara `width`/`height` (ou vive em wrapper `aspect-*` no mesmo arquivo)*, com o teto de `public/` como **allowlist por caminho e exclusão explícita de `build|hot|storage|vendor`**, mais um controle positivo no molde do `it('actually reads the frontend source tree')` para o teste não passar vazio.
+
+**Custo de gate:** o teste de call-site é real e verificável (mesma família dos dois que já existem). O peso da imagem em si não tem gate — a evidência possível é o número medido no corpo do PR (2084×2120 → 96×96, 116.077 B → ~5 KB), não uma catraca.
+
+---
+
+# V6D-5 · `--success` / `--warning` / `--info` reprovam contraste
+
+**Risco: MÉDIO — e o candidato acertou o diagnóstico mas o conserto que ele propõe não fecha o buraco que importa.**
+
+Reproduzi a tabela inteira com script próprio (WCAG 2.x relative luminance), e ela bate **exatamente**: 3,30 / 2,15 / 2,77 / 2,28 / 8,77 / 6,83. Também confirmei que o `@theme` (`app.css:14-70`) não exporta nenhum dos três e que a tabela de `theme-tokens.test.ts:127-134` tem 6 pares, nenhum semântico.
+
+**Dois fatos novos que mudam a fatia:**
+
+1. **Não é token dormente. Os três já pintam pixel hoje, em dois canais.** Além do `border-left: 4px solid var(--warning)` (`app.css:648`), o `lib/toast-config.ts` passa `iconTheme: { primary: 'var(--success)', secondary: 'var(--success-foreground)' }` — que é o disco colorido com o glifo por dentro, o par exato da tabela. Medido contra a superfície real (`--card`, branco no claro / `#0f2a44` no escuro):
+
+   | canal vivo | razão | 3:1 (WCAG 1.4.11) |
+   |---|---|---|
+   | borda `--warning` sobre card claro | **2,15:1** | ✗ |
+   | borda `--info` sobre card claro | **2,77:1** | ✗ |
+   | borda `--success` sobre card claro | 3,30:1 | ✓ |
+   | glifo branco sobre disco `--success` escuro | **2,28:1** | ✗ |
+   | as três bordas sobre card escuro | 6,42 / 8,77 / 6,83 | ✓ |
+
+   Ou seja: a borda esquerda que **distingue uma variante de toast da outra** não alcança 3:1 no tema claro para aviso e info. É defeito ao vivo, não dívida adormecida. (Nota de precisão: o `iconTheme` de warning e info é **inerte** — os dois passam `icon: '⚠️'`/`'ℹ️'`, e o react-hot-toast usa o `icon` no lugar do glifo padrão. Os pares vivos por ícone são success e error.)
+
+2. **Escurecer o `-foreground` no claro — o conserto que o candidato propõe — não conserta a borda nem o disco.** O par `--warning`/`--warning-foreground` passaria, e `bg-warning text-warning-foreground` ficaria legível; mas `--warning` continuaria a 2,15:1 contra o card, e é aí que ele é usado hoje. É literalmente a armadilha do "token que faz dois trabalhos" que o `.ai/rules/css.md` já descreve para o `--destructive`.
+
+**Mitigação concreta, medida:** escurecer o token no claro e manter o foreground branco — `--warning: #b45309` dá **5,02:1**, `--info: #0369a1` dá **5,93:1**, `--success: #15803d` dá **5,02:1** (contra branco, que é tanto o `-foreground` quanto o card). No escuro, o inverso, que é o que warning e info já fazem: `--success-foreground: var(--brand-navy-dark)` leva 2,28 → **6,42:1** sem tocar no hex do token. Assim o par **e** a borda passam nos dois temas, e só então os seis entram no `@theme`.
+
+O que quebra ao fazer isso:
+
+- **`resources/js/test/lib/toast-config.test.ts` não quebra** — ele afirma `iconTheme.primary === 'var(--success)'`, nome e não valor. Confirmado lendo o arquivo.
+- **`theme-tokens.test.ts` quebra de propósito** ao acrescentar as 3 linhas, e é o passo (1) certo. Cuidado com a guarda `it('exporta pelos utilitários apenas tokens semânticos')`: qualquer `--color-success: #16a34a` literal no `@theme` reprova; tem de ser `var(--success)`.
+- **A cor da borda dos toasts muda visivelmente** (amarelo-âmbar → âmbar escuro). É exatamente a superfície onde a fatia #107 acabou de passar. Sem `pest-plugin-browser` não há prova visual: a evidência possível é a tabela de contraste no teste (que **é** a prova de que importa) mais screenshot manual dos 4 toasts no corpo do PR.
+- **`ctfinance.md:420` continua não reproduzindo**: `git -C $B grep -rn "text-success" origin/main -- resources/js` → 0 linhas. Confirmo a correção do candidato.
+
+---
+
+# V6D-6 · `page-header.tsx` + `page-info.tsx` mortos, com classe interpolada
+
+**Risco: BAIXO para podar. ALTO para adotar — e a adoção reabre exatamente o que a fatia #103 fechou há três commits.**
+
+Confirmei tudo do lado do alvo: a linha `page-header.tsx:41` é a **única** classe Tailwind interpolada do repo; `PageHeader` tem 0 call sites; `PageInfo` só é alcançável por `page-header.tsx` (3 referências, todas lá dentro).
+
+**O fato que decide o veredito, e que o candidato não viu:** `resources/js/components/page-info.tsx:85` é
+
+```tsx
+{description && <DialogDescription className="text-base">{description}</DialogDescription>}
+```
+
+`git -C $B grep -rn "DialogDescription" origin/main -- resources/js | grep -v ui/dialog.tsx` devolve 15 linhas em 6 arquivos, e **esta é a única condicional**. Todas as outras (`delete-confirmation-dialog.tsx:104`, `ui/confirm-dialog.tsx:53`, `module-info-dialog.tsx:33`, `add-permission-dialog.tsx:118`, `assign-role-user.tsx:154`, `delete-user.tsx:72`) renderizam incondicionalmente — que é o contrato que a fatia #103 escreveu no `.ai/rules/js.md` ("descrição obrigatória **no tipo** e renderizada incondicionalmente") e travou em `5fdf030` (`test(a11y): trava o render incondicional da descrição com string vazia`). O `PageInfo` é o resto vivo do idioma antigo, e sobrevive só porque ninguém o chama.
+
+Mais dois defeitos no mesmo arquivo, que vêm de brinde numa adoção: `page-info.tsx:70` põe `role="button"` num `<Button>` (papel redundante em elemento nativo — mesma família do que a fatia #101 removeu do `SearchBar`), e `InfoSection` tem `iconColor = 'text-blue-600'` default mais `text-green-600` fixo em `InfoFeatureList`, fora do sistema de tokens.
+
+**Mitigação:**
+- **Podar (recomendado, risco BAIXO):** apagar `layout/page-header.tsx` e `components/page-info.tsx`. Zero importadores confirmados; o gate é `tsc --noEmit` + ESLint, que já rodam em `ci:check`. Some junto a única classe interpolada do repo, e o caso do guard-rail proposto (`` `…-${…}` `` com prefixo de utilitário) nasce verde com o alcance certo.
+- **Adotar (risco ALTO):** exige, no mesmo commit, (i) remover `iconGradient`; (ii) tornar `description` obrigatória e incondicional no `PageInfo`, sob pena de reabrir #103; (iii) remover o `role="button"`; (iv) trocar `text-blue-600`/`text-green-600` por token; (v) dar um call site real (`pages/users/index.tsx:145-152`, que monta o cabeçalho à mão). Isso é uma fatia inteira, não uma absorção.
+
+**Custo de gate:** ótimo, para variar. O guard-rail de classe interpolada é um caso no `link-button-nesting.test.ts` (mesmo `applicationSourceFiles()`, mesma forma), com controle positivo obrigatório — se a poda vier primeiro, o teste nasce vazio e precisa do `expect(sources.length).toBeGreaterThan(40)` para não passar vacuamente.
+
+---
+
+# V6D-7 · Autosave campo-a-campo e o contrato do partial reload
+
+**Risco: ALTO como escrito — a regra proposta afirma um fato falso sobre o alvo e produziria orientação errada.**
+
+**A correção, medida:**
+
+```
+git -C $B grep -rn "Inertia::always\|::always(" origin/main -- app     # 0 linhas
+git -C $B grep -rn "'flash'" origin/main -- app                        # 0 linhas
+git -C $B show origin/main:app/Http/Middleware/HandleInertiaRequests.php  # share() = name, quote, auth, ziggy. Sem flash.
+```
+
+O candidato diz: *"o boilerplate acabou de fazer o `flash` do `share()` virar `Inertia::always()` (candidato E13 do ctfinance) — ou seja, no boilerplate `only:` não corta o flash"*. **Isso não existe no `origin/main`.** O flash do boilerplate não é prop nenhuma: é o flash nativo do Inertia 3 (`@inertiajs/react ^3.6.1`, `inertiajs/inertia-laravel ^3.0`), que vive no objeto de página e é consumido por `router.on('flash')` em `lib/flash.ts`. O próprio `.ai/rules/js.md` já diz isso com todas as letras: *"O flash nativo vive no OBJETO DE PÁGINA (irmão de component/props/url), então não é prop: **nenhum filtro de partial reload o alcança**"*.
+
+A consequência prática é o oposto da que o candidato descreve, e é a armadilha de verdade: **num autosave no boilerplate, `only:` não tem como suprimir o toast — nem por `always`, nem por filtro.** Se o controller fizer `->with('success', …)`, o listener global dispara um toast por rodada de salvamento, em cada campo. A regra correta não é "conferir o `share()`"; é *rota de autosave não emite flash — o desfecho é o indicador do formulário, e o flash fica para a navegação*.
+
+Segundo problema, este de a11y: o `SaveIndicator` da fonte (`53d7d9a:resources/js/pages/site-settings/edit.tsx:121-150`) **é o mesmo defeito que a fatia #101 acabou de consertar no `SearchBar`**. O ramo `idle` devolve um `<span>` **sem** `role="status"`; o ramo `saving` devolve um `<span>` **com** `role`/`aria-live` e o texto novo ao mesmo tempo. A região não preexiste com o papel — ela ganha o papel no mesmo instante em que o conteúdo muda, que é justamente o que o `.ai/rules/js.md` proíbe ("`aria-live` num nó recém-montado não anuncia nada"). Além disso ele pinta `text-emerald-600 dark:text-emerald-400` na mão, fora do sistema de tokens que o V6D-5 está tentando arrumar.
+
+**Mitigação concreta:** absorver **só** o `SaveIndicator`, e corrigido: um único `<span role="status" aria-live="polite">` sempre renderizado, cujo **conteúdo** troca entre os 4 estados (o `idle` fica com o texto de repouso, não com um nó diferente), e cor por token (`--success` depois do V6D-5, `--destructive` no erro). O hook `useSettingsAutosave` **não** entra: `only: ['settings']` é o nome de uma prop de um controller que não existe aqui, e a motivação nº 2 do docblock da fonte é inaplicável ao Inertia 3 do alvo. E, como o próprio candidato admite, o indicador nasceria sem dono — mesmo defeito do V6D-6.
+
+**Custo de gate:** aqui o gate é bom e barato: teste de componente Vitest no molde de `data-table/search-bar.test.tsx` (que já testa região viva), afirmando que o nó com `role="status"` existe **antes** da mudança de estado e que o texto muda dentro dele. Isso é exatamente a prova que a versão da fonte não passaria.
+
+---
+
+# V6D-8 · Quarto estado do assíncrono (`stalled`), alvo de toque, `[@media(hover:none)]`
+
+**Risco: BAIXO — é a candidatura de menor risco do lote, porque não há nada vivo para regredir. E há um fato do alvo que a fortalece.**
+
+Confirmei as quatro medições do alvo, todas em `origin/main`: `hover:none|pointer:coarse` → 0; `min-h-11|min-w-11|min-h-[44px]|size-11` → 0; `setInterval` fora de teste → 0; `group-hover` → 4 linhas.
+
+**Fato novo:** das 4 ocorrências de `group-hover`, duas são efeito cosmético (`scale-105`, `text-cyan-600` em `user-table-row.tsx:41` e `role-users-table.tsx:75,97`) e a única que esconde uma **afordância** é `ui/sidebar.tsx:594` — o `SidebarMenuAction`. E `git -C $B grep -rn "SidebarMenuAction" origin/main -- resources/js | grep -v ui/sidebar.tsx` → **0 linhas**: é código morto, igual ao `SidebarMenuSkeleton` do V6D-1. Ou seja, hoje o boilerplate tem **zero** afordância só-em-hover viva. A regra é 100% preventiva, o que a torna gratuita: nenhuma catraca é tocada, nenhum pixel muda, `ci:check` nem percebe.
+
+O que quebra: nada, desde que a regra seja escrita como piso e não como violação. O candidato já acertou nisso e eu confirmo o número: `size="icon"` = `size-9` (36 px) e os `h-8 w-8` de `user-table-row.tsx`/`filter-panel.tsx` (32 px) passam o mínimo AA de 24 px da SC 2.5.8 e reprovam o AAA de 44 px da 2.5.5. Escrever "violação" seria falso e a lente da rodada 1 já cobrou isso.
+
+**Mitigação:** dividir a regra em três frases com estatutos diferentes, porque elas não têm o mesmo peso: (a) `focus-within:` + `[@media(hover:none)]` em afordância só-em-hover é **obrigatório** e testável; (b) prazo de cliente para estado indeterminado é **recomendação com dono** — não implemente prazo genérico no `ui/button.tsx` (o `loading` é `boolean`, e enfiar temporizador nele obriga todo call site a lidar com um terceiro estado; ALTO risco, e é o único ponto do candidato onde o risco sobe); (c) piso de 44 px é **AAA declarado como tal**, aplicável a fluxo de celular, não catraca geral.
+
+**Custo de gate:** (a) é trava real — caso no `focus-ring.test.ts` (que já varre a árvore): *arquivo com `group-hover/*:opacity-100` sem `[@media(hover:none)]` nem `md:opacity-0` é infrator*, hoje com lista de mortos vazia depois de podar o `SidebarMenuAction`. (b) e (c) não têm gate possível sem browser e devem ser escritos como regra, com essa limitação declarada.
+
+---
+
+# V6D-9 · `SiteLayout`: duas famílias de layout por enum
+
+**Risco: BAIXO (é regra preventiva sem código) — com uma afirmação a corrigir e uma inconsistência do próprio alvo a resolver antes.**
+
+Li o enum da fonte inteiro (`53d7d9a:app/Enum/SiteLayout.php`) e as três rachaduras do candidato se confirmam, inclusive a boa: `fromSetting()` degrada em silêncio e `str_starts_with($page['component'] ?? '', 'site/boutique/')` na blade (`:134`) é acoplamento de nome de componente fora do enum.
+
+**Correção de fato:** o candidato escreve *"nem o mecanismo de `$page['component']` chegar à blade como dado existe aqui (só o `@vite` já o usa)"* — as duas metades da frase se contradizem, e a segunda é a certa. `resources/views/app.blade.php:71` do alvo faz `@vite([… "resources/js/pages/{$page['component']}.tsx"])`. O mecanismo existe e já é usado; o que não existe é uma segunda família de layout. Detalhe pequeno, mas é o tipo de frase que vira decisão errada de quem pegar a fatia.
+
+**Inconsistência do alvo que a fatia tem de encarar:** o `.ai/rules/enum.md` já manda *"listas para UI saem de um `options()` estático com pares value/label"*, e nenhum dos dois enums do repo tem `options()`. Medido: `Roles.php` expõe `label()`, `description()`, `priority()`, `isSelectable()`; `Permissions.php` expõe `label()`, `description()`, `grantDenialMessage()`. Nenhum `static function options()`, nenhum `tryFrom` tolerante. Absorver "a forma do enum de variação" como regra nova, sem tocar nisso, engrossa uma regra que o repo já não cumpre — e regra que o código desmente é a dívida mais cara que existe num arquivo de convenções.
+
+O que quebra: nada em código. Risco zero de regressão visual, nenhum dado persistido, nenhuma catraca tocada.
+
+**Mitigação:** escrever a regra em `.ai/rules/enum.md` **junto** com a correção de `options()` nos dois enums existentes (é um `array_map` sobre `cases()` em cada um, coberto por teste unitário trivial), para que a regra passe a descrever o repo. A metade sobre nome de componente Inertia é a parte de valor e é barata: *enum que resolve nome de componente resolve todos os derivados desse nome (prefixo de asset, chave de preload); nada de `str_starts_with` sobre o nome literal fora do enum.*
+
+**Custo de gate:** `options()` tem teste Pest direto. A regra do nome de componente não tem gate hoje (não há segunda família), e isso deve ser dito na própria regra — ela é um contrato para quando a segunda família chegar, não uma catraca.
+
+---
+
+# V6D-10 · Listagem em cards no mobile
+
+**Risco: MÉDIO — e o arquivo de referência que o candidato traz, copiado como está, cria um infrator do V6D-4 do mesmo lote.**
+
+Confirmei as duas pontas: no alvo, `md:hidden` aparece **1 vez** e é o `<Separator>` de `layouts/settings/layout.tsx:55`; a coluna sacrificada é `column.key === 'mobile'` (`pages/users/index.tsx:223` e `user-table-row.tsx:50`) — o **celular** da pessoa. Li o bloco da fonte (`53d7d9a:resources/js/pages/items/index.tsx:200-273`).
+
+O que quebra:
+
+1. **Conflito interno do lote.** O `<img>` do card da fonte (`:205-209`) não tem `width`, não tem `height` e não tem `loading` — exatamente o que o V6D-4 quer proibir por teste de call-site. Se as duas fatias entrarem na mesma rodada, quem entrar depois derruba a outra. Ordem obrigatória: V6D-4 primeiro, e o card nasce conforme.
+2. **O custo é bem maior aqui do que na fonte.** A linha da fonte tem 3 ações (`FeaturedStar`, editar, excluir) e um `<Select>`. A linha do alvo é o `UserTableRow`, que recebe **16 props** e monta 7 ações condicionais por permissão (`onView`, `onEdit`, `onDelete`, `onToggleActive`, `onImpersonate`, `onAssignRole`, `onAddPermission`, mais `canDelete/canEdit/canImpersonate/canManagePermissions/canAssignRoles`). Duplicar isso num `<ul>` significa duplicar a fiação de autorização de UX inteira — e é onde o defeito silencioso mora: uma ação que existe na tabela e não no card só some para quem está no celular.
+3. **Sem regressão de a11y por duplicação.** `md:hidden` e `hidden md:block` são `display:none`, então a árvore acessível expõe só uma das variantes. Sem eco de leitor de tela, sem `id` duplicado desde que os `key`/`id` sejam distintos. Nenhum teste existente quebra: não há teste que renderize `pages/users/index.tsx` (só `components/users/user-table-row.test.tsx`).
+
+**Mitigação concreta:** a que o candidato propõe é a certa e é a única que fecha o defeito nº 2 — teste de render que monta as duas variantes com o mesmo `user` e afirma **o mesmo conjunto de ações acessíveis** (`getAllByRole('button', {name})`) e os mesmos dados. Sem esse teste, a fatia entrega uma tela mobile com menos poder e ninguém percebe. Extra barato e valioso: incluir o celular (a coluna hoje escondida) na asserção, já que é o dado que o desenho atual esconde justamente de quem está no celular.
+
+**Custo de gate:** aqui o gate é bom — teste de componente Vitest, sem browser. O que **não** tem gate é a aparência do card; screenshot manual no PR, declarado como tal.
+
+---
+
+# V6D-11 · Trava do follow-up de E28
+
+**Risco: BAIXO por mudança, MÉDIO por volume — e o volume está subestimado por um fator de 1,7.**
+
+A candidatura é a mais bem fundamentada do lote e eu a endosso. Mas a contagem de ofensores está errada, e é o número que define a fatia.
+
+O candidato conta **9** (3 spinner-`div` + 6 `LoaderCircle`), porque usou o regex `disabled=\{(processing|form\.processing)\}`. Abri os 10 arquivos de `border-t-transparent` um a um (`grep -n -B14`) e olhei a tag que abre cada bloco:
+
+| arquivo | linha do spinner | fica dentro de | flag usada |
+|---|---|---|---|
+| `add-permission-dialog.tsx` | 211 | `<Button>` (`:203`) | `isSubmitting` |
+| `assign-role-user.tsx` | 200 | `<Button>` (`:192`) | `processing` |
+| `delete-confirmation-dialog.tsx` | 239 | `<Button>` (`:227`) | `processing` |
+| `user-form.tsx` | 369 | `<Button>` (`:362`) | `processing` |
+| `users/filter-panel.tsx` | 169 | `<Button>` (`:157`) | `isSearching` |
+| `permission-role/roles.tsx` | 208 | `<Button>` (`:200`) | `actions.isSaving` |
+| `settings/password.tsx` | 201 | `<Button>` (`:193`) | `actions.isUpdatingPassword` |
+| `settings/profile.tsx` | 211 | `<Button>` (`:203`) | `actions.isUpdatingProfile` |
+| `users/permissions.tsx` | 167 | `<Button>` (`:159`) | `isSaving` |
+| `data-table/search-bar.tsx` | 110 | **não é botão** (`div` aria-hidden) | `isSearching` |
+
+São **9 spinner-`div` dentro de `<Button>`**, não 3 — mais os **6** `LoaderCircle` das telas de auth (verificados um a um: `confirm-password:49`, `forgot-password:55`, `login:103`, `register:104`, `reset-password:81`, `verify-email:33`, todos filhos diretos de `<Button … disabled={processing}>`). **15 ofensores**, contra 2 call sites corretos (`delete-user.tsx:114`, `ui/confirm-dialog.tsx:70`). O `search-bar.tsx` é o único legítimo e o teste proposto (violação = indicador **dentro de `<Button>`**) o poupa corretamente — o recorte do candidato está certo, só a contagem não.
+
+O que quebra na migração:
+
+1. **Nada de catraca.** `focus-ring.test.ts` não olha `animate-spin`; `theme-tokens.test.ts` não olha className de componente. `Button.test.tsx` (10 casos) testa só o primitivo.
+2. **Um teste existente pode encostar:** `components/delete-confirmation-dialog.test.tsx` e `components/data-table/search-bar.test.tsx` existem. O `search-bar` usa `data-testid="search-spinner"` e não é tocado. O `delete-confirmation-dialog` **é** ofensor (`:239`) e o seu teste pode afirmar o markup do estado de envio — verificar antes de trocar; a troca para `loading` muda o nó de `div.animate-spin` para `svg[data-slot=button-loading-icon]`.
+3. **Efeito colateral que ninguém pediu:** 8 dos 9 botões ofensores carregam paleta fixa fora do sistema (`bg-cyan-600`, `bg-green-600`, `bg-blue-600`, mais `hover:scale-105 active:scale-95`). Trocar para `loading` **não** mexe nisso (a prop convive com `className`), mas quem abrir esses arquivos vai sentir vontade. Deixe claro no PR que a fatia é mecânica: paleta é outra dívida, e misturar as duas torna o diff irrevisável.
+4. **`loadingText` cobre os 3 casos de rótulo** ("Salvando…", "Excluindo…", "Removendo…") — confirmado, `ui/button.tsx:66` já tem a prop. Nada a inventar, como o candidato diz.
+
+**Mitigação:** partir em duas passagens — (a) migrar os 15, sem tocar em classe; (b) só então acrescentar o teste, para ele nascer **verde** em vez de vermelho com 15 ofensores (um teste que entra vermelho e é "consertado depois" é o mecanismo pelo qual o follow-up de `a418f41` já ficou para trás uma vez). O teste é irmão direto do `impersonation-call-sites.test.ts` — mesmo `applicationSourceFiles()`, mesmo `@vitest-environment node`, com o controle positivo obrigatório (`expect(sources.filter(b => b.includes('<Button')).length).toBeGreaterThan(10)`), senão ele passa vazio no dia em que o glob quebrar.
+
+**Custo de gate:** o melhor do lote. Teste de fonte, sem browser, sem screenshot, e cada arquivo migrado já tem cobertura de componente ou é tela de auth com teste de integração. Multi-fonte confirmada: `git -C $R grep -n "loading\|aria-busy" 53d7d9a -- resources/js/components/ui/button.tsx` → **0 linhas**; o `ui/button.tsx` da fonte é shadcn cru, e os 10 arquivos de spinner artesanal são os mesmos nos dois projetos. Sem trava, o idioma volta.
+
+### Lente ATUALIDADE — vereditos
+
+# Lente ATUALIDADE — lote do Caçador 3 (ctvitrine `53d7d9a` → boilerplate `origin/main` = `beb848e`)
+
+**Versões do alvo, lidas de `origin/main` e confirmadas no `node_modules` instalado** (não de memória):
+`tailwindcss` **4.3.3** · `react`/`react-dom` **19.2.8** · `@types/react` **19.2.18** · `@inertiajs/react` **3.6.1** · `inertiajs/inertia-laravel` **^3.0** · `vite` **8.2.1** · `typescript` **6.0.3** · `laravel/framework` **^13.0** · `php` **^8.4** · `@radix-ui/themes` 3.3.0 · `lucide-react` **1.31.0** · `tailwindcss-animate` 1.0.7.
+**Fonte:** `@inertiajs/react` **^3.4.0**, `vite` ^7.3.5, `typescript` ^5.9.3, `lucide-react` ^0.475.0, tailwind ^4.3.0, react ^19.2.7. **A distância que importa é o Inertia: 3.4 → 3.6.1.** Quatro dos onze candidatos dependem disso.
+
+---
+
+### V6D-1 · Skeleton sem uso — **ATUAL COM MODERNIZAÇÃO**
+
+**O primitivo está atual.** `ui/skeleton.tsx` usa `animate-pulse`, que é **core do Tailwind 4**, não do plugin: a referência default do tema declara `--animate-pulse: pulse 2s cubic-bezier(0.4,0,0.6,1) infinite;` com o `@keyframes pulse` dentro do próprio `@theme` (doc `theme.mdx`, "Default theme variable reference"). Nada a mexer nas 14 linhas. `animate-pulse` no alvo: **1 ocorrência, e é a do próprio primitivo** (`git -C $B grep -rn "animate-pulse" origin/main -- resources`).
+
+**A modernização é na regra, e é grande.** A regra proposta — *"skeleton representa um valor identificado que está chegando"* — descreve **exatamente** a API que o Inertia 3.6.1 já expõe e que o boilerplate usa **zero** vezes:
+
+- `<Deferred data="x" fallback={<Skeleton className="h-9 w-full" />}>` — o slot `fallback` **é** o buraco do skeleton. Mudança do v3 que fecha o caso: *"The React `<Deferred>` component no longer resets to show the fallback during partial reloads… A new `reloading` slot prop is available"* (upgrade guide v3).
+- `<WhenVisible data="x" fallback={…}>` — IntersectionObserver nativo, com `fetching` para recargas.
+- v3 *Nested Prop Types*: `Inertia::defer()`/`Inertia::optional()` funcionam dentro de closures e arrays aninhados, com dot-notation (`only: ['auth.notifications']`).
+
+Verificado no dist instalado (`node_modules/@inertiajs/react/dist/index.js`): `Deferred` 8 ocorrências, `WhenVisible` 5, `InfiniteScroll` 10, `usePoll` 3. No alvo, `git -C $B grep -rn "Deferred\|WhenVisible\|usePoll\|InfiniteScroll" origin/main -- resources/js` → **0**.
+
+**Correção à redação:** escrever a regra como pura convenção induz o próximo a montar `useState(loading)` + `router.reload` quando `Deferred` existe. A regra tem de **nomear o mecanismo**: skeleton nasce como `fallback` de `Deferred`/`WhenVisible`; skeleton fora disso precisa justificar por que o valor não é uma prop diferida.
+**Não invalida a fonte:** o `Skeleton` de `studio.tsx:1105` cobre um job assíncrono local (`ai_status`), não uma prop diferida — `Deferred` não o substitui. O código da fonte está certo em 3.4 e em 3.6.
+
+`SidebarMenuSkeleton` (podar ou usar): sem ângulo de versão, **ATUAL**.
+
+---
+
+### V6D-2 · Favicon e `<head>` da blade — **ATUAL COM MODERNIZAÇÃO (pequena)**
+
+Não existe recurso nativo em Laravel 13 / Vite 8 / `laravel-vite-plugin` 3.1 que gere ou linke favicon: a lista de `<link rel="icon">` continua sendo o jeito. A colheita está atual. Dois ajustes:
+
+1. **React 19 hoista metadata.** `<title>`, `<meta>` e `<link>` renderizados em qualquer componente são movidos para o `<head>` automaticamente — o exemplo da própria doc de `<link>` no react.dev é literalmente `<link rel="icon" href="favicon.ico" />`. Isso **não** muda o veredito para os ícones (você quer o ícone e o `theme-color` no primeiro paint, e a árvore React chega depois da hidratação — a blade continua certa). Muda para o que o candidato corretamente aponta como faltando: `<meta name="description">` e OG **por página** têm casa nativa no componente da página, e a regra deve dizer isso, senão alguém escreve um `useEffect` mexendo em `document.head`.
+2. **Inertia 3 trouxe `<x-inertia::head>` / `<x-inertia::app>`**, cujo slot de fallback só renderiza quando o SSR está desligado — *"solving the long-standing issue of duplicate `<title>` tags in SSR applications"* (upgrade guide v3). O boilerplate usa `<title inertia>` + `@inertiaHead` + `@inertia`, o idioma v2, que segue suportado. Se a fatia vai abrir o `<head>` de qualquer jeito, é a hora.
+
+woff2 duplicado, ícones órfãos e o teste de árvore em `public/`: sem ângulo de versão, **ATUAL**.
+
+---
+
+### V6D-3 · `preconnect` morto — **ATUAL**, e **a dívida que o candidato assumiu está paga**
+
+A remoção não foi superada por nada; é deleção de uma linha. Duas contribuições:
+
+**Fecho o "não medido" (i) do candidato.** Medi o `dist/` do Radix Themes no alvo:
+`grep -oE "https?://[a-zA-Z0-9._/-]+" node_modules/@radix-ui/themes/styles.css` → **0 matches**; `grep -oE "url\((['\"]?)(https?:)?//[^)]*\)"` no mesmo arquivo → **0 matches**. A folha do `@radix-ui/themes` **não puxa nada de terceiro**. O `preconnect` para `fonts.bunny.net` não tem consumidor em `resources/` **nem** no vendor. Pode cair sem confirmação adicional.
+
+**Modernização a nomear na regra:** React 19 expõe `preconnect`, `prefetchDNS`, `preload`, `preinit`, `preloadModule`, `preinitModule` em `react-dom`, e o próprio React deduplica e hoista o `<link>` (em `ReactFiberConfigDOM.js`, `preconnectAs()` monta a chave `link[rel="preconnect"][href="…"]`, checa `querySelector` e só então dá `head.appendChild`). Logo a regra deve ter duas metades, não uma: *hint estático no `<head>` só com consumidor estático demonstrável (as 5 `preload` de fonte da blade qualificam — `_fonts.css` as consome); hint condicional ou por rota vem de `preconnect()`/`preload()` do `react-dom`, que já deduplica — não de mais uma linha na blade.*
+
+---
+
+### V6D-4 · Imagens — **ATUAL COM MODERNIZAÇÃO**, com **um erro factual na regra proposta**
+
+**Erro:** a regra escreve `fetchpriority="high"`. Em React 19 a prop é **camelCase `fetchPriority`**. Medido no alvo: `node_modules/@types/react/index.d.ts:3178` dentro de `interface ImgHTMLAttributes<T>` → `fetchPriority?: "high" | "low" | "auto" | undefined;` (também em `LinkHTMLAttributes` :3351 e `ScriptHTMLAttributes` :3474). Escrever minúsculo em JSX vira prop desconhecida. **Consequência prática:** um teste de call-site que casar em `fetchpriority` passa vazio — o gênero de trava que o `impersonation-call-sites.test.ts` foi feito para impedir. Corrigir antes de escrever o teste.
+
+**Modernizações reais:**
+- `aspect-*` é core do Tailwind 4 (namespace `--aspect-*`, `--aspect-video: 16 / 9` no tema default) e aceita **fração nua**: `aspect-3/2`. Os `aspect-[3/4]` / `aspect-[2/1]` / `aspect-[4/3]` da fonte são valores arbitrários da era v3; no alvo escreva `aspect-3/4`. Cosmético, mas a regra não deve canonizar colchetes.
+- Para logo acima da dobra, a forma nativa em React 19 não é um `<img loading="eager">` que ainda causa CLS: é `import { preload } from 'react-dom'; preload(src, { as: 'image', fetchPriority: 'high' })` — hint hoistada e deduplicada pelo React, sem tocar a blade.
+
+O resto (dimensão obrigatória, teto de peso em `public/` com allowlist) não foi superado por nada: nem Tailwind 4 nem Vite 8 dimensionam imagem; qualquer coisa nessa linha é plugin de terceiro. Guard-rail continua sendo a resposta.
+
+---
+
+### V6D-5 · Tokens semânticos + contraste — **ATUAL COM MODERNIZAÇÃO**
+
+O núcleo (medir contraste **antes** de exportar) é independente de versão e está certo. A modernização é em **como** exportar, e é o passo (3) da receita do candidato:
+
+`resources/css/app.css:14` abre **`@theme {`**, não `@theme inline`, e mapeia 26 `--color-X: var(--X)`. A doc do Tailwind 4 é explícita: *"Use `@theme inline` when defining colors that reference other colors"*, com o exemplo `:root` / `[data-theme="dark"]` → `@theme inline { --color-canvas: var(--acme-canvas-color); }` (`colors.mdx`, "Referencing other variables").
+
+**Sendo exato: isso não está quebrado hoje.** `.dark` cai no `document.documentElement` (`resources/js/hooks/use-appearance.tsx:25` → `document.documentElement.classList.toggle('dark', isDark)`) e no `<html>` pela blade (`@class(['dark' => …])`) — mesmo elemento que `:root`, então a indireção resolve contra os valores escuros. Quebra no dia em que alguém escopar `.dark` (ou um `data-theme`) num contêiner interno. Como a fatia vai abrir o `@theme` de qualquer forma para acrescentar `--color-success`/`--color-warning`/`--color-info`, converter para `@theme inline` custa uma palavra e é o idioma documentado.
+
+**Segundo ponto, para o passo (2):** se a fatia vai **repintar** os pares reprovados, os hex atuais (`#16a34a`, `#f59e0b`, `#0ea5e9`) são sRGB da era v3; a paleta default do Tailwind 4 é oklch. Re-escolher a partir de `--color-emerald-*` / `--color-amber-*` / `--color-sky-*` do v4 mantém os tokens de estado no mesmo espaço de cor de tudo o mais que o Tailwind gera. Não é bug — é a decisão certa a tomar quando já se está escolhendo.
+
+Nada em Tailwind 4 fornece tokens semânticos prontos nem checagem de contraste: a tabela do `theme-tokens.test.ts` continua sendo a única guarda. **Não rejeitado.**
+
+---
+
+### V6D-6 · Classe Tailwind interpolada em `page-header.tsx` — **ATUAL COM MODERNIZAÇÃO**
+
+O diagnóstico está confirmado pela doc da versão em uso, quase palavra por palavra: *"Since Tailwind scans your source files as plain text, it has no way of understanding string concatenation or interpolation"*, com o anti-exemplo `` `bg-${color}-600 hover:bg-${color}-500` `` e a prescrição "map props to complete class names" (`detecting-classes-in-source-files.mdx`). O conserto proposto é o que a doc manda. Duas adições:
+
+1. **`bg-gradient-to-br` é o nome v3.** Em Tailwind 4 é `bg-linear-to-br` (`background-image.mdx`: *"Use utilities like `bg-linear-to-r`…"`; upgrade guide renomeou `bg-gradient-*` → `bg-linear-*`). Medido no alvo: `git -C $B grep -rn "bg-gradient-to-" origin/main -- resources` → **6 linhas**: `layout/page-header.tsx:41`, `permissions/role-users-table.tsx:75`, `users/user-table-row.tsx:41`, `layouts/auth/auth-card-layout.tsx:18`, `auth-simple-layout.tsx:15`, `auth-split-layout.tsx:15`. `bg-linear-` → **0**. Ou seja: os gradientes **vivos** que o candidato cita como "controle: gradiente estático existe e funciona" estão no alias depreciado. Se a fatia canonizar `user-table-row.tsx:41` como referência sem renomear, ela grava a grafia v3 como padrão da casa. Renomear as seis, não uma.
+2. **A escapatória nativa, para a regra não induzir reincidência:** se algum dia um gradiente realmente dinâmico for necessário, o v4 tem `@source inline("{hover:,}from-{cyan,blue}-{500,600}")` (brace expansion) — o `safelist` do config v3 **não existe mais** em v4. Uma frase na regra evita a próxima interpolação.
+
+A trava proposta (falhar em `` `…-${…}` `` com prefixo de utilitário) fica.
+
+---
+
+### V6D-7 · Autosave campo-a-campo — **OBSOLETO como código · ATUAL COM MODERNIZAÇÃO como regra**
+
+**Não porte `use-settings-autosave.ts`.** A fonte está em `@inertiajs/react ^3.4.0`; o alvo está em **3.6.1**, e as manchetes do v3 caem em cima desse hook:
+
+- **`useHttp`** — da doc de Forms v3: *"For standalone HTTP requests that don't trigger page visits, you may use the `useHttp` hook, which provides the same developer experience as `useForm`."* Um autosave é precisamente uma requisição que não pode ser page visit. `useHttp` expõe `processing`, `errors`, `hasErrors`, `progress`, `wasSuccessful`, **`recentlySuccessful`** (*"true for two seconds after a successful request"*) e `isDirty`, e *"Each `useHttp` instance tracks its own `processing`, `errors`, and other reactive state"* — o que é, ponto a ponto, o contador `inFlight`, a máquina de 4 estados e o "'Salvo' é estado, não evento". Presente no dist instalado (`grep -c useHttp` → 3).
+- **Optimistic updates com rollback automático** (v3 what's-new) — a outra metade do "salvar um campo sem reescrever a logo".
+- **`preserveErrors`** em partial reloads (v3) — o bookkeeping `roundHadError` ganhou alavanca nativa.
+
+Publicar um hook 3.4-shaped num boilerplate 3.6.1 grava como estilo da casa algo que o adapter passou a entregar.
+
+**O que sobrevive intacto — e é o ativo real:** o contrato `only:` × `always`. Confirmado literalmente no protocolo v3: *"Always props are resolved on every response in both modes. They ignore the partial reload filters entirely, so an always prop is sent even when a request lists it in `except`."* E *"The `errors` prop is an always prop"*. O aviso do candidato sobre o `flash` ter virado `Inertia::always()` (E13) está mecanicamente correto. Acrescente as metades v3 que a fonte não tinha: **`except:`** existe como complemento, `only`/`except` aceitam **dot-notation**, e `Inertia::optional()`/`defer()` resolvem em qualquer profundidade.
+
+**Uma armadilha a desarmar explicitamente:** `async: true` **não** é o análogo do `replace: true` que a lente do ctfinance derrubou. Continua sendo opção documentada em v3 (`router.get(url, {}, { async: true })`, combinável com `showProgress`) e o v3 expõe `router.cancelAll({ sync, async, prefetch })`, o que confirma que síncrono e assíncrono são classes distintas de requisição. Não é redundante — não o corte por analogia.
+
+`SaveIndicator` com `role="status" aria-live="polite"`: sem substituto de framework, **ATUAL** — mas ligado ao estado de `useHttp`, não a um enum próprio.
+
+---
+
+### V6D-8 · Quarto estado / `stalled` / hover em toque — **OBSOLETO em três dos quatro mecanismos**
+
+A rejeição mais pesada do lote. O **conceito** ("estado indeterminado tem prazo") sobrevive; a regra, como escrita, ensina o jeito 3.4.
+
+1. **Polling — obsoleto.** `POLL_BACKOFF` + `POLL_MAX_FAILURES` + `setInterval` + `setClock` é artesanal. `usePoll(ms, options, { keepAlive, autoStart })` está no adapter instalado. Doc v3: *"By default, the poll helper will throttle requests by 90% when the browser tab is in the background"*; *"It automatically stops polling when the page is unmounted"*; retorna `{ start, stop, polling }`; e aceita **uma função** que devolve as opções, *"evaluated on every tick, allowing the poll to reflect the latest component state"* — que é onde vive o backoff e o `stop()` após N falhas. ⇒ **A frase *"polling … pausa em aba oculta"* não pode entrar na regra como requisito do autor: já vem de graça, e escrevê-la assim induz exatamente o `setInterval` que o `usePoll` substitui.** A regra correta é: *polling é `usePoll`; se você escreveu `setInterval`, justifique.*
+2. **O estado "travou" + "Tentar de novo" — obsoleto quando a causa é falha de request.** Inertia 3 entrega isso inteiro: `Inertia::defer(fn () => …, rescue: true)` no servidor + o **slot `rescue`** do `<Deferred>` no cliente, cujo exemplo React na doc é literalmente *"Failed to load permissions."* com um botão **Retry** ligado a `router.reload({ only: ['permissions'] })`, um booleano `reloading` para desabilitá-lo durante a retentativa, e *"The rescue state is preserved until you explicitly reload the rescued prop."* — inclusive a propriedade de **não** voltar a virar spinner. **Ressalva honesta:** o `STALL_DEADLINE_MS` da fonte cobre um caso que `rescue` **não** cobre — um job de fundo ainda legitimamente rodando (`ai_status === 'processing'`), que não é request falhado. Esse prazo do cliente permanece legítimo. O que fica obsoleto é implementá-lo do zero para o caso de falha.
+3. **`[@media(hover:none)]:opacity-100` — sintaxe obsoleta, e a justificativa da regra é mais forte do que a fonte diz.** Tailwind 4 tem `pointer-coarse` (`@media (pointer: coarse)`) e `any-pointer-coarse` como variantes de primeira classe (apêndice de `hover-focus-and-other-states.mdx`). Escreva `pointer-coarse:opacity-100`. E, mais importante — **medido no compilador instalado, não de memória** (`node_modules/tailwindcss/dist/lib.js`):
+   ```js
+   i.static("hover", p => { p.nodes = [H("&:hover", [B("@media","(hover: hover)", p.nodes)])] })
+   ```
+   com `i.compound("group", 2, …)` reescrevendo o seletor da variante interna e **preservando a at-rule**. Ou seja: em Tailwind 4, `hover:` e `group-hover:` compilam dentro de `@media (hover: hover)` — afordância só-em-hover não é "desconfortável" no celular, é **CSS morto** no celular. O upgrade guide nomeia a mudança e oferece a escapatória `@custom-variant hover (&:hover)` para quem dependia do tap. Essa é a justificativa que a regra deve citar.
+4. **Piso de 44px — ATUAL**, e a ressalva do candidato (AAA 2.5.5 vs AA 2.5.8) está correta; mantenha. **Uma correção de fato:** "piso de toque 0" é verdade para o token `min-h-11`, mas falso como afirmação sobre a prática do boilerplate — `ui/sidebar.tsx:588` já traz `"after:absolute after:-inset-2 md:after:hidden"` com o comentário *"Increases the hit area of the button on mobile."* A regra deve reconhecer o idioma `after:-inset-*` como alternativa a inflar a caixa visual, senão ela contradiz código existente e comentado.
+
+---
+
+### V6D-9 · Enum de variação `SiteLayout` — **ATUAL** (o enum) **· ATUAL COM MODERNIZAÇÃO** (a rachadura iii)
+
+`tryFrom` tolerante + `options()` + `Rule::enum` na escrita: nada em Laravel 13 ou PHP 8.4 supera isso; segue o idioma, e é o mesmo formato de `App\Enum\Roles`/`Permissions`. (Se algum dia precisar estreitar, `Rule::enum()->only()/except()` existe.) **ATUAL.**
+
+**Rachadura (iii) — contrato de props divergente por branch — tem resposta nativa em 3.6.1 que a fonte em 3.4 não tinha limpa.** Do upgrade guide v3, *Nested Prop Types*: *"Prop types like `Inertia::optional()`, `Inertia::defer()`, and `Inertia::merge()` now work inside closures and nested arrays. Inertia resolves them at any depth and uses dot-notation paths in partial reload metadata"*, com `router.reload({ only: ['auth.notifications'] })` do lado cliente. Logo `banners`/`featured`/`categoryCards`/`sellers` são `Inertia::optional(...)` **declaradas uma vez** — resolvidas só quando pedidas — em vez de um `if` no controller que nenhum tipo exprime; e `<Deferred>`/`<WhenVisible>` fazem a metade do cliente. Isso converte "props que existem se e só se o layout é X" de convenção em **mecanismo**. É em torno disso que a regra deve ser escrita, não em torno de um tipo TS de união escrito à mão.
+
+**Rachadura (ii)** — `str_starts_with($page['component'], 'site/boutique/')` na blade: sem substituto nativo; `SiteLayout::assetPrefix()` é a resposta. **ATUAL.** (Se o `<head>` for reestruturado, `<x-inertia::head>` do v3 é a hora.)
+
+**Não medido, sinalizado em vez de afirmado:** a lista "What's New" do v3 traz o item *"Enum support in `Inertia::render()` responses"*. Não consegui recuperar a página de detalhe. Se significar que um BackedEnum pode ser o argumento de componente, `Inertia::render($layout->homePage())` pode ter forma nativa mais curta. **Verificar antes de depender disso.**
+
+---
+
+### V6D-10 · Listagem em cards no mobile — **ATUAL COM MODERNIZAÇÃO**
+
+O par `md:hidden` / `hidden md:block` é idioma de **viewport**, da era v3. Tailwind 4 traz **container queries no core** (sem o plugin `@tailwindcss/container-queries`): *"Use the `@container` class to mark an element as an inline-size container, then use variants like `@sm` and `@md`…"* e *"Use variants like `@max-sm` and `@max-md` to apply a style below a specific container size"*, além de contêineres nomeados (`@container/main` → `@sm/main:`). Medido: `git -C $B grep -rn "@container" origin/main -- resources` → **0**. O boilerplate nunca usou.
+
+**Por que aqui não é cosmético:** a listagem vive dentro de `app-sidebar-layout`, com sidebar **colapsável** (`group-data-[collapsible=icon]` existe em `ui/sidebar.tsx`). No mesmo viewport `md`, a tabela tem larguras muito diferentes com a sidebar aberta e fechada — que é o caso de uso canônico de container query. `@container` no wrapper + `@max-md:hidden` na `<ul>` e `@max-md:hidden` invertido na `<Table>` responde à largura real disponível; `md:hidden` responde à janela e erra sempre num dos dois estados da sidebar.
+
+O resto do candidato é atual: a estratégia "esconder uma coluna" (`pages/users/index.tsx:223`, `components/users/user-table-row.tsx:50`) não tem substituto nativo, e o teste de render provando que as duas variantes expõem os mesmos dados continua sendo a única trava possível. **Não medido:** se o `Table.Root` do `@radix-ui/themes` 3.3.0 oferece fallback responsivo próprio — não abri a doc do Radix Themes; medi apenas o uso no boilerplate.
+
+---
+
+### V6D-11 · Spinners artesanais dentro de `<Button>` — **ATUAL**
+
+Nada nativo substitui isto, e o `ui/button.tsx@origin/main` está em dia com a stack: `aria-busy`, `disabled`, `LoaderCircle` (o nome pós-rename; existe tanto no `lucide-react` 0.475 da fonte quanto no **1.31.0** do alvo, então a direção do port está segura), CVA + `@radix-ui/react-slot` 1.3.3. Três notas de versão, nenhuma bloqueante:
+
+- **`useFormStatus` do React 19 não serve aqui.** Ele é definido sobre Actions de `<form action={fn}>`; o `useForm`/`<Form>` do Inertia submete pelo router com handler de `onSubmit`. **Não medi experimentalmente** — é leitura do escopo documentado do hook. A fonte de verdade a usar é o `processing` que o próprio Inertia expõe.
+- **Simplificação maior disponível, para a migração não ser feita duas vezes:** o `<Form>` do v3 entrega no slot `errors, hasErrors, processing, progress, wasSuccessful, recentlySuccessful, setError, clearErrors, defaults, isDirty, reset, submit, cancel`. Os 6 call sites de `pages/auth/*` que hoje fazem `disabled={processing}` + `<LoaderCircle>` na mão podem migrar para `loading=` **e** para `<Form>` no mesmo passo. Não é requisito da fatia; é uma linha na regra.
+- `animate-spin` é core do Tailwind 4 (`--animate-spin` + `@keyframes spin` no tema default), então podar os 10 spinners artesanais **não** toca a questão do plugin. E o Tailwind 4 tem variante `aria-busy` nativa (`&[aria-busy="true"]`) caso a trava queira asserção visual.
+
+O teste de call-site em si é neutro de versão. Segue **ATUAL**.
+
+---
+
+### Achado transversal desta lente, fora dos 11 candidatos
+
+`resources/css/app.css:7` → `@plugin 'tailwindcss-animate';` — plugin **JS da era Tailwind v3** (1.0.7) carregado sobre Tailwind **4.3.3**, com consumidores reais no alvo: `animate-in` 9 · `animate-out` 8 · `fade-in` 8 · `zoom-in` 5 · `slide-in-from-*` 16 (`git -C $B grep -rho … origin/main -- resources/js`). O substituto nativo do v4 é `tw-animate-css`, cuja própria descrição é: *"a replacement for `tailwindcss-animate`… embraces the new CSS-first architecture, providing a pure CSS solution… without relying on the legacy JavaScript plugin system"*, com compatibilidade explícita com Radix. Não pertence a nenhum candidato deste lote, mas é a maior dívida de **atualidade** no CSS da frente que este lote cobre, e a fatia F32 passou ao lado dela.
+
+---
+
+### Comandos rodados (todos contra o alvo `origin/main` = `beb848e`, e o `node_modules` do alvo)
+
+```bash
+B=/Users/cristianomorgante/workspace/laravel/simplify-technology/boilerplate
+R=/Users/cristianomorgante/workspace/laravel/simplify-technology/ctvitrine
+git -C $B rev-parse origin/main                                    # beb848ea509bf6682c9e31f10611ad7ab489392e
+git -C $B show origin/main:package.json                            # tailwind 4.3.3, react 19.2.8, @inertiajs/react 3.6.1, vite 8.2.1, ts 6.0.3
+git -C $R show 53d7d9a:package.json | grep -E '"(react|@inertiajs/react|tailwindcss|vite|typescript|lucide-react)"'  # inertia ^3.4.0, vite ^7.3.5, ts ^5.9.3, lucide ^0.475.0
+node -e "…@types/react/package.json" ; node -e "…@inertiajs/react/package.json"   # 19.2.18 · 3.6.1
+grep -n "fetchPriority" $B/node_modules/@types/react/index.d.ts    # :3178 ImgHTMLAttributes · :3351 Link · :3474 Script  (camelCase)
+grep -oE "https?://[^\"')]+" $B/node_modules/@radix-ui/themes/styles.css   # 0 matches
+grep -oE "url\((['\"]?)(https?:)?//[^)]*\)" $B/node_modules/@radix-ui/themes/styles.css  # 0 matches
+grep -o '.\{160\}hover: hover.\{120\}' $B/node_modules/tailwindcss/dist/lib.js
+  # i.static("hover",p=>{p.nodes=[H("&:hover",[B("@media","(hover: hover)",p.nodes)])]})
+grep -o 'compound("group".\{0,200\}' $B/node_modules/tailwindcss/dist/lib.js  # compound("group",2,…) reescreve seletor, preserva at-rule
+for k in usePoll WhenVisible Deferred InfiniteScroll useHttp usePrefetch; do grep -c "$k" $B/node_modules/@inertiajs/react/dist/index.js; done  # 3 5 8 10 3 3
+git -C $B grep -rn "Deferred\|WhenVisible\|usePoll\|InfiniteScroll\|useHttp" origin/main -- resources/js   # 0
+git -C $B grep -rn "bg-gradient-to-" origin/main -- resources      # 6 linhas
+git -C $B grep -rn "bg-linear-" origin/main -- resources           # 0
+git -C $B grep -rn "@container" origin/main -- resources           # 0
+git -C $B grep -rn "animate-pulse" origin/main -- resources        # 1 (ui/skeleton.tsx:8)
+git -C $B grep -rn "tailwindcss-animate\|tw-animate" origin/main -- resources package.json  # app.css:7 + package.json:92
+git -C $B grep -rho "animate-in\|animate-out\|fade-in\|zoom-in\|slide-in-from-[a-z-]*" origin/main -- resources/js | sort | uniq -c
+git -C $B grep -rn "group-hover" origin/main -- resources/js       # 4 (sidebar.tsx:594 salva por md:opacity-0)
+git -C $B show origin/main:resources/js/components/ui/sidebar.tsx | sed -n '585,600p'   # after:-inset-2 md:after:hidden
+git -C $B show origin/main:resources/css/app.css | sed -n '1,80p'  # @theme (NÃO inline), @plugin tailwindcss-animate, @custom-variant dark
+git -C $B grep -rn "classList" origin/main -- resources/js         # use-appearance.tsx:25 → documentElement
+```
+
+Docs consultadas via **Boost `search-docs`** (version-aware para este projeto): `tailwindcss@4.x` (`functions-and-directives`, `colors`, `dark-mode`, `theme`, `upgrade-guide`, `hover-focus-and-other-states`, `responsive-design`, `detecting-classes-in-source-files`, `background-image`, `aspect-ratio`) e `inertiajs/inertia-laravel@3.x` (`upgrade-guide`, `the-protocol`, `deferred-props`, `load-when-visible`, `polling`, `forms`, `http-requests`, `manual-visits`, `progress-indicators`). React 19 via context7 (`/websites/react_dev`, `/react/react/v19.2.7`) e `tw-animate-css` via `/wombosvideo/tw-animate-css`.
+
+---
+
+## Caçador 4 — blade, boot, layouts, navegação, favicon/manifest, responsividade
+
+# Caçador 4 — blade, boot, layouts, navegação, favicon/manifest, responsividade
+**Fonte:** ctvitrine @ `53d7d9a` · **Alvo:** boilerplate @ `origin/main`
+
+---
+
+### V6F-1 · O boilerplate versiona 6 ícones de aba e não linka nenhum; a fonte linka 5 e declara `theme-color`
+
+- **Evidência (fonte):** `resources/views/app.blade.php:11-21@53d7d9a`
+  ```blade
+  @if ($faviconUrl)
+      <link rel="icon" href="{{ $faviconUrl }}" >
+      <link rel="apple-touch-icon" href="{{ $faviconUrl }}" >
+  @else
+      <link rel="icon" href="/favicon.ico?v=2" sizes="any" >
+      <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" >
+      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2" >
+      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=2" >
+      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2" >
+  @endif
+  <meta name="theme-color" content="{{ $meta['theme_color'] ?? '#0f2a44' }}" >
+  ```
+  Duas técnicas embutidas: **fallback por prop Inertia** (`data_get($page, 'props.branding.favicon_url')`, linha 10 — cada instância mostra a própria marca) e **cache-bust `?v=2`** (o comentário das linhas 7-9 diz por quê).
+- **Estado do boilerplate hoje:** `git grep -n -iE "favicon|apple-touch|android-chrome|webmanifest|rel=\"icon\"|theme-color" origin/main` → **zero linhas fora de `docs/`**. O `app.blade.php` daqui vai direto de `<meta name="color-scheme">` (linha 8) para o `<script>` de tema (linha 11): **nenhum `<link rel="icon">`**. Ao mesmo tempo, `git ls-tree -r origin/main --name-only -- public` lista 6 ícones: `favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `android-chrome-192x192.png`, `android-chrome-512x512.png`. Só o `.ico` é alcançável (convenção implícita `/favicon.ico` do browser) — **5 arquivos inalcançáveis**. Sem `site.webmanifest` (`ls-tree | grep -i manifest` → só `public/vendor/log-viewer/mix-manifest.json`). Sem `theme-color`: a barra do Chrome Android e a status bar do PWA ficam no cinza padrão, num app que já pinta `#0f2a44` em três outros lugares.
+- **O que absorver / o que travar:** portar o bloco `@else` de 5 links (o ramo `@if` do branding é específico do multi-tenant da vitrine — não vem). Adicionar `<meta name="theme-color">` amarrado ao mesmo hex. Adicionar `public/site.webmanifest` com `name`/`short_name`/`display: standalone`/`theme_color`/`background_color` + os dois `android-chrome-*` que já estão versionados, e `<link rel="manifest">` no blade — isso resgata os 5 órfãos de uma vez.
+- **Adaptação necessária:** o manifest e o `theme-color` viram o **6º e 7º sítios do hex da marca**. Hoje o boilerplate tem 5 declarações literais (`resources/css/app.css:107` como token `--brand-navy-dark`, `resources/views/app.blade.php:48`, `resources/views/errors/500.blade.php:41,45,55`) e a guarda de contraste `resources/js/test/styles/theme-tokens.test.ts` lê **um arquivo só** (`resolve(import.meta.dirname, '../../../css/app.css')`, linha 20) — um hex no `.webmanifest` nasce fora do alcance dela. `.ai/rules/views.md:9` já manda o caso certo ("Superfície nova pintada fora do `app.css` entra nesse teste no mesmo commit"): estender `tests/Unit/Theme/InlineThemeBackgroundTest.php` (`themedBlades()`, linha 34) para incluir o manifest é parte da fatia, não follow-up.
+- **Risco · esforço:** P · P. Assets já existem, nada de build.
+- **Multi-fonte?** Sim. **spinmax** tem `public/site.webmanifest` (`display: standalone`, `theme_color: #00647B`, ícone `purpose: any maskable`) e o inventário dele já registrou o mesmo diagnóstico — "é o **terceiro** lugar onde os hex da marca são declarados […] fora do alcance de `scripts/check-contrast.mjs`" (`docs/harvest/v2/spinmax.md:1859`). O ctvitrine **não** tem manifest e por isso deixa `android-chrome-{192,512}.png` órfãos — mesmo par de arquivos, mesmo destino, aqui.
+
+---
+
+### V6F-2 · `.env.example` do boilerplate liga o SSR do Inertia, e nenhum caminho de execução sobe um servidor SSR
+
+- **Evidência (fonte):** `stubs/ops/instance.env.stub:13-18@53d7d9a`
+  ```
+  # SSR do Inertia DESLIGADO. A instância não sobe servidor SSR (só o daemon do
+  # Horizon) nem builda o bundle (deploy roda `build`, não `build:ssr`). Com SSR
+  # ligado, todo full-page load LOGADO dispara um dispatch SSR inexistente e derruba
+  # o worker PHP-FPM → 502 no reload da área logada. […]
+  INERTIA_SSR_ENABLED=false
+  ```
+  E a fonte **trava a string com teste**: `tests/Feature/Ops/StubRenderTest.php:58@53d7d9a` — `->and($env)->toContain('INERTIA_SSR_ENABLED=false')  // fix do 502 no reload logado`. Repetido em três docs (`docs/tecnico/01-arquitetura.md:23`, `05-operacao-e-comandos.md:96`, `08-provisioning-instancias.md:57`) e no deploy (`scripts/deploy/deploy.sh:86` — "Se ativar SSR em produção, troque por: `$PNPM_BIN run build:ssr`").
+- **Estado do boilerplate hoje:** quatro fatos medidos, nenhum deles amarrado a outro.
+  1. `.env.example:73` → `INERTIA_SSR_ENABLED=true`, e `config/inertia.php:24` tem `env('INERTIA_SSR_ENABLED', true)` — **ligado por default e por exemplo**.
+  2. `composer.json` `"dev"` roda `serve`, `horizon:listen`, `schedule:work`, `pail`, `pnpm dev` — **não roda `inertia:start-ssr`**. Só `"dev:ssr"` roda.
+  3. Não existe script nem doc de deploy: `git ls-tree -r origin/main --name-only | grep -iE "deploy"` → **0 arquivos**. Ninguém no repo diz para subir o daemon SSR.
+  4. `tests/TestCase.php:16` faz `config()->set('inertia.ssr.enabled', false)` — **a suíte inteira roda com SSR desligado**, então nenhum teste jamais encosta nesse caminho.
+  A mitigação parcial é `config/inertia.php:32` (`ensure_bundle_exists` default `true`) somada a `/bootstrap/ssr` no `.gitignore:2`: em clone novo o bundle não existe e o dispatch é pulado. Ela **evapora** no minuto em que alguém roda `composer dev:ssr` (que faz `pnpm build:ssr` e cria `bootstrap/ssr/ssr.mjs`) e volta para `composer dev`: o arquivo fica no disco, o gate passa, e cada page load tenta um POST para `127.0.0.1:13714` recusado. Mesmo cenário em produção com `.env` copiado do `.env.example` + `pnpm build:ssr` no deploy.
+- **O que absorver / o que travar:** não é código a portar, é postura + guarda. (i) `.env.example` nasce com `INERTIA_SSR_ENABLED=false` e o comentário de duas linhas explicando a condição para ligar (bundle **e** daemon, os dois); (ii) teste Pest lendo `.env.example` que trava a string, no molde exato do `StubRenderTest` da fonte; (iii) linha em `.ai/rules/views.md` (ou `js.md`) com a regra "SSR só liga com `inertia:start-ssr` no supervisor **e** `build:ssr` no deploy — as três chaves viram juntas"; (iv) se a decisão for manter `true`, então `.env.example` também precisa pinar `INERTIA_SSR_ENSURE_BUNDLE_EXISTS=true` explicitamente, porque hoje a única coisa que segura o dispatch é um default de terceiro.
+- **Adaptação necessária:** o boilerplate mantém `ssr.tsx`, `build:ssr` e `dev:ssr` — eles ficam. Muda só o default e a documentação da armadilha. Atenção a um efeito colateral bom: com SSR realmente desligado, o defeito de hidratação do V6F-5 deixa de ser observável em produção — o que é razão a mais para os dois andarem juntos na mesma fatia.
+- **Risco · esforço:** P · P (uma linha de env + um teste + uma regra). O risco de **não** fazer é o que a fonte descreve por escrito.
+- **Multi-fonte?** Sim, o tema é geral: `docs/migration/projects/{ctjuris,sorteiopix,spinmax,ctfinance}.md` registram "SSR ativo" nos quatro, e o gate da Fatia 3b do playbook já exige "`build:ssr` + health check do runtime SSR" (`docs/migration/PLAYBOOK.md:81`). O ctvitrine é o único dos derivados que **desligou de propósito e escreveu o motivo** — o achado é essa justificativa, não o `false`.
+
+---
+
+### V6F-3 · A fonte tem, verbatim, o defeito que a guarda de tema do boilerplate existe para pegar — e a guarda não viaja no playbook
+
+- **Evidência (fonte):** `resources/views/app.blade.php:106-117@53d7d9a`
+  ```blade
+  {{-- Inline style to set the HTML background color --}}
+  <style >
+      html { background-color: white; transition: background-color 0.2s ease; }
+      html.dark { background-color: var(--palette-primary-dark); transition: background-color 0.2s ease; }
+  </style >
+  ```
+  `--palette-primary-dark` é declarado em `resources/css/app.css:111@53d7d9a` (`#0f2a44`) — arquivo que só chega pelo `@vite` da linha **142**, 28 linhas abaixo do bloco. E o bloco da fonte **não declara `color-scheme` em nenhuma das duas regras**, nem existe `<meta name="color-scheme">` no `<head>` (`git grep -n "color-scheme" 53d7d9a -- resources/views` → 0 linhas).
+- **Estado do boilerplate hoje:** os dois lados já resolvidos e **travados**. `resources/views/app.blade.php:40-52` usa literal `#0f2a44` + `color-scheme: light` / `html.dark { color-scheme: dark }`, com o `<meta name="color-scheme">` na linha 8 como declaração precoce. `tests/Unit/Theme/InlineThemeBackgroundTest.php:135-142` reprova qualquer `var(--` dentro do `<style>`; `:144-165` cobra a igualdade com `--brand-navy-dark`; `:167-178` exige `color-scheme` nas duas regras. A regra em prosa está em `.ai/rules/views.md:9` e `:11-12`. **O buraco é a exportação:** `git grep -n -iE "InlineTheme|color-scheme|var\(--|app.blade" origin/main -- docs/migration` → **zero linhas**. Nenhuma fatia do `PLAYBOOK.md` leva essa guarda para os 7 derivados.
+- **O que absorver / o que travar:** nada de código vem da fonte — ela é a **prova de campo** de que a guarda pega defeito vivo em produto entregue. O que entra: uma fatia no `docs/migration/PLAYBOOK.md` que porta `tests/Unit/Theme/InlineThemeBackgroundTest.php` + os dois parágrafos de `.ai/rules/views.md` para o projeto derivado, com o `appCssToken('…')` parametrizado pelo nome do token local (aqui `brand-navy-dark`, no ctvitrine `palette-primary-dark`) e a lista `themedBlades()` ajustada às superfícies daquele projeto.
+- **Adaptação necessária:** o teste hoje hardcoda `'brand-navy-dark'` (linhas 128 e 145) e uma lista de dois blades (linhas 38-41). Para viajar, os dois viram constante no topo do arquivo. Cuidado registrado no próprio teste (linhas 48-51): os comentários Blade têm de ser removidos **antes** do regex do `<style>`, senão a prosa que cita a tag é mordida no lugar do bloco.
+- **Risco · esforço:** P · P para o boilerplate (só documentação/playbook). M por projeto derivado, porque o `color-scheme` ausente é conserto visível: no ctvitrine, hoje, quem usa tema escuro vê barra de rolagem e controles de formulário claros em **toda** página.
+- **Multi-fonte?** O sintoma (`var(--token)` no bloco pré-CSS) é herança direta do starter Laravel+Inertia — vale conferir nos outros 6 derivados na mesma fatia. Aqui só o ctvitrine foi medido.
+
+---
+
+### V6F-4 · 79 KB de fonte duplicada por artefato de Finder vivem no `origin/main` do boilerplate, com zero referências
+
+- **Evidência (fonte):** o crítico do inventário registrou o par no ctvitrine (banner, item 1 dos "cinco fatos do `public/`"): `aptos-extrabold-italic 2.woff2` e `aptos-extrabold-italic.woff2` são o **mesmo blob** `fc88540e…`, 78.980 B cada, e só o segundo aparece no `_fonts.css`.
+- **Estado do boilerplate hoje:** **o boilerplate tem o mesmo arquivo, mesmo blob.**
+  ```
+  $ git ls-tree origin/main -- "public/fonts/woff2/aptos/aptos-extrabold-italic 2.woff2" \
+                               "public/fonts/woff2/aptos/aptos-extrabold-italic.woff2"
+  100644 blob fc88540ed885152d200bf22f8f759258f78538b1  …/aptos-extrabold-italic 2.woff2
+  100644 blob fc88540ed885152d200bf22f8f759258f78538b1  …/aptos-extrabold-italic.woff2
+  ```
+  `git grep -n "extrabold-italic 2" origin/main` → **0 referências**. O `_fonts.css:59` cita só a versão sem ` 2`. Auditoria fechada: **22** woff2 na árvore, **21** URLs distintas no `_fonts.css`, e o `comm -23` das duas listas devolve exatamente **um** nome — o duplicado. Ou seja, o ctvitrine não introduziu o lixo: herdou daqui, e o inventário dele foi o único lugar onde alguém olhou.
+- **O que absorver / o que travar:** apagar o arquivo (`git rm "public/fonts/woff2/aptos/aptos-extrabold-italic 2.woff2"`) e, no mesmo commit, um teste barato que impede a reincidência nos dois sentidos — todo woff2 de `public/fonts/` é citado por `_fonts.css`, e toda URL do `_fonts.css` existe no disco. O segundo sentido é o que pega o caso oposto (`@font-face` apontando para arquivo que não subiu no deploy → FOIT silencioso). O `comm` acima é o teste inteiro, em 15 linhas de Pest.
+- **Adaptação necessária:** o teste precisa dos preloads também — `resources/views/app.blade.php:59-65` declara 5 `<link rel="preload" href="/fonts/…">` e nenhum deles é verificado hoje contra o disco; um preload para caminho inexistente é 404 em toda página, sem sintoma visível. Os cinco existem (conferido contra o `ls-tree`), então o teste nasce verde.
+- **Risco · esforço:** P · P. Zero risco de runtime: o arquivo é inalcançável por definição.
+- **Multi-fonte?** O ctvitrine confirma que a duplicata se propaga por clone. Vale um `git ls-tree | grep " 2\."` nos outros 6 derivados na próxima célula de inventário — o padrão do nome (` 2` antes da extensão) é assinatura de cópia do Finder e não é específico de fonte.
+
+---
+
+### V6F-5 · Com SSR ligado, `AppShell` semeia o estado da sidebar do `localStorage` no primeiro render; o cookie que o primitivo já grava não é lido por ninguém
+
+- **Evidência (fonte):** `resources/js/components/app-shell.tsx:9-10@53d7d9a`
+  ```tsx
+  export function AppShell({ children, variant = 'header' }: AppShellProps) {
+      const [isOpen, setIsOpen] = useState(() => (typeof window !== 'undefined' ? localStorage.getItem('sidebar') !== 'false' : true));
+  ```
+  A própria fonte escreveu a regra que este arquivo viola, noutro hook: `resources/js/hooks/use-favorites.ts:5@53d7d9a` — `/** SSR: o repo tem ssr.tsx — nenhuma leitura de storage pode acontecer no módulo. */`.
+- **Estado do boilerplate hoje:** `resources/js/components/app-shell.tsx:9-10@origin/main` é **idêntico linha a linha** ao da fonte (mesmo ternário, mesmo `'sidebar'`, mesmo `!== 'false'`). O servidor não tem `window`, então renderiza sempre `defaultOpen=true`; o cliente hidrata com o valor guardado. Para quem deixou a sidebar recolhida, o HTML do servidor e a primeira árvore do cliente discordam — com `INERTIA_SSR_ENABLED=true` no `.env.example` (V6F-2), isso é o default de configuração. E o canal correto **já está sendo alimentado e jogado fora**: `resources/js/components/ui/sidebar.tsx:85` grava `document.cookie = "sidebar_state=…"`, e `git grep -rn "sidebar_state\|SIDEBAR_COOKIE_NAME" origin/main` devolve **exatamente 2 linhas, ambas nesse mesmo arquivo** (a constante e a escrita). Ninguém lê. São duas persistências paralelas do mesmo booleano, e a que sobrevive ao servidor é a ignorada.
+- **O que absorver / o que travar:** trocar `localStorage` por leitura server-side do cookie, no molde que o boilerplate **já usa para o tema**: `app/Http/Middleware/HandleAppearance.php:14` faz `View::share('appearance', $request->cookie('appearance') ?? 'system')`. O análogo é `sidebar_state` chegando como shared prop (ou `View::share`) e `AppShell` recebendo `defaultOpen` do servidor — uma fonte só, mesma resposta no servidor e no cliente, e o `document.cookie` do primitivo deixa de ser escrita morta. Guarda: teste Vitest que renderiza `AppShell` sem `window.localStorage` e um teste Pest do `HandleInertiaRequests::share()` (o contrato props↔types do `CLAUDE.md` obriga a atualizar `resources/js/types/` no mesmo commit).
+- **Adaptação necessária:** o cookie tem de ficar **fora do `encryptCookies`** para o front conseguir escrevê-lo em texto puro — exatamente a exceção que o `appearance` já tem (registrada no comentário de `resources/views/errors/500.blade.php:9-11`). E há uma migração de estado: quem hoje tem `localStorage['sidebar']` e nenhum `sidebar_state` volta ao default aberto uma vez. Aceitável; ou lê-se os dois por uma release.
+- **Risco · esforço:** M · M. Mexe em componente que toda página autenticada monta, e o `resources/js/test/components/navigation-landmarks.test.tsx:57` já depende de `AppShell` — a suíte cobre a regressão de landmark, não a de estado.
+- **Multi-fonte?** O arquivo é idêntico nos dois repositórios lidos, e `spinmax`/`sorteiopix`/`ctjuris`/`ctfinance` estão registrados com SSR ativo nos docs de migração — o mesmo `app-shell.tsx` neles é candidato ao mesmo defeito, com SSR de verdade ligado. Não medido nesses quatro.
+
+---
+
+### V6F-6 · `env(safe-area-inset-*)` no `body` sem `viewport-fit=cover`: resolve para `0px` nos dois lados
+
+- **Evidência (fonte):** `resources/css/app.css:235@53d7d9a` — `padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);` no bloco `body`. E `resources/views/app.blade.php:5@53d7d9a` — `<meta name="viewport" content="width=device-width, initial-scale=1" >`, **sem `viewport-fit=cover`**.
+- **Estado do boilerplate hoje:** o par idêntico. `resources/css/app.css:241@origin/main` tem a mesma linha de padding; `resources/views/app.blade.php:5@origin/main` tem a mesma meta sem `viewport-fit`. `git grep -n "safe-area\|viewport-fit" origin/main -- resources` devolve **uma única linha** — a do padding. Sem o opt-in `viewport-fit=cover`, o WebKit mantém o layout dentro da safe area e as quatro variáveis `env()` valem `0px`: a intenção de respeitar notch/home-indicator existe no CSS e não tem efeito em lugar nenhum.
+- **O que absorver / o que travar:** decidir para um lado, num commit só. Ou **apagar** a linha 241 (é padding morto num seletor caro) — e aí não há o que travar; ou **ativar**: `content="width=device-width, initial-scale=1, viewport-fit=cover"` no blade e conferir o que a sidebar `fixed` faz com o inset lateral em paisagem. Um comentário na regra dizendo qual meta a habilita, nos dois casos.
+- **Adaptação necessária:** se ativar, atenção ao par `viewport-fit=cover` + `body { padding }` com `SidebarInset`: o `<main>` do primitivo é filho de um container que não herda o padding do `body`, então o inset pode ficar visualmente no lugar errado. Verificar em aparelho, não só no devtools.
+- **Risco · esforço:** P · P para apagar. M para ativar (mudança de layout global em iOS).
+- **Multi-fonte?** Não medido nos outros derivados. A linha é herança do mesmo starter, então a chance de estar nos 7 é alta.
+
+---
+
+### V6F-7 · Duas famílias de layout, três variantes, e o ramo `variant="header"` está morto nos dois repositórios
+
+- **Evidência (fonte):** `resources/js/layouts/app/app-header-layout.tsx@53d7d9a` existe, compõe `AppShell → AppHeader → AppContent` — e `git grep -n "app-header-layout\|AppHeaderLayout" 53d7d9a -- resources` devolve **uma linha só, a própria declaração**: zero importadores. O `resources/js/components/app-header.tsx` existe e é arrastado junto. Do lado público, o ctvitrine **não tem família de layout nenhuma**: as 4 páginas de vitrine montam o shell inline — `site/home.tsx` e `site/item.tsx` importam `site-topbar`+`site-footer` (medido: 4 linhas de import), `site/boutique/{home,item}.tsx` importam `boutique/header`+`boutique/footer`, e `site/landing.tsx` não importa nenhum dos dois.
+- **Estado do boilerplate hoje:** `resources/js/layouts/` tem 3 famílias (`app/` com 1 arquivo, `auth/` com 3, `settings/`+`permissions/`) e **não tem `app-header-layout.tsx`** (`ls-tree -r origin/main -- resources/js/layouts` confirma). Mas os dois primitivos ainda carregam a variante que ninguém usa: `components/app-shell.tsx:9` (`variant = 'header'` como **default**) e `:20-22` (o ramo `<div className="flex min-h-screen w-full flex-col">`), `components/app-content.tsx:8,13-17` (mesmo default, ramo `<main className="mx-auto … max-w-7xl">`). O único chamador da árvore inteira é `layouts/app/app-sidebar-layout.tsx:16,32`, e passa `variant="sidebar"` nos dois. Medido: `git grep -n "AppShell\|AppContent" origin/main -- resources/js` fora dos próprios arquivos → 6 linhas, todas nesse layout. **Nenhuma família pública/guest existe** — `auth-layout` é a única coisa sem sidebar, e ela é para telas de autenticação.
+- **O que absorver / o que travar:** o que **não** se traz é o `app-header-layout.tsx` da fonte — é código morto lá e seria código morto aqui. O que fica: (i) decidir sobre o ramo `'header'` — ou nasce uma família pública que o use, ou os dois defaults viram `'sidebar'` e os ramos saem (hoje um `<AppContent>` sem prop cai silenciosamente no ramo errado, que é a armadilha de um default apontando para o caminho não exercitado); (ii) se uma família pública for criada, ela é o lugar de reunir topbar+footer+skip-link, exatamente para não repetir o que o ctvitrine fez — 4 páginas montando o shell à mão em duas variações incompatíveis.
+- **Adaptação necessária:** o boilerplate está **à frente** num ponto que qualquer família nova tem de preservar: `layouts/app/app-sidebar-layout.tsx:25-30` traz o skip-link "Pular para o conteúdo" e `:32` marca o alvo com `id="conteudo" tabIndex={-1}` — o ctvitrine **não tem nada disso** (o `app-sidebar-layout.tsx` da fonte vai direto de `<AppShell>` para `<AppSidebar />`). Layout público novo nasce com o skip-link e entra em `resources/js/test/components/navigation-landmarks.test.tsx`.
+- **Risco · esforço:** P · P para a poda do ramo morto. G para criar a família pública — é decisão de produto, não de refatoração, e o boilerplate hoje não tem nenhuma página pública para justificá-la.
+- **Multi-fonte?** `app-shell.tsx`/`app-content.tsx` são byte-idênticos entre fonte e alvo; o ramo morto é herança comum. Não medido nos outros 5.
+
+---
+
+#### Onde eu medi e **não** achei delta (para ninguém recaçar)
+
+- `resources/js/components/ui/table.tsx`: as 40 primeiras linhas são idênticas nos dois (`<div className="relative w-full overflow-auto">` envolvendo a `<table>`). **Tabela em tela estreita já rola** nos dois lados, e `components/permissions/role-users-table.tsx` repete `overflow-x-auto p-3 sm:p-4` nos dois (linha 38 aqui, 37 lá).
+- Breakpoint móvel: `MOBILE_BREAKPOINT = 768` em `resources/js/hooks/use-mobile.tsx:3` **nos dois**, mesmo `matchMedia`, mesmo `useEffect`. Zero delta.
+- Preloads de fonte: o boilerplate declara 5 (`app.blade.php:59-65`), todos existentes no disco, somando **255.372 B** (aptos 72.824 + semibold 73.272 + bold 73.324 + montserrat-800 19.012 + merriweather-regular 16.940). A fonte declara os mesmos 5 **mais** um sexto condicional, keyed no componente Inertia: `@if (str_starts_with($page['component'] ?? '', 'site/boutique/'))` (`app.blade.php:134-136@53d7d9a`) — a única alavanca de diferenciação por página que existe dentro do `app.blade.php`. Registro a técnica; **não** proponho a porta, porque não medi quais das 5 famílias o boilerplate realmente desenha em cada rota, e `_fonts.css` declara `font-display: swap` em todas as faces (linhas 6, 14, 22, 30, 38…), o que já limita o dano de um preload sobrando.
+- `resources/views/errors/500.blade.php` do boilerplate é **melhor** que o `errors/vitrine-suspended.blade.php` da fonte no ponto que importa: decide o tema por `$appearance` (linha 17-19, cookie via `HandleAppearance`), enquanto a fonte decide só por `@media (prefers-color-scheme: dark)` (`vitrine-suspended.blade.php:65-69@53d7d9a`) — que é literalmente o bug descrito no comentário das linhas 11-14 do 500 daqui. A única coisa que a página da fonte tem e a nossa não é `<meta name="robots" content="noindex">` (linha 6) e um bloco OG neutro; como `bootstrap/app.php:57` roteia **403, 404, 500 e 503** por esse caminho, o `noindex` é barato e não-óbvio o suficiente para valer a linha.
+
+---
+
+#### Medições
+
+```bash
+# Fonte (read-only, SHA pinado)
+git -C …/ctvitrine ls-tree -r 53d7d9a --name-only -- resources/views resources/js/layouts public
+git -C …/ctvitrine show 53d7d9a:resources/views/app.blade.php | cat -n
+git -C …/ctvitrine show 53d7d9a:resources/views/errors/vitrine-suspended.blade.php | cat -n
+git -C …/ctvitrine show 53d7d9a:stubs/ops/instance.env.stub | sed -n '1,30p'
+git -C …/ctvitrine show 53d7d9a:tests/Feature/Ops/StubRenderTest.php | sed -n '40,70p'
+git -C …/ctvitrine show 53d7d9a:resources/js/components/app-shell.tsx
+git -C …/ctvitrine show 53d7d9a:resources/js/components/ui/table.tsx | sed -n '1,40p'
+git -C …/ctvitrine grep -n -- "--palette-primary-dark" 53d7d9a -- resources
+git -C …/ctvitrine grep -n -i "0f2a44" 53d7d9a
+git -C …/ctvitrine grep -n "INERTIA_SSR\|start-ssr\|build:ssr\|ssr.tsx" 53d7d9a
+git -C …/ctvitrine grep -n "app-header-layout\|AppHeaderLayout" 53d7d9a -- resources
+git -C …/ctvitrine grep -n "components/site/site-topbar\|components/site/site-footer" 53d7d9a -- resources/js
+git -C …/ctvitrine grep -n "overflow-x" 53d7d9a -- resources/js
+git -C …/ctvitrine grep -n "safe-area\|viewport-fit" 53d7d9a -- resources
+git -C …/ctvitrine grep -n "MOBILE_BREAKPOINT" 53d7d9a -- resources/js
+
+# Alvo (sempre origin/main, nunca o disco)
+git -C …/boilerplate show origin/main:resources/views/app.blade.php | cat -n
+git -C …/boilerplate show origin/main:resources/views/errors/500.blade.php | cat -n
+git -C …/boilerplate show origin/main:tests/Unit/Theme/InlineThemeBackgroundTest.php | cat -n
+git -C …/boilerplate show origin/main:app/Http/Middleware/HandleAppearance.php
+git -C …/boilerplate show origin/main:bootstrap/app.php | sed -n '40,80p'
+git -C …/boilerplate show origin/main:config/inertia.php | sed -n '18,55p'
+git -C …/boilerplate show origin/main:composer.json | sed -n '70,110p'
+git -C …/boilerplate show origin/main:resources/js/components/{app-shell,app-content}.tsx
+git -C …/boilerplate grep -n -iE "favicon|apple-touch|android-chrome|webmanifest|theme-color|rel=\"icon\"" origin/main   # → 0 fora de docs
+git -C …/boilerplate ls-tree -r origin/main --name-only | grep -iE "manifest|deploy"
+git -C …/boilerplate grep -rn "sidebar_state|SIDEBAR_COOKIE_NAME" origin/main                                            # → 2 linhas, mesmo arquivo
+git -C …/boilerplate grep -n "AppShell\|AppContent" origin/main -- resources/js                                          # → 6 linhas, 1 chamador
+git -C …/boilerplate grep -n -i "0f2a44" origin/main                                                                     # → 5 sítios + 1 comentário
+git -C …/boilerplate grep -n "safe-area\|viewport-fit" origin/main -- resources                                          # → 1 linha
+git -C …/boilerplate grep -n -iE "InlineTheme|color-scheme|var\(--|app.blade" origin/main -- docs/migration              # → 0 linhas
+git -C …/boilerplate ls-tree origin/main -- "public/fonts/woff2/aptos/aptos-extrabold-italic 2.woff2" \
+                                            "public/fonts/woff2/aptos/aptos-extrabold-italic.woff2"                      # → mesmo blob fc88540e
+git -C …/boilerplate ls-tree -r origin/main --name-only -- public/fonts/woff2 | wc -l                                    # → 22
+git -C …/boilerplate show origin/main:resources/css/_fonts.css | grep -oE "url\('[^']+'\)" | sort -u | wc -l             # → 21
+comm -23 <(git -C …/boilerplate ls-tree -r origin/main --name-only -- public/fonts/woff2 | sed 's|^public||' | sort) \
+         <(git -C …/boilerplate show origin/main:resources/css/_fonts.css | grep -oE "/fonts/woff2/[^']+" | sort -u)     # → 1 órfão
+git -C …/boilerplate ls-tree -r -l origin/main -- public/fonts/woff2                                                     # tamanhos dos preloads
+
+# Multi-fonte (docs meus, Read normal)
+grep -n -iE "webmanifest|favicon|theme-color" …/boilerplate-harvest-state/docs/harvest/v2/{spinmax,ctfinance,cuidari}.md  # → só spinmax:1859-1860
+```
+
+### Lente REFUTAR — vereditos
+
+# V6F-1 — favicon/manifest/theme-color
+
+**SOBREVIVE (escopo corrigido, com dois fatos consertados).**
+
+Reproduzi as medições e elas batem no essencial:
+
+```
+$ git -C …/boilerplate grep -n -iE "favicon|apple-touch|android-chrome|webmanifest|rel=\"icon\"|theme-color" origin/main
+(zero linhas — repo inteiro, docs incluído)
+$ git -C …/boilerplate ls-tree -r origin/main --name-only -- public | grep -vE "fonts|vendor"
+public/.htaccess  android-chrome-192x192.png  android-chrome-512x512.png  apple-touch-icon.png
+favicon-16x16.png  favicon-32x32.png  favicon.ico  index.php  logo-simplify.png  logo.svg  robots.txt
+$ git -C …/boilerplate ls-tree -r origin/main --name-only | grep -i manifest   → só public/vendor/log-viewer/mix-manifest.json
+```
+
+Não existe no alvo (nem sob outro nome), não toca ADR nenhum, o ramo `@if ($faviconUrl)` você mesmo já barrou (multi-tenant, acoplado ao domínio). Dois fatos errados, porém:
+
+1. **"portar o bloco `@else` de 5 links"** — o boilerplate **não tem `public/favicon.svg`**. A fonte tem (`53d7d9a:public/favicon.svg`, 927 B); o alvo não (`ls-tree` acima). Portar o `@else` verbatim entrega um `<link>` para `/favicon.svg?v=2` que é 404 permanente — exatamente o defeito que a sua própria seção de adaptação quer travar nos preloads do V6F-4. Ou a linha do SVG sai, ou o asset entra no mesmo commit.
+2. **"5 arquivos inalcançáveis"** — são **4**. `apple-touch-icon.png` na raiz é convenção implícita do Safari/iOS igual ao `/favicon.ico`: iOS busca `/apple-touch-icon.png` sem `<link>`. Inalcançáveis de fato: `favicon-16x16.png`, `favicon-32x32.png`, `android-chrome-192x192.png`, `android-chrome-512x512.png`.
+
+Terceira ressalva menor: `?v=2` é cache-bust de um `v1` que o boilerplate nunca serviu. Copiar o `2` é cargo cult; ou nasce sem sufixo, ou o sufixo vem com comentário próprio.
+
+CSP não bloqueia: `SecurityHeaders.php:65` declara `default-src 'self'` e nenhum `manifest-src`, então o manifest cai no fallback e carrega.
+
+**Escopo corrigido:** (a) 4 `<link rel="icon">` + o apple-touch, **sem a linha do SVG** (ou com o asset junto); (b) `<meta name="theme-color" content="#0f2a44">` literal; (c) `public/site.webmanifest` + `<link rel="manifest">`, resgatando os dois `android-chrome-*`; (d) o hex do manifest entra na guarda no mesmo commit — `.ai/rules/views.md:9` é explícito ("Superfície nova pintada fora do `app.css` entra nesse teste no mesmo commit") e hoje `theme-tokens.test.ts:20` lê só `app.css` (confirmado) e `InlineThemeBackgroundTest::themedBlades()` lista só dois blades (linhas 38-41, confirmado). O hex atual tem 5 sítios reais, medidos: `app.css:107`, `app.blade.php:48`, `errors/500.blade.php:41,45,55`.
+
+**Amarra:** se o manifest nascer com `display: standalone`, o V6F-6 deixa de ser padding morto e vira decisão pendente. Os dois têm de ser resolvidos na mesma rodada, na ordem V6F-6 → V6F-1.
+
+---
+
+# V6F-2 — SSR ligado por default sem servidor SSR
+
+**SOBREVIVE, mas o mecanismo central é FALSO e tem de ser reescrito antes de virar comentário travado por teste.**
+
+O inventário de fatos do alvo bate, um a um:
+
+```
+.env.example:73  INERTIA_SSR_ENABLED=true
+config/inertia.php:24  'enabled' => (bool) env('INERTIA_SSR_ENABLED', true)
+config/inertia.php:32  'ensure_bundle_exists' => (bool) env(..., true)
+config/inertia.php:50  'throw_on_error' => (bool) env('INERTIA_SSR_THROW_ON_ERROR', false)
+composer.json "dev": serve + horizon:listen + schedule:work + pail + pnpm dev   (sem inertia:start-ssr)
+composer.json "dev:ssr": … + php artisan inertia:start-ssr
+tests/TestCase.php:16  config()->set('inertia.ssr.enabled', false)
+.gitignore:2  /bootstrap/ssr
+git ls-tree -r origin/main --name-only | grep -iE deploy  → 0 arquivos
+```
+
+**Refutação 1 — o 502 não existe nesta base.** `composer.lock` fixa `inertiajs/inertia-laravel v3.3.1`. Li o gateway instalado:
+
+```php
+// vendor/inertiajs/inertia-laravel/src/Ssr/HttpGateway.php
+} catch (Exception $e) {
+    if ($e instanceof StrayRequestException || $e instanceof SsrException) { throw $e; }
+    $this->handleSsrFailure($page, ['error' => $e->getMessage(), 'type' => 'connection']);
+    return null;   // ← fallback para render no cliente
+}
+```
+e `handleSsrFailure()` só lança quando `config('inertia.ssr.throw_on_error')` — default **false** aqui. Conexão recusada em `127.0.0.1:13714` ⇒ evento `SsrRenderFailed` + render no cliente. **Não derruba worker, não dá 502.** A frase do stub é do lock do ctvitrine (`53d7d9a:composer.lock` → **v3.1.0**) e nunca foi remedida contra a versão do alvo. Copiar "derruba o worker PHP-FPM → 502" para um comentário do `.env.example` e depois travá-lo com Pest é plantar um fato falso e blindá-lo — o modo de falha da rodada 1.
+
+**Refutação 2 — a mitigação que você descreve não vale em `composer dev`.** O gate do bundle é curto-circuitado quando o Vite está quente:
+
+```php
+if (! $isHot && $this->shouldEnsureBundleExists() && ! $this->bundleExists()) { return null; }
+$url = $isHot ? $this->getHotUrl('/__inertia_ssr') : $this->getProductionUrl('/render');
+```
+Com `public/hot` presente (que é o estado normal do `composer dev`), `$isHot` é true, o gate não roda, e o Inertia faz POST para `<vite>/__inertia_ssr`. O `laravel-vite-plugin@3.1.3` instalado **não trata essa rota** (`grep -rl "inertia_ssr" node_modules/laravel-vite-plugin/` → 0 arquivos), logo 404 → `handleSsrFailure` → fallback. Ou seja: o desperdício **já acontece hoje, em todo full-page load do dev**, sem ninguém ter rodado `dev:ssr`. Esse é o achado real, e é mais forte que o alegado — só que é latência e ruído, não indisponibilidade.
+
+**Refutação 3 — o item (iv) é inócuo.** `INERTIA_SSR_ENSURE_BUNDLE_EXISTS=true` já é o default do próprio `config/inertia.php:32` do repo (não "default de terceiro"), e é justamente o que o caminho hot ignora. Pinar não protege nada.
+
+**Escopo corrigido:** mantém (i) `.env.example` nasce `false`, (ii) teste Pest travando a string, (iii) regra em `.ai/rules`. O comentário diz o que eu medi, não o que o stub alegou: *"SSR desligado por default: `composer dev` não sobe `inertia:start-ssr` e o repo não tem script de deploy. Com `true`, todo full-page load faz um POST condenado (ao Vite em dev, ao `:13714` em prod) que o gateway v3 absorve e devolve render no cliente — custo de roundtrip e evento `SsrRenderFailed` sem ouvinte, não 502. Ligar exige as três chaves juntas: env, `build:ssr` no deploy e daemon no supervisor."* Item (iv) sai. Zero ouvintes do evento no repo (`git grep SsrRenderFailed origin/main` → só o comentário de `config/inertia.php:45`), então hoje a falha é silenciosa — vale uma linha sobre isso e o ADR 0006.
+
+---
+
+# V6F-3 — exportar a guarda de tema pelo playbook
+
+**SOBREVIVE, mas rebaixado de "uma fatia nova" para "uma linha na Fatia 4" — e a alegação central é parcialmente falsa.**
+
+O lado do alvo confere: `app.blade.php:40-52` com literal `#0f2a44` + `color-scheme` nas duas regras, `<meta name="color-scheme">` na linha 8, `InlineThemeBackgroundTest.php` com as quatro guardas (`:135-142` proíbe `var(--`, `:144-165` cobra sincronia com `--brand-navy-dark`, `:167-178` cobra `color-scheme`, `:180-184` cobra o meta), `.ai/rules/views.md:9` e `:11-12`. O lado da fonte também: `app.blade.php:107-117@53d7d9a` usa `var(--palette-primary-dark)` (declarado em `app.css:111@53d7d9a`, entregue só pelo `@vite` da linha 142) e **não há uma única declaração da propriedade `color-scheme` em `resources/` inteiro** — `git grep -n "color-scheme" 53d7d9a -- resources` devolve 4 linhas, todas `prefers-color-scheme` em media query/matchMedia. A prova de campo é legítima.
+
+**O que é falso:** *"Nenhuma fatia do `PLAYBOOK.md` leva essa guarda para os 7 derivados."* Duas coisas já viajam:
+- **Fatia 6** (`PLAYBOOK.md:115`) manda copiar `.ai/rules/index.md` **e os arquivos de área aplicáveis** — `views.md` é arquivo de área, e os dois parágrafos que você quer exportar estão nele. E ela é explicitamente antecipada para a Fatia 2.
+- **Fatia 4** (`PLAYBOOK.md:93`) já manda copiar `resources/views/errors/500.blade.php` — um dos dois blades tematizados — **sem o teste que o protege**.
+
+O buraco real, então, é estreito e cirúrgico: a Fatia 4 copia o arquivo e não copia a guarda. Isso é uma linha de edição no bullet existente, não uma fatia.
+
+**Escopo corrigido:** acrescentar ao bullet de páginas de erro da Fatia 4 — *"…e `tests/Unit/Theme/InlineThemeBackgroundTest.php`, com `appCssToken('…')` e `themedBlades()` parametrizados pelo token e pelas superfícies do projeto"* — mais uma linha nas Armadilhas (§4) registrando o sintoma medido no ctvitrine (`var(--token)` no bloco pré-CSS + zero `color-scheme`). A refatoração das duas constantes no topo do teste é do projeto derivado, não do boilerplate.
+
+**Não medido, não afirme:** *"no ctvitrine, hoje, quem usa tema escuro vê barra de rolagem e controles claros em toda página"* — o mecanismo está certo, mas ninguém abriu um browser. Escreva "sem `color-scheme` declarado em lugar nenhum (medido), o cromo nativo não segue a classe `.dark`".
+
+---
+
+# V6F-4 — `aptos-extrabold-italic 2.woff2`
+
+**SOBREVIVE intacto. É o único candidato do lote cujos números todos reproduziram sem correção.**
+
+```
+$ git -C …/boilerplate ls-tree origin/main -- "…/aptos-extrabold-italic 2.woff2" "…/aptos-extrabold-italic.woff2"
+100644 blob fc88540ed885152d200bf22f8f759258f78538b1  …/aptos-extrabold-italic 2.woff2
+100644 blob fc88540ed885152d200bf22f8f759258f78538b1  …/aptos-extrabold-italic.woff2
+$ git grep -n "extrabold-italic 2" origin/main            → 0
+$ ls-tree -r origin/main -- public/fonts/woff2 | wc -l     → 22
+$ _fonts.css | grep -oE "/fonts/woff2/[^')]+" | sort -u | wc -l → 21
+$ comm -23 <(…árvore…) <(…css…)                            → /fonts/woff2/aptos/aptos-extrabold-italic 2.woff2   (um, e só um)
+```
+
+Não existe no alvo sob outro nome (é o alvo), nenhum ADR encosta, não é acoplado a vitrine, custo é uma remoção e ~15 linhas de Pest. Os 5 preloads de `app.blade.php:59-65` existem todos na árvore (confirmado no `ls-tree`), então o segundo sentido do teste nasce verde como você previu.
+
+**Duas notas de execução:** o nome tem espaço — o `git rm` e o `comm` do teste precisam de aspas, e o regex do `_fonts.css` tem de aceitar espaço na URL, senão o teste passa por não enxergar o arquivo. E mantenha o teste standalone em `tests/Unit/` — não pendure no `InlineThemeBackgroundTest`, que tem outro assunto.
+
+---
+
+# V6F-5 — `AppShell` semeando do `localStorage`, cookie escrito e ignorado
+
+**SOBREVIVE, com a severidade corrigida: a duplicação é real e viva; o "mismatch de hidratação" é latente, não observável hoje.**
+
+Fatos confirmados um a um:
+- `app-shell.tsx` é **byte-idêntico** entre `53d7d9a` e `origin/main` (li os dois: 29 linhas, mesmo ternário, mesmo `'sidebar'`, mesmo `!== 'false'`). `app-content.tsx` idem.
+- `git grep -n "sidebar_state\|SIDEBAR_COOKIE_NAME" origin/main` → exatamente **2 linhas**, ambas em `ui/sidebar.tsx` (`:27` a constante, `:85` a escrita). Ninguém lê. Confirmado.
+- E o cookie **é mesmo escrito no modo controlado**: `ui/sidebar.tsx:56-69` chama `setOpenProp(openState)` e escreve `document.cookie` logo depois, incondicionalmente. Sua premissa se sustenta.
+- Precedente do canal certo confirmado: `HandleAppearance.php:14` (`View::share`) + `bootstrap/app.php:35` (`encryptCookies(except: ['appearance'])`).
+
+**O que cai:** *"com `INERTIA_SSR_ENABLED=true` no `.env.example`, isso é o default de configuração"* — a config está ligada, mas o SSR **não renderiza** (V6F-2: sem daemon, sem bundle, e no dev-hot o POST toma 404 e o gateway v3.3.1 devolve fallback no cliente). Servidor nenhum produz HTML de `AppShell` hoje, logo não há divergência servidor↔cliente observável. Vender o candidato pela hidratação é vender um sintoma que não acontece.
+
+**O que fica de pé sem depender de SSR:** duas persistências paralelas do mesmo booleano, uma delas pura escrita morta; e leitura de `localStorage` no inicializador de um componente que toda página autenticada monta, contra a regra da própria casa (`.ai/rules/js.md:72` já exige que `navigator` seja lido "só sob demanda e depois da montagem", e o `use-favorites.ts:5` da fonte escreve a regra em uma linha). Isso basta.
+
+**Escopo corrigido:** uma fonte só. Ou o servidor publica `sidebar_state` (via `share()` + tipos em `resources/js/types/` no mesmo commit, por `CLAUDE.md`) e `AppShell` deixa de ser dono do estado, ou o `AppShell` para de controlar e devolve a persistência ao primitivo (que já escreve o cookie) — **não os dois**. Cookie fora do `encryptCookies`, junto de `appearance`. Guardas: Vitest renderizando sem `window.localStorage` + Pest no `share()`. Migração de estado: quem tem `localStorage['sidebar']` volta ao aberto uma vez — aceitável, registre no PR.
+
+---
+
+# V6F-6 — `env(safe-area-inset-*)` sem `viewport-fit=cover`
+
+**SOBREVIVE só na metade "apagar". A metade "ativar" é DERRUBADA: é decisão de produto sem página que a justifique, e o próprio candidato a classifica como M com verificação em aparelho.**
+
+Medido no alvo:
+```
+$ git grep -n "safe-area\|viewport-fit" origin/main -- resources
+resources/css/app.css:241:  padding: env(safe-area-inset-top) … env(safe-area-inset-left);   ← linha única
+app.blade.php:5  <meta name="viewport" content="width=device-width, initial-scale=1">   ← sem viewport-fit
+```
+Fonte idêntica. Sem o opt-in, as quatro `env()` valem `0px`: é padding morto num seletor que já carrega `@apply` + `font-family !important` (`app.css:234-242`).
+
+Ativar significa mudar o layout global em iOS num boilerplate que não tem uma única página pública, e ainda esbarra no problema que você mesmo levanta (o `<main>` do `SidebarInset` não herda padding do `body`, então o inset ficaria no container errado). Isso é adiamento, não fatia.
+
+**Escopo corrigido:** remover a linha 241 + um comentário de uma linha no lugar dizendo qual meta a habilitaria. **Ordem obrigatória:** decidir isto **antes** do V6F-1 — se o manifest nascer com `display: standalone`, o app vira instalável e o inset passa a importar de verdade; aí a ativação vira uma fatia própria, com o padding no container de rolagem e não no `body`.
+
+---
+
+# V6F-7 — variante `'header'` morta / famílias de layout
+
+**SPLIT: a poda SOBREVIVE (escopo corrigido); a família pública é DERRUBADA — "G, decisão de produto, e o boilerplate não tem página pública para justificá-la" é a própria definição de adiamento, não de fatia.**
+
+Confirmado: `app-header-layout.tsx` existe na fonte com **zero importadores** (`git grep … 53d7d9a -- resources` → só a linha da declaração) e **não existe** no alvo (`ls-tree -r origin/main -- resources/js/layouts`). `app-shell.tsx` e `app-content.tsx` byte-idênticos entre os dois. `AppShell variant = 'header'` e `AppContent variant = 'header'` são os defaults, e o único chamador é `app-sidebar-layout.tsx`, passando `"sidebar"` nas duas (`:16` e `:32`). O skip-link do alvo (`:25-30`) e o alvo marcado (`:32`) existem; a fonte não tem nada disso (li o `app-sidebar-layout.tsx@53d7d9a`: vai de `<AppShell>` direto para `<AppSidebar />`). Tudo isso se sustenta.
+
+**Fato errado:** *"`git grep -n "AppShell\|AppContent" origin/main -- resources/js` fora dos próprios arquivos → 6 linhas, todas nesse layout"*. Rodei: são **8** linhas fora dos dois componentes — 7 em `app-sidebar-layout.tsx` (1, 2, 16, 19, 32, 40, 41; a 19 é comentário) e 1 em `resources/js/test/components/navigation-landmarks.test.tsx:57`, também comentário. A conclusão (um chamador só) sobrevive; a contagem e o "todas nesse layout" não.
+
+**Escopo corrigido da poda:** melhor que trocar o default para `'sidebar'` é **remover a prop `variant` inteira** dos dois componentes — prop obrigatória com um valor só é ruído, e some junto a armadilha do default apontando para o ramo não exercitado. É seguro: `SidebarInset` é literalmente um `<main>` (`ui/sidebar.tsx:329-331`), então o landmark não se perde ao apagar o ramo `header` de `AppContent`. Duas travas de execução: preservar o `{...props}` que leva `id="conteudo"`/`tabIndex={-1}` até o `<main>` (é o que faz o skip-link funcionar) e rodar `navigation-landmarks.test.tsx` no mesmo commit. Se um dia a família pública nascer, ela nasce com o skip-link e entra nesse teste — mas isso é bilhete para a próxima rodada, não escopo desta.
+
+---
+
+# Extra — `<meta name="robots" content="noindex">` no `errors/500.blade.php`
+
+Está enterrado na seção "onde não achei delta", mas é uma proposta e por isso julgo. **DERRUBADO como fatia própria; SOBREVIVE como linha carona do V6F-1.**
+
+Confirmei que `bootstrap/app.php:57` roteia `[403, 404, 500, 503]` por esse caminho (e que o `errors.500` só entra no `catch` do render Inertia, `:65`), e que `public/robots.txt` libera tudo. Mas crawlers não indexam resposta não-200 — o ganho é marginal e você mesmo o classifica como "barato e não-óbvio o suficiente para valer a linha", que é argumento de conveniência, não de defeito medido. Um PR só para isso não se sustenta; anexado ao commit de `<head>` do V6F-1, custa zero.
+
+### Lente RISCO — vereditos
+
+### V6F-1 · favicon/manifest
+
+**Falsificação que muda a fatia.** O candidato manda "portar o bloco `@else` de 5 links". Medi `git -C .../boilerplate ls-tree -r origin/main --name-only -- public`: existem `favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `android-chrome-{192,512}.png` — **e nenhum `favicon.svg`**. A fonte tem (`git -C .../ctvitrine ls-tree -r 53d7d9a --name-only -- public` lista `public/favicon.svg`, além de `favicon-48x48.png` e `favicon.png`). Portar os 5 links verbatim planta `<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">` apontando para arquivo inexistente: **404 em toda página**, e é justamente o link que Chrome/Firefox preferem quando declarado. São **4** links a portar, não 5 — ou 5 com um `favicon.svg` novo desenhado no mesmo commit.
+
+**Segundo detalhe herdado sem sentido:** o `?v=2` é cache-bust de uma marca que já girou uma vez na fonte. Aqui nunca houve `v=1` (zero linhas de `rel="icon"` em `origin/main`, confirmado). Entra como token permanente que ninguém sabe quando girar. Ou nasce sem query, ou nasce com o comentário explicando o protocolo.
+
+**Regressão visual/comportamental:** nula sobre o que as 30 fatias consertaram. Nenhum `className`, nenhum token do `@theme`, nenhuma regra de `app.css`. `resources/js/test/styles/{theme-tokens,focus-ring}.test.ts` leem `resources/css/app.css` e `resources/js/**/*.tsx?` respectivamente — não enxergam `public/` nem `<head>`. `tests/Unit/Theme/InlineThemeBackgroundTest.php` recorta só o primeiro `<style>` do blade; `<link>` e `<meta>` novos passam ao largo.
+
+**A adaptação proposta não funciona.** O candidato diz "estender `themedBlades()` (linha 34) para incluir o manifest". Li o teste: `themeStyleBlock()` (linhas 44-56) faz `preg_match('/<style\s*>(.*?)<\/style\s*>/s')` e a primeira asserção (linhas 127-133) é `expect(themeStyleBlock($nome))->not->toBe('')`. Um `.webmanifest` é JSON e não tem `<style>` — pôr o caminho em `themedBlades()` derruba o teste na entrada, não na sincronia. O mesmo vale para o `<meta name="theme-color">`: ele vive fora do `<style>`, logo fora de `themeDeclarations()`. A guarda certa é uma asserção **nova**, reaproveitando `appCssToken('brand-navy-dark')` (linha 118) e comparando com `json_decode(file_get_contents($manifest))->theme_color` e com o `content=` do meta, via regex própria.
+
+**Segurança:** CSP não quebra. `SecurityHeaders.php:64-75` emite `default-src 'self'` (que é o fallback de `manifest-src`, ausente na lista) e `img-src 'self' data: https:` — manifest e ícones de mesma origem passam. Mas `X-Content-Type-Options: nosniff` é incondicional (`SecurityHeaders::HEADERS`, linhas 23-28) e `public/.htaccess` (25 linhas, li inteiro) **não declara `AddType`**. Servidor que não conheça `.webmanifest` entrega `application/octet-stream` e o Chrome, com `nosniff`, recusa o manifest silenciosamente. `php artisan serve` faz exatamente isso. Mitigação obrigatória: `AddType application/manifest+json .webmanifest` no `.htaccess` (e a nota equivalente para nginx no PR).
+
+**a11y/contraste:** calculei `#0f2a44` — luminância relativa 0.0217, contraste **14.6:1 contra branco**. O texto que o Chrome Android escolhe para a barra fica confortável. O efeito colateral é estético e real: um `theme-color` único pinta a barra de navy também no tema claro, num app cujo canvas claro é `--background: white` (`app.css:119`). Mitigação de uma linha: dois metas com `media="(prefers-color-scheme: light)"` / `dark`.
+
+**Custo de gate:** sem `pest-plugin-browser` não há prova visual. Evidência possível e barata, na ordem de valor: (1) teste Pest lendo `app.blade.php`, extraindo todo `href` de `rel="icon|apple-touch-icon|manifest"`, stripando `?v=`, e afirmando `file_exists(public_path(...))` — é exatamente o que pega o `favicon.svg` fantasma antes do merge; (2) `json_decode` do manifest travando `theme_color`/`background_color` contra `appCssToken()`; (3) screenshot da aba no PR.
+
+**Veredito: risco MÉDIO.** Seria BAIXO sem o link fantasma e sem o MIME. Mitigação: 4 links (não 5), `AddType` no `.htaccess`, asserção nova em vez de `themedBlades()`, dois `theme-color` por `prefers-color-scheme`.
+
+---
+
+### V6F-2 · SSR ligado por default
+
+**Fatos do alvo: todos confirmados por medição própria.** `.env.example:73` `INERTIA_SSR_ENABLED=true`; `config/inertia.php:24` default `true`, `:32` `ensure_bundle_exists` default `true`; `composer.json` `"dev"` roda `serve/horizon:listen/schedule:work/pail/pnpm dev` e **não** `inertia:start-ssr`, que só aparece em `"dev:ssr"`; `tests/TestCase.php:16` `config()->set('inertia.ssr.enabled', false)`; `.gitignore:2` `/bootstrap/ssr`; zero arquivos de deploy (`ls-tree -r origin/main --name-only | grep -i deploy` → 0).
+
+**Falsificação na justificativa.** O candidato importa da fonte a frase "derruba o worker PHP-FPM → 502 no reload da área logada". No boilerplate esse desfecho **não se sustenta**: `config/inertia.php:50` tem `'throw_on_error' => (bool) env('INERTIA_SSR_THROW_ON_ERROR', false)`, e o próprio bloco de comentário (linhas 40-47) diz que a falha de SSR cai graciosamente para client-side rendering. O sintoma real aqui é **uma tentativa de POST recusada por page load** — latência do connect-refused mais ruído de log — não 502. Isso não derruba a fatia; derruba a prosa copiada. Se a fatia entrar com o texto da fonte, ela afirma fato falso sobre este repositório.
+
+**Regressão de CI: medida e nula.** `.github/workflows/ci.yml:170` faz `cp .env.example .env` antes do gate de migrations MySQL e do `./vendor/bin/pest`. Trocar a linha 73 muda o `.env` daquele job — mas `TestCase.php:16` já força `inertia.ssr.enabled = false` na suíte inteira, então nenhum teste muda de resultado. Efeito líquido: zero.
+
+**Dados persistidos:** nenhum. `.env` de instalação existente não é tocado.
+
+**Segurança/a11y:** neutro, com uma melhora marginal — desligar remove um destino de requisição saindo do PHP para `127.0.0.1:13714` em cada render. Sem impacto de foco, contraste ou anúncio.
+
+**Custo de gate:** o teste proposto (Pest lendo `.env.example`) não tem precedente aqui — `git grep -n "env.example" origin/main -- tests scripts .github` devolve só a linha do CI. É factível: o arquivo é versionado e existe local e no runner. Recomendo travar o **par** (a chave em `false` **e** o comentário de condição), não a string solta: string solta é trivialmente satisfeita por quem só quer o CI verde.
+
+**Trap não anotada:** `composer dev:ssr` roda `pnpm build:ssr` e deixa `bootstrap/ssr/ssr.mjs` no disco permanentemente (está em `.gitignore`, ninguém limpa). Com o default virando `false` o resíduo passa a ser inofensivo — mas quem quiser SSR de verdade agora tem de virar três chaves. Vale uma linha na regra dizendo isso.
+
+**Veredito: risco BAIXO.** Uma linha de env + um teste + uma regra, com CI provadamente indiferente. Mitigação: reescrever a justificativa para "dispatch recusado por page load + log", não "502".
+
+---
+
+### V6F-3 · exportar a guarda de tema para o playbook
+
+**Fact-check.** A afirmação `git grep -n "color-scheme" 53d7d9a -- resources/views` → 0 linhas é **falsa**. Rodei o comando: devolve **2** linhas — `app.blade.php:97` e `errors/vitrine-suspended.blade.php:65`, ambas `prefers-color-scheme`. O fato substantivo permanece verdadeiro: nenhuma declaração da propriedade `color-scheme`, nenhum `<meta name="color-scheme">` no ctvitrine. Confirmei também `var(--palette-primary-dark)` dentro do `<style>` da fonte (bloco em 106-117) com o `@vite` 28 linhas abaixo. E confirmei o buraco de exportação: `git grep -inE "InlineTheme|color-scheme|var\(--|app\.blade" origin/main -- docs/migration` → **0 linhas**; a Fatia 4 do `PLAYBOOK.md:93` cita `errors/500.blade.php` mas não a guarda de tema.
+
+**Risco para o boilerplate: nulo.** A fatia toca só `docs/migration/PLAYBOOK.md`. Nenhum gate roda sobre `docs/`; nenhum arquivo executável muda. Regressão visual impossível.
+
+**Risco de portabilidade — o candidato subestimou o que precisa virar constante.** Li o teste inteiro. Além de `appCssToken('brand-navy-dark')` (linhas 128, 145) e de `themedBlades()` (34-42), ele carrega: `dirname(__DIR__, 3)` nas linhas 36 e 120 (assume `tests/Unit/Theme/` a exatamente 3 níveis da raiz — derivado com outra árvore de testes lê o arquivo errado e falha com mensagem enganosa); e `ehSeletorEscuro()` (105-108) que só reconhece `.dark` e `.system`. Derivado que use `data-theme` em vez de classe faz `darkBackgroundDeclarations()` voltar vazia — e aí a guarda **falha alto**, graças à asserção `not->toBeEmpty()` da linha 148, que é o detalhe bem-projetado do teste. Já o cuidado que o candidato destacou (remover comentários Blade antes do regex, linhas 48-51) está correto e é o único documentado no arquivo.
+
+**Onde o risco vive de verdade: no derivado, não aqui.** O teste não conserta nada — ele reprova. Para o ctvitrine ficar verde é preciso (a) trocar `var(--palette-primary-dark)` por literal e (b) acrescentar `color-scheme` nas duas regras. O item (b) é uma mudança visível em **toda** página escura: barra de rolagem e controles nativos passam de claro para escuro. É melhoria de a11y inequívoca (não há como um `color-scheme: dark` correto piorar contraste), mas é mudança perceptível — merece screenshot no PR do derivado.
+
+**Custo de gate:** o próprio teste é o gate, e ele mede a declaração, não o pixel — o que é adequado, porque o defeito original (`var()` sem valor) é textual. Nenhuma prova visual é necessária.
+
+**Ordem obrigatória, que a fatia tem de dizer:** conserto **antes** do teste, no mesmo PR. Invertido, a suíte do derivado nasce vermelha e o PR fica refém de uma correção de CSS que não estava no escopo.
+
+**Veredito: risco BAIXO no boilerplate; MÉDIO por derivado.** Mitigação: parametrizar quatro coisas (token, lista de blades, raiz do projeto, predicado de seletor escuro), e ordenar conserto→teste.
+
+---
+
+### V6F-4 · `aptos-extrabold-italic 2.woff2`
+
+**Confirmado por medição própria, integralmente.** Mesmo blob: `git ls-tree origin/main -- "…/aptos-extrabold-italic 2.woff2" "…/aptos-extrabold-italic.woff2"` devolve `fc88540ed885152d200bf22f8f759258f78538b1` nos dois. `git grep -n "extrabold-italic 2" origin/main` → 0. 22 woff2 na árvore, 21 URLs distintas no `_fonts.css`, e o `comm -23` devolve exatamente `/fonts/woff2/aptos/aptos-extrabold-italic 2.woff2`. Como 22−21=1 e o órfão é único, o **sentido inverso também está limpo hoje**: toda URL do CSS existe no disco. O teste nasce verde nos dois sentidos, como o candidato disse.
+
+**Regressão visual/comportamental: zero.** O arquivo é inalcançável por definição (nenhum `@font-face`, nenhum preload, nenhum import o cita). Nenhum teste de estilo o enxerga: `focus-ring.test.ts:32-42` varre só `.tsx?` sob `resources/js` (exceto `test/`), `theme-tokens.test.ts:20` lê só `resources/css/app.css`.
+
+**Risco real, não anotado, mora no teste proposto.** Dois pontos:
+1. **Vacuidade.** O extrator que o candidato usou (`grep -oE "/fonts/woff2/[^']+"`) assume aspas simples em todo `url()`. Um `url("…")` futuro escapa do regex, a lista fica curta, e o teste passa verde afirmando nada. O repo já tem o antídoto e o padrão a copiar: o controle positivo de `focus-ring.test.ts:64-69` (`expect(sources.length).toBeGreaterThan(50)` e `>= 8` arquivos com a classe). Aqui: `expect(count($urls))->toBeGreaterThanOrEqual(21)`.
+2. **O espaço no nome.** Qualquer `glob()`/`preg` que monte a URL a partir do caminho tem de sobreviver a um nome com espaço — é literalmente o arquivo que o teste existe para pegar; se o pipeline engasgar nele, o teste não vê o alvo.
+
+**Estender aos preloads:** conferi os 5 `href` de `app.blade.php:59-65` contra o `ls-tree` — os cinco existem. A extensão acopla `tests/` a `resources/views/` e precisa ignorar query string; aceitável e barata. É a mesma asserção que o V6F-1 precisa para os ícones — vale unificar num teste só de "todo asset referenciado no `<head>` existe em `public/`".
+
+**Dados persistidos / segurança / a11y:** nada. Apagar um arquivo não referenciado não muda tipografia renderizada, contraste, foco nem ordem de tabulação.
+
+**Deploy:** com deploy por rsync **sem** `--delete`, o arquivo sobrevive em produção depois do `git rm` — inofensivo, e sem script de deploy no repo (0 arquivos) não há como travar isso daqui.
+
+**Veredito: risco BAIXO.** Única mitigação necessária: controle positivo no teste, no molde do `focus-ring.test.ts`.
+
+---
+
+### V6F-5 · estado da sidebar em `localStorage` vs cookie
+
+**Confirmado byte-a-byte.** `resources/js/components/app-shell.tsx` é idêntico linha a linha entre `53d7d9a` e `origin/main` (li os dois, 29 linhas cada, mesmo ternário na linha 10). Confirmado `bootstrap/app.php:35` → `encryptCookies(except: ['appearance'])` e `HandleAppearance.php:14` → `View::share('appearance', …)`.
+
+**Correção de contagem:** `git grep -n "sidebar_state\|SIDEBAR_COOKIE" origin/main` devolve **3** linhas, não 2 — `ui/sidebar.tsx:27` (nome), `:28` (max-age) e `:85` (a escrita). Conclusão inalterada: ninguém lê.
+
+**Correção de mecanismo, esta importa.** O candidato oferece "shared prop (ou `View::share`)". `View::share` **não serve**: ele alcança o Blade, não as props do React. O `appearance` funciona porque é consumido dentro de `app.blade.php` (linhas 2, 8, 13). Para chegar no `AppShell` só há o caminho da prop compartilhada do Inertia — a alternativa (injetar `window.__sidebar` num inline script) reintroduz script inline num `<head>` que a CSP só tolera por `'unsafe-inline'`.
+
+**A linha que decide se a fatia funciona:** `sidebar_state` **tem** de entrar no `except` do `encryptCookies`. Sem isso, o `EncryptCookies` falha ao descriptografar o cookie que o JS escreveu em texto puro e **descarta** o valor: `$request->cookie('sidebar_state')` volta `null`, o servidor manda sempre `true`, e a fatia entrega o bug atual com mais código e mais superfície. Não é detalhe de acabamento.
+
+**Gate existente que vai quebrar — de propósito, e isso é bom.** `tests/Feature/SharedPropsTest.php:21-55` fecha o escopo raiz com `->interacted()` e o comentário das linhas 26-31 diz explicitamente que prop nova sem espelho em `resources/js/types` quebra ali. Uma chave `sidebarOpen` derruba o teste com "Unexpected properties were found in scope" até `share()`, `SharedPropsTest` e `SharedData` mudarem juntos. É exatamente a catraca que o `CLAUDE.md` promete.
+
+**Regressão medida em teste existente.** `resources/js/test/components/navigation-landmarks.test.tsx` renderiza `AppSidebarLayout` de verdade em quatro testes (117, 125, 139, 147), com `vi.mock('@inertiajs/react')` (linhas 24-41) cujo `usePage()` devolve **só** `{ url, props: { auth } }`. Se `AppShell` passar a ler `usePage().props.sidebarOpen`, o mock entrega `undefined` — sem fallback explícito, os quatro testes de skip-link caem. Mitigação: `const open = props.sidebarOpen ?? true;` e a chave acrescentada ao mock no mesmo commit. Já `resources/js/test/components/ui/sidebar-shortcut.test.tsx:14` usa `SidebarProvider defaultOpen` direto e não passa por `AppShell` — imune.
+
+**Segurança:** tirar um cookie do `encryptCookies` é decisão revisável, mas o conteúdo é um booleano de UI sem valor. O que merece conserto junto: a escrita em `ui/sidebar.tsx:85` é `path=/; max-age=…` — **sem `SameSite`, sem `Secure`**. Uma linha, e some a divergência entre o default de Chrome e o de Safari.
+
+**a11y:** neutro se feito direito; positivo de tabela: hoje, com SSR ligado, quem recolheu a sidebar recebe HTML do servidor com a sidebar aberta e o cliente a fecha no primeiro frame — um salto de layout que reposiciona o skip-link e todo o `<main>`. Foco e ordem de tabulação não mudam (o skip-link continua o primeiro focável, `app-sidebar-layout.tsx:25-30`).
+
+**Dados persistidos — são duas migrações, não uma.** (i) quem tem `localStorage['sidebar']='false'` e nenhum `sidebar_state` volta ao aberto uma vez (o candidato anotou); (ii) o `localStorage['sidebar']` fica **órfão para sempre** no browser de todo usuário existente se a escrita da linha 16 não for removida no mesmo commit — senão a fatia sai com três canais em vez de um, que é o oposto do objetivo declarado.
+
+**Custo de gate:** a hidratação real não é observável sem browser testing, e o PR deve dizer isso. Evidência possível: (a) Vitest renderizando `AppShell` com `vi.stubGlobal('localStorage', undefined)` — prova a ausência de leitura de storage no primeiro render, que é o defeito nomeado; (b) Pest afirmando que `withCookie('sidebar_state', 'false')` chega como `false` na prop, o que prova de quebra que o cookie sobreviveu ao `encryptCookies`; (c) screenshot/gravação manual do reload com sidebar recolhida.
+
+**Veredito: risco MÉDIO.** Toca o shell de toda página autenticada, mas os três gates existentes (SharedPropsTest, navigation-landmarks, `pnpm types`) fazem o erro aparecer no CI e não em produção. Mitigações obrigatórias: `except: […, 'sidebar_state']`, fallback `?? true`, remoção da escrita em `localStorage`, `SameSite=Lax`.
+
+**Sequenciamento:** depende do V6F-2. Se o SSR nascer desligado, este defeito deixa de ser observável e a fatia perde a urgência — mas as duas persistências paralelas continuam sendo dívida. Rodar V6F-2 primeiro (P·P) e reescrever a justificativa deste como "um canal só", não como "conserto de hidratação".
+
+---
+
+### V6F-6 · `env(safe-area-inset-*)` sem `viewport-fit=cover`
+
+**Confirmado:** `git grep -n "safe-area\|viewport-fit" origin/main` devolve **uma** linha em todo o repositório — `resources/css/app.css:241`, dentro do bloco `body`. `app.blade.php:5` é `content="width=device-width, initial-scale=1"`, sem `viewport-fit`. Nenhum teste referencia. Na fonte, a mesma linha em `app.css:235` e a mesma meta em `app.blade.php:5`.
+
+**Opção A — apagar: risco ZERO, e é medido.** O preflight do Tailwind v4 zera `padding` no seletor universal, então o valor computado de `body` hoje é `0px` e continua `0px` depois da remoção. Nenhum snapshot, nenhum teste de estilo, nenhum `className`, nenhum token. Nada que F1/F5/F42/E28/F32 consertaram encosta nisso.
+
+**Opção B — ativar: risco ALTO, e o candidato subestimou.** Ele propõe "verificar em aparelho". Dois mecanismos concretos garantem que a ativação **desalinha** em vez de alinhar:
+1. A sidebar desktop é posicionada com `fixed` pelo `ui/sidebar.tsx`. Elemento `fixed` resolve contra o **viewport**, não contra a caixa de conteúdo do `body`. Com o padding valendo de verdade, o fluxo desloca e a sidebar não — em paisagem no iPhone, a sidebar cola no notch e o conteúdo ganha uma faixa. O candidato chegou perto ("o `<main>` do primitivo é filho de um container que não herda o padding"), mas o mecanismo é `fixed`, não herança.
+2. Todo overlay Radix e o `Toaster` do `react-hot-toast` saem por **portal em `document.body`** com posicionamento `fixed` — também imunes. A "correção" acertaria só o fluxo normal e deixaria tudo o que é sobreposto desalinhado em relação a ele.
+
+**Um risco que eu levantei e derrubei:** cogitei uma moldura visível da cor do `html` em volta do `body` com padding. Medi `resources/css/app.css:119` (`--background: white`) e `:170` (`.dark { --background: var(--brand-navy-dark) }`) contra o bloco inline de `app.blade.php:41-51` (`white` / `#0f2a44`): **são a mesma cor nos dois temas**, então a moldura seria invisível. Não é risco.
+
+**Dados persistidos / segurança / a11y:** nenhum dos dois lados muda contraste, foco, ordem de tabulação ou anúncio. Na opção B há um ganho teórico de a11y (conteúdo fora do home-indicator) que os dois mecanismos acima anulam na prática enquanto os `fixed` não forem tratados.
+
+**Custo de gate:** para (A), os gates existentes provam a ausência de dano — `composer ci:check` e `corepack pnpm ci:check` verdes bastam. Para (B), **não existe prova automatizável neste repo**: `env()` só tem valor não-zero em Safari iOS com `viewport-fit=cover`, condição que jsdom não reproduz e que só um dispositivo real exibe. Um candidato cuja única prova é visual, e nem screenshot de simulador cobre bem.
+
+**Veredito: risco BAIXO para apagar, ALTO para ativar.** Recomendação: apagar a linha, e uma frase em `.ai/rules/css.md` registrando que `env(safe-area-*)` só volta acompanhada de `viewport-fit=cover` **e** de um plano para os elementos `fixed` — senão volta como padding morto pela segunda vez.
+
+---
+
+### V6F-7 · ramo `variant="header"` morto
+
+**Confirmado.** `git ls-tree -r origin/main --name-only -- resources/js/layouts` não tem `app-header-layout.tsx`; a listagem de `resources/js/components` (fora de `ui/`) não tem `app-header.tsx`. A poda já aconteceu e está documentada: `resources/js/test/styles/focus-ring.test.ts:50-61` conta que a cadeia `app-header-layout → app-header → navigation-menu` era órfã inteira, foi apagada, e `MORTOS_CONHECIDOS` ficou vazia de propósito como catraca.
+
+**Correção de contagem:** `git grep -n "AppShell\|AppContent" origin/main -- resources/js` devolve **7** linhas fora dos próprios arquivos, não 6 — as 6 de `app-sidebar-layout.tsx` (1, 2, 16, 32, 40, 41) mais `navigation-landmarks.test.tsx:57`, uma citação em comentário. A conclusão (chamador único) não muda.
+
+**O que o candidato não notou, e que fortalece a poda:** no `AppShell`, o ramo `'header'` (linhas 20-22) é o **único** caminho que não monta `SidebarProvider`. `ui/sidebar.tsx:46-53` lança `"useSidebar must be used within a SidebarProvider."` para qualquer primitivo abaixo. O default `'header'` não é só "não exercitado": é um default que **derruba a árvore** se alguém montar `<AppShell>` sem prop e puser qualquer coisa de sidebar dentro. Essa é a frase de justificativa que a fatia precisa, e é mais forte que "cai silenciosamente no ramo errado".
+
+**Poda — regressão medida: nenhuma.** O único chamador passa `variant="sidebar"` explicitamente nos dois pontos (`app-sidebar-layout.tsx:16` e `:32`), então remover o ramo não altera árvore renderizada. `navigation-landmarks.test.tsx:146-150` ("exatamente um `<main>`") continua verde: o `<main>` vem do `SidebarInset`, não do ramo removido. Se o prop `variant` for removido do **tipo**, o TS quebra nos dois call sites — que estão no mesmo arquivo, corrigidos no mesmo diff. Se só o default virar `'sidebar'`, nada quebra e a armadilha some. Coberto 100% por `pnpm types` + `vitest` + `eslint`; **não** precisa de gate visual.
+
+**Família pública — ALTO, e mais caro do que o candidato disse.** Além do skip-link, três contratos existentes passariam a valer para o layout novo, automaticamente: (a) os 4 testes de skip-link (`navigation-landmarks.test.tsx:115-150`), incluindo o alvo `id="conteudo" tabIndex={-1}`; (b) o landmark nomeado "Navegação principal" (`:105-112`); (c) `focus-ring.test.ts:32-42`, que varre **toda** `resources/js` exceto `test/` e exige zero `ring-ring/` fracionário — um header público novo entra nessa varredura sem ninguém pedir. Isso é bom, e significa que não existe "só criar o layout".
+
+**a11y:** o `<main>` único é invariante travada; uma família pública que renderize o próprio `<main>` e acabe coexistindo com o app layout em alguma página quebra a asserção. Improvável, mas é a catraca a respeitar.
+
+**Dados persistidos / segurança:** nada.
+
+**Veredito: risco BAIXO para a poda do ramo morto (fazer já, gates existentes cobrem inteiro); ALTO para a família pública (adiar).** A segunda é decisão de produto sem consumidor no boilerplate — hoje não há uma única página pública para justificá-la, e criá-la sem consumidor recria exatamente o código morto que a fatia anterior acabou de podar.
+
+---
+
+### Addendum · o `noindex` proposto na seção "onde não achei delta"
+
+O candidato propõe portar `<meta name="robots" content="noindex">` para `resources/views/errors/500.blade.php`, argumentando que "`bootstrap/app.php:57` roteia 403, 404, 500 e 503 por esse caminho". **Li o bloco (linhas 50-73): não é esse o fluxo.** Os quatro status vão primeiro para `Inertia::render('errors/error-page')` (linha 59); o blade `errors.500` é o **`catch`** (linha 65), acionado só quando o próprio render Inertia falha — manifest/build quebrado. Um crawler encontra a página React, não o blade. Se o objetivo é o `noindex` valer, ele pertence a `resources/js/pages/errors/error-page.tsx` (via `<Head>`), e o blade ganha a cópia só por simetria. Risco de qualquer um dos dois: **nulo** — mas a justificativa como está aponta para o arquivo errado, e `tests/Feature/ErrorPagesTest.php` já existe para travar o certo.
+
+### Lente ATUALIDADE — vereditos
+
+# Lente ATUALIDADE — lote do Caçador 4 (ctvitrine @ `53d7d9a` → boilerplate @ `origin/main`)
+
+**Versões conferidas no alvo, não de memória.** `git -C …/boilerplate show origin/main:package.json` → `tailwindcss ^4.3.3`, `react ^19.2.8`, `@inertiajs/react ^3.6.1`, `vite ^8.2.1`, `typescript ^6.0.3`, `tailwindcss-animate ^1.0.7`; **não existe `@inertiajs/vite`**. `…:composer.json` → `laravel/framework ^13.0`, `inertiajs/inertia-laravel ^3.0`, `pestphp/pest ^5.1`. Instalado: `node_modules/tailwindcss/package.json` = 4.3.3, `node_modules/react/package.json` = 19.2.8.
+
+---
+
+### V6F-1 — favicon / manifest / theme-color
+
+**Veredito: ATUAL COM MODERNIZAÇÃO** (o padrão não foi superado por recurso nativo, mas o bloco de 5 links que se propõe portar é a forma de 2016 e um dos links aponta para arquivo que não existe aqui).
+
+**Nada nativo substituiu isso.** Vite 8 copia `public/` verbatim — não entra no grafo do Rollup, não ganha hash. Por isso o `?v=2` da fonte continua sendo a técnica corrente para esses caminhos (é o mesmo fato que sustenta o V6F-4 mais abaixo). Laravel 13 não tem helper de favicon. Não há o que "deixar de fazer à mão".
+
+**Correção de fato que a lente pega antes da fatia.** `git ls-tree -r origin/main --name-only -- public` lista 6 ícones e **`favicon.svg` não é um deles** (`favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png`, `android-chrome-192x192.png`, `android-chrome-512x512.png`; o `public/logo.svg` é outro arquivo). Portar o ramo `@else` verbatim entrega `<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">` apontando para 404 — exatamente a classe de defeito que o V6F-4 quer travar com teste, introduzida pela fatia que traz o teste. Ou gera o `favicon.svg` no mesmo commit, ou a linha não vem.
+
+**Modernizações concretas:**
+
+1. **O conjunto mínimo atual é menor, não maior.** Com `favicon.ico` (alcançado por convenção) + `favicon.svg` + `apple-touch-icon.png` (180) + manifest com os dois `android-chrome-*`, os PNG de 16×16 e 32×32 são redundantes com o `.ico`. O ganho da fatia é o manifest e o SVG, não os cinco links.
+2. **`theme-color` fixo está errado num app com tema escuro real.** MDN (`/meta/name/theme-color`, buscado agora): a feature **não é Baseline** — *"This feature is not Baseline because it does not work in some of the most widely-used browsers"* — e a forma corrente é o **par com `media`**:
+   ```html
+   <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+   <meta name="theme-color" content="#0f2a44" media="(prefers-color-scheme: dark)">
+   ```
+   Um `#0f2a44` único pinta a barra do Chrome Android de navy por cima do tema **claro**, que é o default do `app.blade.php:2`. Isso muda a conta do candidato: o hex da marca vira o **7º sítio, e o branco vira o 6º** — dois valores no manifest+meta, não um.
+3. **CSP não bloqueia** (medido em `origin/main:app/Http/Middleware/SecurityHeaders.php`, linhas 65-70): `default-src 'self'` sem `manifest-src` explícito ⇒ o manifest cai no fallback do `default-src` e carrega same-origin; `img-src 'self' data: https:` cobre os ícones. A fatia não precisa mexer no CSP.
+
+**O resto do candidato sobrevive intacto:** estender `themedBlades()` de `tests/Unit/Theme/InlineThemeBackgroundTest.php` (medido: linhas 34-42, dois blades hardcoded) para alcançar o `.webmanifest` é a coisa certa, e `.ai/rules/views.md:9` já manda fazer isso no mesmo commit.
+
+---
+
+### V6F-2 — SSR ligado sem daemon
+
+**Veredito: OBSOLETO** — o fato que a fonte congelou em teste deixou de ser verdade na versão que o alvo usa. `[rejeitado]` como está escrito; **a fatia deve ser refeita** sobre o que eu medi abaixo, que é pior e é real.
+
+**A premissa herdada morreu no inertia-laravel 3.** Li o adapter instalado (`vendor/inertiajs/inertia-laravel/src/Ssr/HttpGateway.php`, método `dispatch()`): o `Http::post($url, $page)` está dentro de um `try`; qualquer `Exception` que não seja `StrayRequestException`/`SsrException` cai em `handleSsrFailure($page, ['error' => …, 'type' => 'connection'])` e o método **retorna `null`** — o adapter serve o documento client-side. O mesmo para `$response->failed()`. A doc v3 confirma nos dois lugares (Boost `search-docs`, `inertiajs/inertia-laravel@3.x`): *"When SSR rendering fails, Inertia gracefully falls back to client-side rendering"* e, no protocolo, *"Adapters should treat a failed render as non-fatal, reporting the payload through the application's error handling and falling back to the standard client-side rendered document, so a broken SSR build never takes the site down"*. **Não há 502.** O comentário de 4 linhas do `instance.env.stub`, o teste `StubRenderTest.php:58` que trava a string `// fix do 502 no reload logado` e as três repetições em doc são um fato de v1/v2 fossilizado por teste. Absorver a "postura" é importar uma afirmação falsa para dentro do boilerplate — o pior resultado possível segundo a lição da rodada 1.
+
+**O que está realmente quebrado aqui, medido, e que o candidato inverteu:**
+
+- **A mitigação do `ensure_bundle_exists` não existe em dev.** Em `dispatch()`, `$isHot = Vite::isRunningHot()` é avaliado **antes** do gate, e o gate é `if (! $isHot && $this->shouldEnsureBundleExists() && ! $this->bundleExists())`. Com o Vite quente, o gate é pulado e a URL vira `getHotUrl('/__inertia_ssr')`. Esse endpoint é servido pelo plugin `@inertiajs/vite` — que **não é dependência** (`git show origin/main:package.json | grep -i inertia` → só `@inertiajs/react`) e não está no `vite.config.ts:82-94` (só `laravel()`, `react()`, `tailwindcss()`). Ou seja: hoje, sob `composer dev` com `INERTIA_SSR_ENABLED=true`, **todo full-page load dispara um POST ao dev server do Vite que não é 2xx**, emite `SsrRenderFailed` e cai no fallback. O candidato diz que em clone novo "o dispatch é pulado"; é o contrário — em dev ele nunca é pulado, e em produção sem `build:ssr` é que é.
+- **Mesmo com daemon, nada hidrata.** `origin/main:resources/js/app.tsx:23` faz `createRoot(el)`. A seção *Client-Side Hydration* da doc v3 é explícita: para SSR o entry do cliente troca `createRoot` → `hydrateRoot` (`hydrateRoot(el, <App {...props} />)`). Com `createRoot`, o React 19.2 descarta o DOM do servidor e renderiza do zero. O SSR desta base é decorativo de ponta a ponta.
+
+**Nativos v3 que substituem a disciplina de string de env que a fonte inventou** (todos confirmados na doc buscada agora):
+
+| Necessidade da fatia | Forma da fonte (2 anos atrás) | Nativo na v3 do alvo |
+|---|---|---|
+| desligar por ambiente | `INERTIA_SSR_ENABLED=false` no stub + teste de string | `Inertia::disableSsr(bool\|Closure)` |
+| desligar por rota | não existia | `$withoutSsr` no middleware / `Inertia::withoutSsr(['admin/*'])` |
+| health check de deploy | `curl` manual no script | `php artisan inertia:check-ssr` (a doc oferece como Docker health check) |
+| falha silenciosa em teste | — | `INERTIA_SSR_THROW_ON_ERROR=true` no `phpunit.xml` |
+| binário do runtime ausente | — | `ensure_runtime_exists` |
+
+E `origin/main:tests/TestCase.php:16` (`config()->set('inertia.ssr.enabled', false)`) é o idioma v2; a doc v3 dá `Inertia::disableSsr(app()->runningUnitTests())` ou o env no `phpunit.xml`.
+
+**Fatia que eu recomendaria no lugar:** (i) `hydrateRoot` no `app.tsx` **ou** `INERTIA_SSR_ENABLED=false` no `.env.example` — as duas metades não podem divergir; (ii) `inertia:check-ssr` como gate, que é literalmente o que o `PLAYBOOK.md:81` já pede em prosa; (iii) `throw_on_error` no `phpunit.xml` para o SSR parar de falhar em silêncio. Nenhum desses itens precisa de código do ctvitrine.
+
+---
+
+### V6F-3 — bloco inline de tema com `var(--token)`
+
+**Veredito: ATUAL.** A guarda não foi superada por nada; e eu conferi especificamente a suspeita óbvia.
+
+**A suspeita conferida.** Tailwind 4.3.3 **tem** utilitários de `color-scheme` — `grep -o '"scheme-[a-z-]*"' node_modules/tailwindcss/dist/lib.mjs | sort -u` devolve `scheme-dark`, `scheme-light`, `scheme-light-dark`, `scheme-normal`, `scheme-only-dark`, `scheme-only-light`, e a doc (`tailwindcss@4.x`, página *Color Scheme*) documenta `scheme-light`/`scheme-dark`/`scheme-light-dark`. **Isso não substitui o bloco**, e a razão é a mesma que o próprio teste escreve: esses utilitários nascem no `app.css`, que chega pelo `@vite` da linha 71 — depois da janela que o bloco existe para cobrir. Mesmo argumento derruba `light-dark()`: ela resolve contra o `color-scheme` computado, que é justamente o que o bloco está estabelecendo, e ainda seria um segundo literal em vez de menos um.
+
+**`@theme` também não resolve.** `origin/main:resources/css/app.css:14-70` é `@theme`, e `--brand-navy-dark: #0f2a44` está em `:root` na linha 107 — os dois compilam para dentro do `app.css`. A regra "literal que espelha o token, travado por teste" (`.ai/rules/views.md:9`) é a resposta correta na versão de hoje, não uma sobra de v3.
+
+**Uma modernização, e ela é vazia por medição.** Onde quer que o código setasse `color-scheme` à mão **depois** do CSS carregar, `scheme-dark`/`scheme-light` seriam a forma idiomática em Tailwind 4. Medido: `git grep -n "color-scheme" origin/main -- resources` devolve só o `<meta>` de `app.blade.php:8` e as duas regras inline de `:43`/`:49` — nenhum sítio pós-CSS. Não há nada a converter.
+
+**A proposta do candidato (exportar a guarda para o `PLAYBOOK.md`) passa sem emenda.** O único ajuste de atualidade a registrar na fatia migratória: o projeto derivado que estiver em Tailwind 4 pode usar `scheme-*` nas superfícies React, mas o bloco do `<head>` continua literal nos 7.
+
+---
+
+### V6F-4 — `aptos-extrabold-italic 2.woff2` órfão
+
+**Veredito: ATUAL COM MODERNIZAÇÃO.** Nenhum recurso nativo apaga o arquivo por você e o teste `comm` proposto é válido na versão de hoje. Mas a **classe** de bug é estruturalmente impossível sob o toolchain que este repo já usa — se as fontes saírem de `public/`.
+
+**O mecanismo, medido.** `origin/main:resources/css/_fonts.css` referencia por URL absoluta (`url('/fonts/woff2/aptos/aptos-light.woff2')`, linha 3, e assim nas 21). Para o Vite 8 isso é string literal, não import: `public/` é copiado verbatim, fora do grafo do Rollup. É exatamente por isso que (a) um `.woff2` pode existir sem ninguém citar e (b) o `?v=2` do V6F-1 ainda é necessário. Se as 21 faces morarem em `resources/fonts/` e o `_fonts.css` usar `url('../fonts/...')`, o Rollup passa a **não emitir** arquivo não referenciado e a **falhar o build** em referência inexistente. Os dois sentidos do teste proposto viram invariante de build, sem teste.
+
+**O custo honesto dessa modernização, e por que ela não cabe na fatia P·P.** Os 5 `<link rel="preload">` de `app.blade.php:59-65` usam caminho literal e passariam a precisar de `Vite::asset()`/manifest. Isso é maior que as 15 linhas de Pest. Note também que `origin/main:bootstrap/app.php:42` já registra `AddLinkHeadersForPreloadedAssets` — o mecanismo nativo do Laravel para emitir `Link:` de preload — e ele **só enxerga assets geridos pelo Vite**, que é precisamente o que essas fontes não são. Ou seja, o repo já paga por um recurso nativo que essas 21 fontes não podem usar.
+
+**Recomendação:** manter o candidato como está (apagar + teste `comm` + cobrir os 5 preloads), P·P, e registrar a mudança de pipeline como a correção durável, numa fatia própria.
+
+---
+
+### V6F-5 — `AppShell` semeando estado do `localStorage`
+
+**Veredito: OBSOLETO no sintoma descrito, ATUAL no defeito** — e o defeito real, nas versões de hoje, é maior que o do candidato. `[rejeitado]` para a redação atual; reescrever.
+
+**O sintoma alegado não pode acontecer neste build.** `origin/main:resources/js/app.tsx:23` usa `createRoot(el)`, e a doc do Inertia v3 (*Client-Side Hydration*) diz literalmente que o entry do cliente troca `createRoot` → `hydrateRoot` quando há SSR. Sem `hydrateRoot`, o React 19.2 **descarta** o markup do servidor e renderiza do zero: não há hidratação, logo não há divergência de hidratação. O candidato diz "o HTML do servidor e a primeira árvore do cliente discordam" — não discordam; o do servidor é jogado fora inteiro.
+
+**O defeito real, e é por navegação, não por page load.** `git grep -n "\.layout = \|\.layout=" origin/main -- resources/js` → **0 ocorrências**: o boilerplate não usa layout persistente do Inertia em lugar nenhum. Todas as 10 páginas que têm shell (`git grep -c "from '@/layouts/app-layout'" origin/main -- resources/js` → dashboard, permission-role/roles, settings/{appearance,password,profile}, users/{create,edit,index,permissions,show}) embrulham `children` no wrapper `app-layout.tsx:10`. Consequência, nas palavras da própria doc v3 (*Persistent Layouts*): *"the layout is destroyed and recreated on every visit"*. Então o `useState(() => localStorage.getItem('sidebar') …)` de `app-shell.tsx:10` **re-executa a cada visita Inertia**, não só no primeiro render. Trocar `localStorage` por cookie sem trocar o padrão de layout apenas muda de onde a leitura repetida vem.
+
+**Nativo v3 desenhado para este caso exato.** A página *Layouts* da v3 lista as necessidades de Layout Props assim: *"such as a page title, the active navigation item, **or a sidebar toggle**"*. As duas metades da correção moderna:
+
+1. **Servidor como fonte única**: `sidebar_state` via `View::share`/shared prop → `defaultOpen`. O molde já existe e está certo — `origin/main:app/Http/Middleware/HandleAppearance.php:14` (`View::share('appearance', $request->cookie('appearance') ?? 'system')`) e `bootstrap/app.php:35` (`$middleware->encryptCookies(except: ['appearance'])`), que é exatamente a exceção que `sidebar_state` precisa para o `document.cookie` de `ui/sidebar.tsx:85` continuar legível. Essa parte do candidato está correta e continua correta.
+2. **Layout persistente** (`Page.layout = [AppLayout]`), senão o estado é reconstruído a cada visita. Atenção de porte que a doc React da v3 marca explicitamente: componentes de seta precisam da **forma em array** (`Welcome.layout = [ArrowLayout]`), *"Without the array, Inertia cannot distinguish them from render functions at runtime"* — e `layouts/app-layout.tsx:10` é justamente um arrow component.
+
+**Não medido:** se a leitura de storage for mantida por uma release de transição, a API corrente para "store externo com snapshot de servidor distinto" é `useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)` em vez do ternário `typeof window !== 'undefined'`. Não confirmei isso contra a doc do React 19.2 nesta rodada — trate como pista, não como fato.
+
+**Cobertura existente, medida** (`git ls-tree -r origin/main --name-only -- resources/js/test`): `components/navigation-landmarks.test.tsx` e `components/ui/sidebar-shortcut.test.tsx`. Nenhum dos dois cobre estado da sidebar — o risco M·M do candidato está bem calibrado.
+
+---
+
+### V6F-6 — `env(safe-area-inset-*)` sem `viewport-fit=cover`
+
+**Veredito: ATUAL COM MODERNIZAÇÃO.** Nada no Tailwind 4.3 substituiu isso — conferido, não suposto — mas o ramo "ativar" do candidato está escrito na forma de 2018 e não deve ser portado assim.
+
+**A suspeita conferida, com o resultado negativo.** `grep -rl "safe-area" node_modules/tailwindcss/` → **nenhum arquivo**. Tailwind 4.3.3 não tem utilitário de safe-area (só `scheme-*`, que é outra coisa). Não há `pt-safe`/`pb-safe` nativo para migrar; `env()` cru dentro de `@layer base` é a forma corrente. A linha de `app.css:241` não é legado por versão.
+
+**O mecanismo do candidato está certo; o sourcing dele é mais fino do que parece.** MDN (`/meta/name/viewport`, buscado agora) sobre `viewport-fit`: `contain` = *"The viewport is scaled to fit the largest rectangle inscribed within the display"*; `cover` = *"The viewport is scaled to fill the device display. It's highly recommended to use the safe area inset variables to ensure that important content doesn't end up outside the display."* Já a página `/CSS/env` diz apenas que os valores são *"0 if the viewport is a rectangle and no features — such as toolbars or dynamic keyboards — are occupying viewport space"* — **não** enuncia a dependência do `viewport-fit`. A conclusão "resolve para 0px" se sustenta pelo primeiro trecho; quem escrever a fatia deve citar o da `meta/viewport`, não o da `env`.
+
+**Três coisas que mudaram e que o ramo "ativar" precisa incorporar:**
+
+1. **`env()` sem fallback invalida o shorthand inteiro.** A forma corrente é `env(safe-area-inset-top, 0px)`. Num `padding` de 4 valores, um UA que não reconheça a variável descarta a declaração toda — os quatro lados de uma vez, não um.
+2. **Existem contrapartes estáticas novas, e elas é que servem para padding no `body`.** MDN `/CSS/env`: `safe-area-max-inset-top|right|bottom|left` são *"The static maximum values of their dynamic `safe-area-inset-*` variable counterparts when all dynamic user interface features are retracted. While the `safe-area-inset-*` values change as the currently-visible content area changes, the `safe-area-max-inset-*` values are constants."* As variantes dinâmicas mudam quando a barra de URL recolhe — num `padding` de `body` isso é reflow a cada scroll. Se "ativar" ganhar, é `max-inset`.
+3. **O idioma atual não é shorthand no `body`.** É `max()` no elemento que encosta na borda: o próprio exemplo do MDN é `padding: 1em 1em calc(1em + env(safe-area-inset-bottom))`. Isso também resolve por construção o risco que o candidato levanta ("`<main>` do `SidebarInset` não herda o padding do `body`") — o inset vai no elemento certo desde o começo.
+
+**A decisão do candidato ("decidir para um lado, num commit só") continua válida.** Só que o ramo "apagar" fica ainda mais atraente: nenhuma das três correções acima é P.
+
+---
+
+### V6F-7 — `variant="header"` morto e ausência de família pública
+
+**Veredito: ATUAL na poda; ATUAL COM MODERNIZAÇÃO na criação da família.**
+
+**A poda não tem nativo que a substitua** e nada no React 19.2 / TS 6.0 a torna desnecessária. Confirmei o estado: `git ls-tree -r origin/main --name-only -- resources/js/layouts` → 9 arquivos, **sem `app-header-layout.tsx`**; `app-shell.tsx:9` e `app-content.tsx:8` mantêm `variant = 'header'` como default com ramo não exercitado; o único chamador é `layouts/app/app-sidebar-layout.tsx:16,32`, que passa `variant="sidebar"` nas duas. O detalhe que o candidato levanta se confirma na leitura: `AppContent` no ramo morto renderiza um `<main>` próprio, e `app-sidebar-layout.tsx:32` passa `id="conteudo" tabIndex={-1}` para o `SidebarInset` — um `<AppContent>` sem prop cairia no `<main>` errado e o skip-link de `:25-30` apontaria para lugar nenhum. Poda P·P, procede.
+
+**A família pública, se nascer, nasce numa API que este repo ainda não usa.** Medido: **0 usos de layout persistente** (`git grep -n "\.layout = " origin/main -- resources/js` → vazio); todas as páginas com shell usam o wrapper. O Inertia 3.6 traz, e a doc v3 documenta:
+
+- **Persistent Layouts** — resolvem o *"the layout is destroyed and recreated on every visit"*, que é a mesma causa raiz que faz o V6F-5 disparar por navegação;
+- **Layout Props** — *"Persistent layouts often need dynamic data from the current page, such as a page title, the active navigation item, or a sidebar toggle. Layout props provide a way to define defaults in your layout and override them from any page."* É exatamente a lista do que hoje é passado à mão via `breadcrumbs` prop em cada página;
+- **Static Props em tupla** — `Dashboard.layout = [Layout, { title: 'Dashboard' }]`.
+
+Armadilha de porte, marcada pela própria doc React da v3: componentes de seta exigem a forma em array (`Welcome.layout = [ArrowLayout]`), e `layouts/app-layout.tsx:10` é arrow. Uma família pública construída no padrão wrapper de hoje nasceria legada em relação ao `@inertiajs/react` 3.6.1 que já está no `package.json`.
+
+**O ponto de a11y do candidato sobrevive inteiro:** skip-link + `id="conteudo"`/`tabIndex={-1}` são do boilerplate e não do ctvitrine, e qualquer família nova entra em `resources/js/test/components/navigation-landmarks.test.tsx` (confirmado no `ls-tree` de `resources/js/test`).
+
+---
+
+### Fora do lote, achado pela lente enquanto media
+
+Não é candidato e não julgo, mas cai na minha pergunta e ninguém do lote encostou: `origin/main:package.json` traz **`tailwindcss-animate ^1.0.7`** e `resources/css/app.css:7` o carrega com `@plugin 'tailwindcss-animate'`. Esse plugin é da era v3 (API de plugin JS); o substituto nativo-CSS para Tailwind 4 é `tw-animate-css`. Medido apenas que o pacote v3 está instalado e ativo (`ls node_modules | grep -i animate` → `tailwindcss-animate`) — **não medi** quantas classes `animate-*` dependem dele nem se o `@theme` do projeto já cobre alguma. Vale uma candidatura própria na frente de CSS.
+
+---
+
+## Secagem da dimensão 6 (passada única) + síntese da célula
+
+# Secagem · Dimensão 6 (UI) · ctvitrine @ `53d7d9a` × boilerplate @ `origin/main`
+
+Baseline reconfirmado por mim: `git -C boilerplate rev-parse origin/main` → **`beb848ea509bf6682c9e31f10611ad7ab489392e`**. O banner do `ctvitrine.md` fixa o alvo do inventário em `2965f8c` — **três commits atrás**; toda medição abaixo é contra `beb848e`. Fonte lida só por `git show`/`git grep`/`git ls-tree` sobre `53d7d9a`.
+
+## O que ficou sem olhar — diff da cobertura
+
+Cruzei os caminhos citados pelos 4 caçadores contra `git ls-tree -r 53d7d9a -- resources` (199 arquivos em `resources/js`) e contra a Frente 6 do inventário (`ctvitrine.md:2187-2560`, subseções 6.1 a 6.13).
+
+| Superfície | Quem abriu | Resultado |
+|---|---|---|
+| `components/ui/*` (26) | C2, integral | coberto |
+| tokens, `app.css`, `_fonts.css`, blade | C1, C4 | coberto — **exceto** os blocos `.custom-scrollbar` e o resto do bloco de toast (o inventário só os *lista*: `ctvitrine.md:2550`) |
+| layouts, nav, boot | C4 (layouts), ninguém (nav) | `nav-main/nav-user/nav-footer/breadcrumbs/user-menu-content/app-sidebar-header` → **abri, boilerplate à frente ou idêntico** |
+| `components/site/**` e `site/boutique/**` (13) | ninguém abriu como UI | abri o carrossel; nada portável (domínio vitrine) |
+| **canal de toast** (`toast-provider` × `toast-config` × `flash` × `toast.promise`) | C1 abriu `toast-config`; **ninguém abriu o provider nem `toast.promise`** | **V6S-1** — `git grep -rn "toast.promise" docs/harvest/v2/*.md` → 0 linhas em toda a rodada |
+| `ui/sheet` como drawer mobile (nome acessível) | ninguém | **V6S-4** — `grep -rn "SheetHeader\|SheetTitle" docs/harvest/v2/*.md` → 0 linhas |
+| `resources/views/emails/**` (4) | inventário enumerou (`:2577-2580`); nenhum caçador | **V6S-3** — rejeitado por mim, vira medição anexa |
+| estados `print` / `forced-colors` / `::selection` | ninguém | medido: **0 nos dois projetos**. Sem superfície no alvo ⇒ não candidato |
+| `prefers-reduced-motion` | C3 mediu | já represado (D6, `BACKLOG.md:174`) |
+| erro de campo (`aria-invalid`/`aria-describedby`) | ninguém nesta célula | **já registrado** em `BACKLOG.md:381-387` com mais detalhe que o meu ⇒ não candidato |
+
+---
+
+### V6S-1 · Os dois canais de toast do boilerplate são mutuamente exclusivos: `toast.promise` escapa da cor, do `iconTheme`, do `ariaProps` e da duração — 6 call-sites, decisão documentada e testada anulada
+
+- **Evidência (fonte):** `resources/js/hooks/permissions/use-permission-actions.ts:31,64,97@53d7d9a`, `resources/js/hooks/settings/use-settings-actions.ts:20,59@53d7d9a`, `resources/js/components/assign-role-user.tsx:47@53d7d9a` — **6** `toast.promise`, todos com o mesmo terceiro argumento e nada mais:
+  ```
+  await toast.promise(new Promise(...), {
+      loading: 'Salvando permissões...',
+      success: 'Permissões salvas com sucesso!',
+      error: 'Erro ao salvar permissões. Por favor, tente novamente.',
+  });
+  ```
+  Nenhum `className`, nenhum `iconTheme`, nenhum `ariaProps`, nenhum `duration`.
+- **Estado do boilerplate hoje:** **os mesmos 6 call-sites, nos mesmos arquivos e nas mesmas linhas** (`git grep -n "toast.promise" origin/main -- resources/js` → 6, idênticas às da fonte: ancestral comum). O que o boilerplate acrescentou desde então torna o buraco pior, não melhor. Três consequências, cada uma verificada na fonte da lib instalada (`node_modules/react-hot-toast/dist/index.js`, **v2.6.0**, a mesma versão nos dois `package.json`):
+
+  1. **`className` não compõe, substitui.** O merge do `useToaster` é, verbatim do dist:
+     ```js
+     o.toasts.map(r => ({ ...e, ...e[r.type], ...r,
+        duration: r.duration||e[r.type]?.duration||e?.duration||ue[r.type],
+        style:{...e.style, ...e[r.type]?.style, ...r.style} }))
+     ```
+     `style` é deep-merge; `className` é raso. Como `flash.ts:21-33` passa `toastSuccessOptions` etc. no call-site (`r`), o `className` final é `toast-success` — e **`toast-custom` do `<Toaster>` é descartado**. Já o toast de `toast.promise` não traz `className` nenhum, então herda `toast-custom`. Resultado medido: **`.toast-custom` (`app.css:607-623`) nunca se aplica a um toast de flash, e `.toast-success|error|warning|info` (`:635-656`) nunca se aplica a um toast de promise.** Um "sucesso" de flash tem barra verde à esquerda e sombra pequena (inline style); um "sucesso" de promise não tem barra nenhuma e tem a sombra grande do CSS (`0 10px 15px -3px`, com `!important`, que vence o inline). Duas aparências para o mesmo desfecho, na mesma tela.
+  2. **O `ariaProps` de erro — decisão escrita, justificada e testada — é anulado.** `lib/toast-config.ts:44-53@origin/main` põe `role: 'alert', 'aria-live': 'assertive'` no erro com um parágrafo explicando por quê, e `resources/js/test/lib/toast-config.test.ts:21-23` trava. Esse bloco **é do boilerplate**: `diff` do `toast-config.ts` contra a fonte mostra que os dois `ariaProps` (erro e aviso) são o único delta. E `i.promise=(e,t,o)=>{...i.error(n,{id:s,...o,...o?.error})}` não injeta `ariaProps`, então o erro de promise cai no default da lib (`ariaProps:{role:"status","aria-live":"polite"}`, dentro de `createToast`). **"Erro ao salvar permissões" é anunciado `polite`, na fila** — exatamente o que o comentário do teste diz que não pode acontecer. O teste passa verde: ele afirma o objeto de config, não o call-site.
+  3. **O toast de "carregando" morre em 4 s.** O mapa de duração da lib é `{blank:4e3,error:4e3,success:2e3,loading:1/0,custom:4e3}` — `loading` é `Infinity`. Mas o merge consulta `e.duration` **antes** de `ue[r.type]`, e `toastDefaultOptions.duration = 4000` (`toast-config.ts:8`) chega justamente por `e`. Logo o "Salvando permissões..." desaparece aos 4 s, e se a resposta demorar mais a pessoa fica sem feedback nenhum até o `success` chegar. Ninguém escolheu isso.
+  4. **De brinde, e é a ponte com o F3:** sem `iconTheme`, o disco do ícone usa os defaults da lib — `#61d345` (sucesso) e `#ff4b4b` (erro), medidos por `grep -o 'primary||"#......"'` no dist. Contraste contra `--card`, script próprio (WCAG 2.x): `#61d345` vs branco = **1.92:1** (o token `#16a34a` dá 3.30:1); `#ff4b4b` vs branco = 3.30:1. **O canal que ninguém vigia é o que pinta pior.**
+- **O que absorver / o que travar:** **(b)**, e é fatia de tamanho conhecido. (1) `lib/toast-config.ts` ganha `toastPromiseOptions` (ou, melhor, `lib/toast.ts` exporta um `promiseToast()` que aplica `className`/`iconTheme`/`ariaProps` por perna e `duration: Infinity` no `loading`); (2) os 6 call-sites passam a usá-lo; (3) guard-rail no molde exato de `resources/js/test/lib/impersonation-call-sites.test.ts` (`@vitest-environment node`, varre `resources/js` menos `test/`, com controle positivo): *nenhuma chamada `toast.*` fora de `lib/` sem uma das opções do projeto*; (4) o comentário de `toast-config.test.ts:16-18` ("não mexer em `duration`") passa a dizer o que eu medi: `duration` global sobrescreve o `Infinity` do `loading`.
+- **Adaptação necessária:** decidir se o toast de promise ganha barra colorida (aí `className` por perna) ou fica neutro por desenho (aí o `.toast-custom` deixa de ser acidente e vira escolha, com comentário). Não dá para "só adicionar o className" sem responder isso — é a pergunta que a fatia existe para fechar.
+- **Risco · esforço:** P · M. Zero risco de cascata (é objeto JS), 6 arquivos, todos com teste de componente ou de hook já existente.
+- **Multi-fonte?** Sim, **2 de 2**: os 6 call-sites são byte-a-byte os mesmos na fonte e no alvo. O tema não aparece em nenhum dos quatro inventários (`grep -rn "toast.promise" docs/harvest/v2/*.md` → 0).
+
+**Vereditos (3 lentes, condensado)** — **SOBREVIVE.**
+· *Refutar:* não existe no alvo sob outro nome, não está em nenhum inventário nem no BACKLOG, não é regra preventiva (6 consumidores vivos), não colide com ADR. O único fato que revi duas vezes é o que sustenta tudo — o merge raso do `className` — e ele está no dist instalado, citado acima.
+· *Risco:* baixo. Nenhuma catraca quebra: `toast-config.test.ts` afirma objetos, não DOM; `focus-ring`/`theme-tokens` não olham isto. **Ordenação obrigatória:** migrar os 6 primeiro, teste depois — teste que nasce vermelho é como o follow-up do `a418f41` ficou para trás uma vez (lição da lente de risco do V6D-11). Trap anotada: `toast.promise` faz `{...o, ...o?.success}` com `o.success` **string**, o que espalha índices numéricos no objeto do toast; é ruído interno da lib, não afeta DOM — não use isso como argumento.
+· *Atualidade:* `react-hot-toast@2.6.0` é a corrente e nada nesse caminho mudou. O default de ecossistema pós-shadcn é `sonner`, mas isso é troca de biblioteca e **não** dissolve o achado: config que o caminho de render nunca lê é morta em qualquer lib.
+
+---
+
+### V6S-2 · O resíduo que a PR #108 não varreu: 28 linhas de CSS de scrollbar de diálogo, uma delas com seletor que não casa nada — nos dois projetos, byte a byte
+
+- **Evidência (fonte):** `resources/css/app.css:569-596@53d7d9a`
+  ```
+  /* Global scrollbar for dialogs and modals in dark mode */
+  .dark [data-slot='dialog-content'],
+  .dark [data-slot='dialog-content'] .custom-scrollbar {
+      scrollbar-color: rgba(229, 231, 235, 0.4) transparent;
+  }
+  ```
+  mais quatro regras `::-webkit-scrollbar{,-track,-thumb,-thumb:hover}` para o mesmo seletor.
+- **Estado do boilerplate hoje:** o **mesmo bloco**, em `resources/css/app.css:561-588@origin/main` (deslocado 8 linhas; conteúdo idêntico). Medido:
+  - `git grep -n "custom-scrollbar" origin/main -- resources/js resources/views` → **1 linha**: `ui/dialog.tsx:58`, dentro da className base do `DialogContent`.
+  - `git grep -n 'data-slot="dialog-content"' origin/main -- resources/js` → **1 linha**: `ui/dialog.tsx:56`, o mesmo elemento.
+  - Logo, **todo** `[data-slot='dialog-content']` carrega `.custom-scrollbar` (o `cn()` é `twMerge(clsx())` e `custom-scrollbar` não é classe Tailwind, então nunca é removida por call-site).
+  - Consequência: o seletor **descendente** `.dark [data-slot='dialog-content'] .custom-scrollbar` (`:563`) **não casa nada** — a classe está no próprio elemento, nunca num filho. E as 5 declarações restantes já são produzidas pelo par `.custom-scrollbar::-webkit-*` (`:525-546`) + `.dark .custom-scrollbar*` (`:549-559`), com valores idênticos e mesma especificidade (0,2,0). **28 linhas, 5 regras, 6 seletores, zero efeito observável.**
+  - Contexto de escala: dos 6 `DialogContent` do alvo, só **2** declaram `max-h`+`overflow-y-auto` (`dialogs/module-info-dialog.tsx:25` e `page-info.tsx:77`), e o segundo é código morto (V6D-6). Ou seja, a barra de rolagem estilizada só chega a existir no `ModuleInfoDialog` — que tem 7 consumidores reais.
+- **O que absorver / o que travar:** **(b)**, poda. Apagar `app.css:561-588`. O guard-rail honesto não é um lint de seletor (não é escrevível de forma confiável sobre CSS + JSX); é uma linha em `.ai/rules/css.md`, na mesma seção que a #108 escreveu: *"antes de escrever regra para markup de terceiro, confirme que o seletor casa; seletor descendente para uma classe que mora no próprio elemento é o erro-padrão."*
+- **Adaptação necessária:** nenhuma. Se alguém quiser rolagem estilizada no `SheetContent` (o drawer mobile), aí é regra **nova**, não esta — e a PR #112 já a torna quase desnecessária: com `color-scheme: dark` preso à classe `.dark`, o UA pinta a barra nativa escura sozinho.
+- **Risco · esforço:** P · P. Nenhuma catraca lê este bloco (`theme-tokens.test.ts:20` lê `app.css` só para `--color-*` e pares de contraste).
+- **Multi-fonte?** **3 de 4** pelo menos: `ctvitrine.md:2550`, `cuidari.md:2546` e `spinmax.md:1355` listam o bloco. **Nenhum dos três o analisou** — todos o citam como inventário.
+
+**Vereditos** — **SOBREVIVE, reduzido, e é o mais fraco dos meus.**
+· *Refutar:* o fato reproduz e é novo (nenhum inventário passa de listar). Mas o valor é 28 linhas de um arquivo de 681 — só vale porque F1/F17 vão ter de raciocinar sobre esse arquivo e porque é literalmente a família da fatia `30fe0eb`. Não abrir PR próprio: **anexar à próxima fatia que já tocar `app.css`**.
+· *Risco:* baixo, com uma ressalva honesta: não há gate. A prova de que nada muda é a leitura de cascata que fiz acima, não um teste. Screenshot de um `ModuleInfoDialog` no escuro antes/depois basta no PR.
+· *Atualidade:* `scrollbar-color`/`scrollbar-width` são padrão e não foram superados; `::-webkit-scrollbar` continua sendo o caminho para Chromium/Safari. A modernização real já entrou por outra porta (`color-scheme`, PR #112) e é argumento a favor de podar, não de reescrever.
+
+---
+
+### V6S-3 · `[rejeitado]` A única superfície de UI que sai do boilerplate em inglês é o e-mail transacional — mas o buraco já está registrado; o que é novo é a consequência
+
+Registro o candidato inteiro porque a medição vale, e o veredito porque a lição desta rodada é medir o BACKLOG antes de candidatar (foi o golpe que matou o V6T9).
+
+- **Evidência (fonte):** `resources/views/emails/signup/welcome.blade.php@53d7d9a` e outros três — `<x-mail::message>` + `<x-mail::panel>`, copy em pt-BR escrita à mão. A fonte trata e-mail como superfície desenhada, com 4 templates. E **não tem `lang/` nenhum** (`git ls-tree -r 53d7d9a --name-only -- lang` → vazio), o que o banner do inventário já derrubou como achado (B).
+- **Estado do boilerplate hoje:** `git ls-tree -r origin/main --name-only -- lang` → **4 arquivos**, `pt_BR/{auth,pagination,passwords,validation}.php`. **Não existe `lang/pt_BR.json`** (`git ls-tree -r origin/main --name-only | grep 'lang/.*\.json'` → vazio). E as strings do corpo dos e-mails do framework são JSON-keyed, não PHP-keyed — medido no `vendor` instalado (`laravel/framework v13.24.0`, do `composer.lock`):
+  ```
+  Auth/Notifications/ResetPassword.php:77-81  Lang::get('Reset your password') · 'Reset Password' · 'If you did not request…'
+  Auth/Notifications/VerifyEmail.php:65-68    Lang::get('Verify your email address') · 'Verify Email Address'
+  Notifications/resources/views/email.blade.php:7,9,42  @lang('Whoops!') · @lang('Hello!') · @lang('Regards,')
+  ```
+  Consumidores vivos: `User implements MustVerifyEmail` (`app/Models/User.php:18`), `EmailVerificationNotificationController:17` chama `sendEmailVerificationNotification()`, e `routes/auth.php:28,32,52` publicam `password.request`, `password.email`, `verification.send`. Com `APP_LOCALE=pt_BR` e sem `pt_BR.json`, `Lang::get` devolve a chave crua: **os dois e-mails que o produto envia saem em inglês**, num projeto cuja `.ai/rules/js.md` exige front monolíngue pt-BR. `resources/views/vendor/mail` não é publicado nos dois projetos, então o tema visual também é o default do Laravel (azul `#3869d4`, fora do sistema de tokens, sem tema escuro).
+- **Por que rejeito como candidato:** `ctfinance.md:151` já mede — *"`lang/pt_BR.json` — só **15 chaves**, todas de notificação/e-mail do Laravel. O boilerplate não tem esse arquivo"* — e `BACKLOG.md:259` já tem a linha de tema `i18n / lang` com **3 fontes**. O gap está registrado; eu estaria abrindo o mesmo item pela quarta vez.
+- **O que sobrevive, e deve ser anexado à linha `i18n / lang` do BACKLOG:** (i) a **consequência**, que ninguém escreveu: não é "falta um arquivo de tradução", é "duas rotas de autenticação em produção mandam e-mail em inglês"; (ii) a **correção de uma frase do banner** — `ctvitrine.md` (achado B) diz que "o boilerplate resolve com `lang/pt_BR/{auth,pagination,passwords,validation}.php`". Resolve o *flash* (`passwords.sent`) e a *validação*; **não** resolve o corpo do e-mail, que é outro loader; (iii) o ctvitrine como 5ª fonte e a evidência mais eloquente: um time que escreveu 4 templates de e-mail em pt-BR e não percebeu que os dois do framework saíam em inglês; (iv) o gate, que é trivial e não precisa de browser: Pest com `Notification::fake()` + assert de que o corpo renderizado não contém `Hello!`/`Regards,` — ou, mais barato, `expect(__('Hello!'))->not->toBe('Hello!')`.
+
+**Vereditos** — **[rejeitado] como candidato · sobrevive como medição.**
+· *Refutar:* golpe (1), lente "já existe". · *Risco:* baixo e favorável (as 15 chaves do ctfinance são o conteúdo pronto), com uma trap: `lang/pt_BR.json` traduz por *string inteira*, então qualquer divergência de pontuação com a versão do framework faz a chave não casar — pinar a versão no comentário. · *Atualidade:* Laravel 13 não mudou o mecanismo; `laravel-lang/common` continua sendo a alternativa a manter o arquivo à mão.
+
+---
+
+### V6S-4 · O `SheetHeader` do drawer mobile está FORA do `SheetContent`: duas frases `sr-only` ficam permanentes no corpo da página, abertas ou fechadas
+
+- **Evidência (fonte):** `resources/js/components/ui/sidebar.tsx:183-188@53d7d9a`
+  ```
+  <Sheet open={openMobile} onOpenChange={setOpenMobile} {...props}>
+    <SheetHeader className="sr-only">
+      <SheetTitle>Sidebar</SheetTitle>
+      <SheetDescription>Displays the mobile sidebar.</SheetDescription>
+    </SheetHeader>
+    <SheetContent ...>
+  ```
+- **Estado do boilerplate hoje:** **mesma estrutura, em `resources/js/components/ui/sidebar.tsx:191-196@origin/main`** — o boilerplate está à frente na copy (`Menu lateral` / `Menu lateral de navegação.`, pt-BR) e **igual no defeito**: o `SheetHeader` é irmão do `SheetContent`, não filho. Verificado no pacote instalado (`@radix-ui/react-dialog@1.1.23`): `Dialog` (Root) é `jsx(DialogProvider, { …, children })` — **um provider de contexto sem nó DOM e sem portal**. Consequências medidas por leitura da lib:
+  - O `<div class="sr-only">` renderiza **no fluxo da página**, não no portal, e **sempre que o `Sidebar` mobile monta** — com o drawer fechado inclusive. Em toda página autenticada abaixo de 768px (`use-mobile.tsx`, `MOBILE_BREAKPOINT = 768`), quem usa leitor de tela encontra "Menu lateral. Menu lateral de navegação." solto no corpo do documento.
+  - O nome acessível do diálogo **continua funcionando** (o `aria-labelledby` do `DialogContent` aponta por IDREF para o `id` do `DialogTitle`, que existe no documento), e o `titlePresent`/`descriptionPresent` do provider fica `true`, então **não há aviso de console**. Não venda isso como "diálogo sem nome" — seria falso.
+- **O que absorver / o que travar:** **(b)**, mover 4 linhas para dentro de `<SheetContent>` (é onde o upstream do shadcn as coloca) e um caso em `resources/js/test/components/navigation-landmarks.test.tsx`, que já monta a árvore real: com `matchMedia` mockado para mobile e o drawer **fechado**, `queryByText('Menu lateral de navegação.')` tem de ser `null`. Gate real, em jsdom, sem browser.
+- **Adaptação necessária:** `.ai/rules/js.md:45` proíbe editar `ui/sidebar.tsx` para acrescentar landmark ("entra por prop do call-site"). Aqui não se aplica: não é atributo novo, é **correção do próprio arquivo vendorizado**, e o boilerplate já o editou quatro vezes (strings pt-BR, `aria-keyshortcuts`, guarda `isTypingTarget`, `type="button"` no rail). A fatia deve dizer isso explicitamente, senão o revisor cita a regra.
+- **Risco · esforço:** P · P. Não muda pixel: `sr-only` não desenha.
+- **Multi-fonte?** **2 de 2**, mesma estrutura. Zero menções em qualquer inventário.
+
+**Vereditos** — **SOBREVIVE.**
+· *Refutar:* não está em inventário nem BACKLOG; não é regra preventiva (o nó existe em toda página mobile autenticada); tem gate. Fraqueza real: o impacto é pequeno — duas frases órfãs, não um diálogo anônimo. Escrevi assim de propósito.
+· *Risco:* baixo, com um cuidado: mover o `SheetHeader` para dentro do `SheetContent` o coloca **antes** do `<div className="flex h-full w-full flex-col">{children}</div>`, o que é a ordem certa; e `SheetContent` tem `[&>button]:hidden` na className — confirmar que o seletor de filho direto não passa a esconder algo do header (ele não tem `<button>`, mas a fatia deve reler a linha 200 antes de mesclar).
+· *Atualidade:* `@radix-ui/react-dialog@1.1.23` é o instalado e o comportamento do Root (provider sem DOM) não mudou. Se algum dia a migração para o pacote único `radix-ui` acontecer (a modernização que a lente de atualidade do C2 propôs em V6P-2), este arquivo é reescrito — outra razão para corrigir agora e não depois.
+
+---
+
+## Medi e não achei delta (para ninguém recaçar)
+
+| O que | Comando | Resultado |
+|---|---|---|
+| `@media print`, `@page`, `forced-colors`, `prefers-contrast`, `::selection` | `git grep -nE "@media print\|@page\|forced-colors\|prefers-contrast\|::selection" <ref> -- resources` | **0 nos dois**. O alvo não tem superfície imprimível; regra preventiva aqui morreria na lente 4, como V6D-8/V6D-9 |
+| `target="_blank"` sem `rel` | `git grep -n 'target="_blank"' origin/main -- resources/js resources/views` | **1 ocorrência no alvo**, `nav-footer.tsx:23`, **com** `rel="noopener noreferrer"`. Nada a consertar |
+| `nav-user`, `nav-footer`, `breadcrumbs`, `app-sidebar-header`, `heading`, `heading-small`, `text-link`, `icon`, `data-table/{pagination,table-header}`, `ui/toast-provider` | `md5` par a par | **byte-idênticos** fonte × alvo |
+| `nav-main`, `empty-state`, `user-menu-content`, `impersonate-banner`, `data-table/{filter-toggle,search-bar}` | `diff -u` | **alvo estritamente à frente** nos 6: `aria-current="page"` com comentário (`nav-main`), `EmptyState` sem o ramo `type="row"` e com prop `action` (`empty-state`), `<button>` no lugar de `<a href="#">` e `bg-teal-700` (5.39:1) no lugar de `-500` (2.42:1) (`impersonate-banner`) |
+| `lib/form-styles.ts` (só no alvo) | `git grep -n "form-styles" origin/main -- resources/js` | 1 constante, consumidor único é `ui/form-field.tsx` — que tem 0 call-sites vivos. É satélite do **E7**, não item próprio |
+| `aria-invalid`/`aria-describedby` nos formulários | `git grep -n "aria-invalid" origin/main -- resources/js \| grep -v ui/` | 9 linhas, **todas em `user-form.tsx`**; `aria-describedby` = 0 fora de `form-field.tsx`. **Já registrado em `BACKLOG.md:381`** com mais precisão que eu teria escrito (inclui a falha silenciosa do `FormField` com raiz `<Select>`) |
+
+---
+
+## Síntese da célula
+
+### 1 · Quantos candidatos sobreviveram, por caçador
+
+Contagem pelo **veredito individual da lente refutar**, que é a que decide sobrevivência; risco e atualidade aparecem quando reduziram ou reescreveram.
+
+| Caçador | Candidatos | Sobrevivem | Derrubados | Observação |
+|---|---|---|---|---|
+| **C1** — tokens/tema/contraste | 14 | **7** (V6T2, V6T4, V6T10, V6T11, V6T12, V6T13, V6T14) | 7 | Nenhum intacto. V6T4 sobrevive com manchete falsa corrigida (2 órfãos, não 3) e regressão embutida achada pela lente de risco (`error-page.tsx:35` sairia de Montserrat para Merriweather); a lente de atualidade o reclassificou como idioma v3 dentro de projeto v4 |
+| **C2** — primitivos `ui/` | 9 | **6** (V6P-1, 2, 4, 5, 6, 9) | 3 | Só **3** são harvest de verdade (V6P-1 `min-w-0`, V6P-4 chips, V6P-5 metade b): V6P-2 e V6P-6 não trazem código da fonte, V6P-9 é evidência anexa a uma `[proposta-adr]` já aberta |
+| **C3** — telas/densidade/microinteração | 11 | **7** (V6D-2, 3, 4, 5, 6, 8, 11) | 4 | **Correção de contagem:** o placar do próprio caçador diz "5 sobrevivem … 4 derrubados, 1 rebaixado" — soma 10 para 11 itens e conta como sobreviventes só os de escopo cortado, esquecendo os 2 intactos (V6D-6, V6D-11). São 7 |
+| **C4** — blade/boot/layouts/favicon | 7 | **7**, dois pela metade (V6F-6 só "apagar", V6F-7 só a poda) | 0 inteiros, 2 metades | V6F-2 e V6F-5 sobrevivem **só reescritos**: a lente de atualidade marcou os dois `[rejeitado]` na redação — o "502 do SSR" não existe no `inertia-laravel v3.3.1` (o gateway cai em fallback client-side) e o "mismatch de hidratação" não existe porque `app.tsx:23` usa `createRoot`, não `hydrateRoot` |
+| **V6S** — secagem (esta passada) | 4 | **3** (V6S-1, V6S-2, V6S-4) | 1 (V6S-3, por mim) | — |
+| **Total** | **45** | **30** | **15** | |
+
+### 2 · O que as 3 lentes deixaram passar SEM redução de escopo
+
+Contra a expectativa do enunciado, **dois passaram** — e um terceiro saiu **ampliado**, que não é redução:
+
+- **V6F-4 · `aptos-extrabold-italic 2.woff2`** — o mais limpo da rodada. Refutar: "SOBREVIVE intacto, o único cujos números todos reproduziram sem correção". Risco: BAIXO, e o único acréscimo é *controle positivo no teste* (molde `focus-ring.test.ts`), execução e não escopo. Atualidade: ATUAL, com uma modernização declarada **fora** da fatia (mover as fontes de `public/` para `resources/` e deixar o Rollup falhar sozinho).
+- **V6T14 · `iconTheme` morto em `warning`/`info`** — as três lentes o **ampliaram**: a de refutar achou que a morte é dupla (`type:'blank'` mata de novo), a de risco achou a terceira cópia da afirmação falsa (`.ai/rules/css.md:20-21`), a de atualidade o promoveu de PLAUSÍVEL a CONFIRMADO na fonte da lib. Nenhuma cortou nada.
+- **V6D-11 · trava do follow-up de E28** — refutar: "SOBREVIVE intacto, o mais forte do lote", com um **recorte de alvo** do teste (violação é indicador *dentro de `<Button>`*, poupando `search-bar.tsx`); risco: **ampliou** de 9 para 15 infratores (o caçador contou 3 spinner-`div`; são 9, mais os 6 `LoaderCircle` das telas de auth). Escopo ajustado e ampliado, não reduzido.
+
+**Da minha passada, V6S-1 não entra nesta lista:** eu mesmo lhe imponho uma ordenação (migrar os 6 call-sites primeiro, teste depois) e uma pergunta de desenho em aberto (barra colorida no toast de promise, sim ou não). É correção de escopo, e eu a escrevo para não me auto-conceder o que neguei aos outros.
+
+### 3 · `[rejeitado]` — motivo em uma linha, para não se re-descobrir
+
+| ID | Motivo |
+|---|---|
+| V6T1 | `InlineThemeBackgroundTest.php:135-142` já proíbe `var(--` nos dois blades; a `.ai/rules` proposta é mais fraca e o path de `css.md` nem casaria um blade |
+| V6T3 | Resultado nulo bem medido: as três fontes já concordam no namespace, nenhuma ação sai daí |
+| V6T5 | F1 Defeito 3 no BACKLOG **e** regra já escrita em `.ai/rules/css.md:18`; a asserção nova nasce vermelha, logo é o F1, não uma catraca |
+| V6T6 | Autoderrubado ("não recomendo como fatia isolada"); censo de `!important` é classificação, não candidatura |
+| V6T7 | Curado pela PR #72 (`--brand-cyan-dark: #2a7ba2`); backport para derivado é playbook |
+| V6T8 | Autoderrubado; 4.68:1 e 7.93:1 são ambos AA — é escolha de marca, não correção |
+| V6T9 | `BACKLOG.md:620` (F14) já enfileira `theme-color` **por esquema**, resolvendo a pergunta que o candidato deixou aberta |
+| V6P-3 | Upload não existe em nenhuma das duas pontas do alvo (`UploadedFile\|Storage::\|mimes` → 0 em `app routes`); o primitivo fixaria política de upload pelo front |
+| V6P-7 | Premissa falsa: o contrato de região viva **tem** dois testes (`search-bar.test.tsx:99`, `input-error.test.tsx`); o sweep proposto precisaria de allowlist no dia do nascimento |
+| V6P-8 | Duplicado — o `ui/color-picker` do ctfinance (`ctfinance.md:135`) é a versão melhor do mesmo item; "fonte única" é falso |
+| V6D-1 | Contagem errada (10 `Skeleton`, não 14) e regra sem consumidor: `Deferred`/`WhenVisible` têm 0 usos e `.ai/rules/controllers.md:18` já regra o mecanismo gerador |
+| V6D-7 | Mecanismo central inexistente no alvo: `Inertia::always` → 0 linhas e `flash` não é prop (é o flash nativo do Inertia 3, no objeto de página) |
+| V6D-9 | `options()`/`label()` já são regra em `.ai/rules/enum.md`, e `$page['component']` já chega à blade (linha do `@vite`); `withViewData` é irrelevante |
+| V6D-10 | Confessadamente a terceira confirmação do **E16**; é evidência anexa, não candidato |
+| V6F-6 (metade "ativar") | Sem página pública que a justifique, e sidebar/overlays são `fixed` — resolvem contra o viewport e ignorariam o padding do `body` |
+| V6F-7 (metade "família pública") | Decisão de produto sem consumidor: criar layout sem call-site recria o código morto que a poda anterior acabou de remover |
+| **V6S-3** | **Já registrado**: `ctfinance.md:151` mede `pt_BR.json` e `BACKLOG.md:259` já tem a linha de tema i18n com 3 fontes. Vira medição anexa (a consequência: dois e-mails de auth em inglês) |
+
+### 4 · Recomendação final do F3 — consolidando a tabela do Caçador 1
+
+A tabela comparativa do C1 (ctfinance × ctvitrine × cuidari × boilerplate) foi conferida pelas três lentes e **nenhum erro de fato sobreviveu**; mantenho o desenho dela e acrescento uma coluna que faltava, que é o que esta passada de secagem encontrou.
+
+**O veredito consolidado continua sendo a costura de dois, com peças nomeadas:**
+
+1. **A FORMA vem do ctfinance, e só a forma.** O trio `--state-{status}-{bg,fg,border}` é a única resposta ao problema real — token achatado por status faz dois trabalhos incompatíveis, e o alvo tem a prova aritmética no próprio arquivo (`--destructive` no escuro: **3.67:1** como fundo, **3.99:1** como texto; escurecer conserta um e quebra o outro). Exportar por **`@utility`**, não `@layer components` — com a ressalva que a lente de risco acrescentou e que **não estava na cadeia do backlog**: `@utility` emite dentro de `@layer utilities`, a camada mais fraca deste arquivo, que perde para os 46 `!important` fora de layer e para os 812 KB do Radix não-layerizado. **O F3 depende do F1 estar decidido, não só enfileirado.**
+2. **Os VALORES nascem aqui, calculados, nunca copiados.** Os percentuais de `color-mix` do ctfinance reprovam 3 de 4 na paleta do alvo (2.53 / 3.26 / 3.92). E o emerald inline de `verify-email.tsx` está em 14.38:1 — trocá-lo por um `state-success-soft` mal calibrado é regressão. Esses quatro números vêm do inventário do ctfinance e **não foram re-medidos dentro do pin desta célula**; o de 14.38 é o único que, se errado, inverte uma decisão, e deve ser re-medido antes de a fatia começar.
+3. **O GUARD-RAIL é o do boilerplate, estendido — não um contrato de presença.** `theme-tokens.test.ts` (216 l.) é o único artefato dos quatro que mede **contraste** e o único que sabe expressar dívida com data de validade (`DIVIDA_DESTRUCTIVE_ESCURO = 3.67`, com asserção-teto e a mensagem "se passou de 4.5, o F3 chegou"). O F3 acrescenta linhas à tabela de pares que já existe; não escreve um `design-tokens-contract.test.ts` no molde do ctfinance.
+4. **A entrada do F3 tem de dizer QUAL PAR mede — e agora são três perguntas, não duas.** A tabela de pares mede *fill × rótulo* (4.5:1); o F2 mede *texto × canvas* (6.42 / 8.77 / 6.83 no escuro); e **esta passada acrescenta a terceira**, que ninguém tinha contado: *objeto gráfico × superfície do toast* (3:1, SC 1.4.11), que hoje tem **dois** canais vivos e um deles não passa por token nenhum —
+   - borda `border-left: 4px` sobre `--card`: warning **2.15:1** e info **2.77:1** reprovam no claro (medição da lente de risco do C1, que reproduzi);
+   - `iconTheme` (disco do ícone): success **2.28:1** reprova no escuro;
+   - **`toast.promise`, o canal fora do sistema (V6S-1):** disco `#61d345` a **1.92:1** contra o card claro — pior que qualquer token, em 6 call-sites que nenhuma tabela alcança.
+   Se o F3 mover `success/warning/info` para o `@theme` sem nomear os três pares, ele publica `bg-warning text-warning-foreground` a 2.15:1 e ainda deixa o quarto canal intocado.
+5. **Do ctvitrine, uma peça e uma regra.** A peça: `color-mix(in oklab, base, white N%)` — espaço perceptual, e é a única forma dos quatro que já roda contra base **desconhecida** em produção (`--brand` injetado por `style` no wrapper, 5 pontos de injeção, 33 call-sites). A regra: **consolidar em 3 níveis nomeados**, porque o ctvitrine mostra para onde degenera sem token — 8 percentuais distintos (`white_55/65/70/85/88/90/93/94%`). E, medido pela lente de atualidade: `color-mix(in oklab` aparece **159 vezes** no CSS compilado do alvo, emitido pelo próprio Tailwind 4.3 — a forma do ctvitrine está mais alinhada ao framework instalado do que o único `color-mix(in srgb)` que o boilerplate escreveu à mão (`app.css:366`).
+6. **Ordem, com a catraca que pode entrar antes.** F1 → F2 → F3 permanece. Mas **V6T13 + V6T14 + V6S-1 são uma fatia só e devem entrar antes do F1**: mesma família (tokens de estado × canal que os consome), os três são P, os três executam política já escrita e furada (`.ai/rules/css.md:12` manda acrescentar a linha na tabela do teste no mesmo commit do token), e juntos documentam os números que o F3 vai ter de mover. Separá-los faz o V6T13 travar contraste de tokens que o V6T14 vai apagar, e deixa o V6S-1 travando um canal que o V6T13 acabou de justificar.
+
+**Em uma palavra:** o sistema de tokens de estado mais maduro dos quatro é o do **ctfinance**, e o F3 não deve canonizá-lo — deve canonizar o **desenho** dele dentro do **método** do boilerplate, e antes disso mapear os **quatro** canais que consomem esses tokens hoje. Copiar o ctfinance inteiro embarca 3 reprovações de AA; escrever do zero joga fora o único trio bem desenhado da família; e fazer qualquer um dos dois sem contar `toast.promise` deixa o pior contraste da casa exatamente onde ele está.
+
+---
+
+#### Medições
+
+Fonte lida **exclusivamente** por `git show`/`git grep`/`git ls-tree` sobre `53d7d9a`. Alvo por `git show`/`git grep` sobre `origin/main` (= `beb848e`). Três leituras vêm do **`node_modules` e do `vendor` do boilerplate** (bibliotecas instaladas, não a fonte) e estão rotuladas. Nenhum build, teste ou comando de escrita foi executado.
+
+```bash
+CT=…/ctvitrine ; BP=…/boilerplate
+git -C $BP rev-parse origin/main                      # beb848ea509bf6682c9e31f10611ad7ab489392e
+
+# --- diff de cobertura ---
+git -C $CT ls-tree -r 53d7d9a --name-only -- resources | sort        # 199 arquivos em resources/js
+git -C $CT ls-tree -r -l 53d7d9a -- public | sort -k4 -nr
+git -C $BP ls-tree -r origin/main --name-only -- resources/js/components resources/js/pages resources/views resources/js/lib
+for f in nav-main nav-user nav-footer breadcrumbs empty-state app-sidebar user-menu-content \
+         app-sidebar-header heading heading-small text-link icon impersonate-banner \
+         data-table/{pagination,filter-toggle,table-header,search-bar}; do
+  md5 <(git -C $CT show 53d7d9a:resources/js/components/$f.tsx) \
+      <(git -C $BP show origin/main:resources/js/components/$f.tsx); done   # 11 IGUAL, 6 DIFERE (alvo à frente)
+
+# --- V6S-1 (as 3 últimas linhas leem a LIB INSTALADA, react-hot-toast@2.6.0) ---
+git -C $BP grep -n "toast.promise" origin/main -- resources/js          # 6 call-sites
+git -C $CT grep -n "toast.promise" 53d7d9a     -- resources/js          # os MESMOS 6
+git -C $BP show origin/main:resources/js/lib/toast-config.ts | cat -n
+git -C $BP show origin/main:resources/js/lib/flash.ts | cat -n
+git -C $BP show origin/main:resources/js/test/lib/toast-config.test.ts | cat -n
+diff -u <(git -C $CT show 53d7d9a:resources/js/lib/toast-config.ts) \
+        <(git -C $BP show origin/main:resources/js/lib/toast-config.ts)  # delta = só os 2 ariaProps
+python3 -c "import re;s=open('$BP/node_modules/react-hot-toast/dist/index.js').read();\
+  print(re.search(r'\{blank:[^}]*loading:[^}]*\}',s).group(0));\
+  print(re.search(r'duration:r\.duration\|\|[^,]*,',s).group(0))"
+  # {blank:4e3,error:4e3,success:2e3,loading:1/0,custom:4e3}
+  # duration:r.duration||e[r.type]?.duration||e?.duration||ue[r.type]
+grep -o 'primary||"#[0-9a-f]\{6\}"' $BP/node_modules/react-hot-toast/dist/index.js   # #61d345 · #ff4b4b · #616161
+
+# --- V6S-2 ---
+git -C $BP show origin/main:resources/css/app.css | grep -n "custom-scrollbar\|dialog-content"   # 517-588
+git -C $CT show 53d7d9a:resources/css/app.css     | sed -n '566,597p'                            # bloco idêntico
+git -C $BP grep -n "custom-scrollbar" origin/main -- resources/js resources/views                # 1: ui/dialog.tsx:58
+git -C $BP grep -n 'data-slot="dialog-content"'   origin/main -- resources/js                    # 1: ui/dialog.tsx:56
+git -C $BP grep -nE "max-h-\[|overflow-y-auto" origin/main -- resources/js | grep Dialog         # 2 (1 morto)
+
+# --- V6S-3  (as 3 linhas do meio leem o VENDOR instalado, laravel/framework v13.24.0) ---
+git -C $BP ls-tree -r origin/main --name-only -- lang                     # 4 arquivos .php
+git -C $BP ls-tree -r origin/main --name-only | grep 'lang/.*\.json'      # vazio
+grep -n "Lang::get" $BP/vendor/laravel/framework/src/Illuminate/Auth/Notifications/{ResetPassword,VerifyEmail}.php
+grep -n "@lang" $BP/vendor/laravel/framework/src/Illuminate/Notifications/resources/views/email.blade.php
+python3 -c "import json;d=json.load(open('$BP/composer.lock'));print([p['version'] for p in d['packages'] if p['name']=='laravel/framework'])"   # v13.24.0
+git -C $BP grep -rn "MustVerifyEmail\|sendEmailVerificationNotification" origin/main -- app
+git -C $CT ls-tree -r -l 53d7d9a -- resources/views/emails                # 4 templates
+
+# --- V6S-4  (a última linha lê @radix-ui/react-dialog@1.1.23 instalado) ---
+git -C $BP show origin/main:resources/js/components/ui/sidebar.tsx | sed -n '189,212p'
+git -C $CT show 53d7d9a:resources/js/components/ui/sidebar.tsx     | sed -n '181,202p'
+python3 -c "import re;s=open('$BP/node_modules/@radix-ui/react-dialog/dist/index.mjs').read();\
+  i=s.find('DialogProvider,');print(s[i-350:i+420])"   # Root = provider de contexto, sem DOM e sem portal
+
+# --- não-deltas ---
+git -C $BP grep -nE "@media print|@page|forced-colors|prefers-contrast|::selection" origin/main -- resources  # 0
+git -C $CT grep -nE "…" 53d7d9a -- resources                                                                  # 0
+git -C $BP grep -n 'target="_blank"' origin/main -- resources/js resources/views                              # 1, com rel
+git -C $BP grep -n "aria-invalid" origin/main -- resources/js | grep -v ui/ | grep -v /test/                  # 9, todas user-form
+git -C $BP grep -n "aria-describedby" origin/main -- resources/js | grep -v /test/                            # só form-field (morto)
+grep -rn "toast.promise\|SheetHeader\|SheetTitle" …/docs/harvest/v2/*.md                                      # 0 linhas
+grep -n "aria-describedby\|form-field" …/docs/harvest/v2/BACKLOG.md                                           # :381-387 (já registrado)
+
+# --- contraste (script próprio, WCAG 2.x) ---
+# <scratchpad>/contraste.py — luminância relativa + (L1+.05)/(L2+.05)
+#   #61d345 vs #ffffff = 1.92 · vs #0f2a44 = 7.60
+#   #ff4b4b vs #ffffff = 3.30 · vs #0f2a44 = 4.43
+#   #16a34a vs #ffffff = 3.30 · #22c55e vs #0f2a44 = 6.42 (reproduzem os do C1)
+```
+
+**Não medido, e onde importa:** (i) não rodei browser nem build — a aparência dos dois canais de toast (V6S-1) e o efeito da poda de scrollbar (V6S-2) precisam de screenshot no PR; (ii) os números do ctfinance e do cuidari citados na recomendação do F3 vêm dos inventários, fora do meu pin — o 14.38:1 do `verify-email.tsx` é o único que, se errado, inverte uma decisão; (iii) não abri `resources/js/pages/site/**` além do carrossel e das linhas que o grep devolveu; (iv) não conferi se o `SheetHeader` fora do `SheetContent` é a forma atual do upstream do shadcn (sem acesso a ele nesta rodada) — afirmo só o que a lib do Radix instalada faz.

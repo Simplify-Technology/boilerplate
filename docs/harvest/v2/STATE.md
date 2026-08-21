@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (11/70 células) · **31 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12, E28, F32, E26) · **zero PR aberto**
+- **Situação:** Fase 0 concluída · varredura em andamento (12/70 células) · **31 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12, E28, F32, E26) · **zero PR aberto**
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -78,11 +78,11 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 2 | spinmax | ✅ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 3 | sorteiopix | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 4 | ctjuris | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
-| 5 | ctvitrine | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
+| 5 | ctvitrine | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ✅ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 6 | cuidari | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 11/70 células (16%) · BACKLOG: **38 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25, E21, E12, E28, F32)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 12/70 células (17%) · BACKLOG: **38 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25, E21, E12, E28, F32)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -668,6 +668,29 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 **Repetiu na mesma tarde, como previsto.** Mesclado o #94, o #96 conflitou de novo no mesmo arquivo — agora contra as duas seções do `EmptyState`. Mesma resolução pelos estágios do índice, mesmo resultado (3 linhas acrescentadas, zero removida), gates verdes na árvore mesclada (33 arquivos / 224 testes). **O `rerere` NÃO ajudou**: ele casa o conflito exato, e cada merge novo traz um lado diferente. O custo real é um merge de `main` por PR por leva — o que confirma a leitura de que isto é estrutural e não vale tentar evitar com truque de ferramenta.
 
 ## Próxima unidade
+
+### Dimensão 6 (UI) do ctvitrine — célula ✅ (2026-08-20)
+
+**45 candidatos · 30 sobrevivem · 15 derrubados.** Material em `ctvitrine.md` (o arquivo foi a 961 KB); candidatos priorizados em `BACKLOG.md`. Custo total da célula **~6,6M tokens de subagente** em duas passadas — a mais cara da rodada, e a única que precisou de retomada.
+
+**⭐ O F3 está DESTRAVADO.** A linha de comparação do tema multi-fonte "tokens de estado" está fechada no BACKLOG com os quatro concorrentes medidos. Veredito: **o F3 canoniza o DESENHO do ctfinance dentro do MÉTODO do boilerplate, com a TÉCNICA do ctvitrine, e não copia valor de ninguém** — o ctfinance vence a forma (o trio que separa preenchimento de texto), o ctvitrine vence a técnica (`color-mix(in oklab)`, que é o idioma do Tailwind 4.3 instalado — 159 ocorrências no CSS compilado do alvo), o boilerplate vence o guard-rail (é o único dos quatro que mede contraste) e o cuidari perde (colisão de token ainda viva).
+
+**Três coisas que a célula mudou no F3, e nenhuma estava na cadeia original:**
+
+1. **`@utility` emite dentro de `@layer utilities`, a camada mais fraca do arquivo** — perde para os 46 `!important` fora de layer e para os 812 KB do Radix não-layerizado. **O F3 depende do F1 estar DECIDIDO, não só enfileirado.**
+2. **São TRÊS pares a medir, não dois.** O terceiro é *objeto gráfico × superfície do toast* (3:1, SC 1.4.11), e ele tem **quatro** canais hoje — dois reprovando por token (borda `warning` 2.15:1, `info` 2.77:1 no claro; `iconTheme` `success` 2.28:1 no escuro) e um **fora de qualquer token**: `toast.promise`, disco `#61d345` a **1.92:1**, em 6 call-sites.
+3. **Há contraste bom a preservar:** o par emerald das telas de auth está em **14.38:1**, e não em uma página — são **três** (`forgot-password.tsx:30`, `login.tsx:44`, `verify-email.tsx:25`), com um segundo par a 7.03:1. Correção minha ao texto dos agentes, que falavam só de `verify-email`.
+
+**⚠️ O padrão "nenhum candidato passa intacto" QUEBROU, depois de 4 células.** Dois passaram sem redução de escopo — **V6F-4** (79 KB de fonte duplicada por artefato de Finder vivendo no `origin/main` **daqui**, com zero referências: o único cujos números todos reproduziram sem correção) e **V6T14** (`iconTheme` morto, que as 3 lentes **ampliaram** em vez de cortar, achando a terceira cópia da afirmação falsa em `.ai/rules/css.md:20-21`). Um terceiro saiu ampliado: **V6D-11**, de 9 para 15 infratores. Isso não afrouxa a verificação — dois dos três são achados sobre o **próprio boilerplate**, onde a lente tem o código à mão e erra menos.
+
+**Fact-check meu antes de gravar:** re-medi as afirmações capazes de inverter decisão e **todas reproduzem** — 6 call-sites de `toast.promise`; defaults `#61d345`/`#ff4b4b`/`#616161` da lib instalada; `DIVIDA_DESTRUCTIVE_ESCURO = 3.67` com a catraca `toBeLessThan(4.5)`; a dupla emissão de `.font-title` (byte 44.554 dentro de `@layer utilities{`, que abre em 16.742, × byte 815.278 **fora de qualquer layer**, com `!important`); 46 `!important`; 159 `color-mix(in oklab`; e o 14.38:1 que a secagem marcou como não medido.
+
+**Próxima unidade sugerida: a fatia V6T13 + V6T14 + V6S-1** — prioridade 1 do protocolo (fatia pronta), e a própria secagem argumenta que ela vai **antes do F1**. Mesma família (tokens de estado × os canais que os consomem), os três P, os três executando política já escrita e já furada (`.ai/rules/css.md:12` manda acrescentar a linha na tabela do teste no mesmo commit do token). Separá-los faz o V6T13 travar contraste de tokens que o V6T14 vai apagar, e deixa o V6S-1 travando um canal que o V6T13 acabou de justificar. Fecha a Definition of Done sem gate de browser: é teste de estilo lendo CSS + teste de componente, os dois idiomas que o boilerplate já tem.
+
+Depois dela, na ordem: **F1** (decisão, não só fila — o F3 depende dela) → **F2** → **F3** → o resto da dimensão 6.
+
+**Alternativas se a preferência for outra:** fatia de deps (levantamento pronto abaixo, autossuficiente, sem decisão do dono) · dimensão 1 (Segurança) do cuidari ou do ctvitrine, as duas com inventário e ponteiros listados.
+
 
 **Reconciliação da 13ª invocação (2026-08-20, noite).** Feita ANTES de qualquer ação, com a unidade 3 ainda em voo.
 
