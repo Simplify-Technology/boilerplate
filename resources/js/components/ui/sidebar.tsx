@@ -21,6 +21,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useIsMobile } from "@/hooks/use-mobile"
+import { isAppleKeyboard, isTypingTarget, shortcutLabel } from "@/lib/keyboard"
 import { cn } from "@/lib/utils"
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state"
@@ -94,6 +95,13 @@ function SidebarProvider({
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Divergência deliberada do upstream shadcn: o handler é global e o
+      // `preventDefault()` abaixo comeria a tecla nativa de quem está digitando
+      // (no macOS, Ctrl+B move o cursor dentro de <input>/<textarea>).
+      if (isTypingTarget(event.target)) {
+        return
+      }
+
       if (
         event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
         (event.metaKey || event.ctrlKey)
@@ -255,22 +263,40 @@ function SidebarTrigger({
 }: React.ComponentProps<typeof Button>) {
   const { toggleSidebar } = useSidebar()
 
+  // A dica visível segue a convenção da plataforma, mas o handler aceita as
+  // duas teclas — por isso `aria-keyshortcuts` declara ambas, e é estático
+  // (renderiza no SSR, ao contrário do conteúdo da tooltip).
+  const [isApple, setIsApple] = React.useState(false)
+
+  React.useEffect(() => {
+    setIsApple(isAppleKeyboard())
+  }, [])
+
   return (
-    <Button
-      data-sidebar="trigger"
-      data-slot="sidebar-trigger"
-      variant="ghost"
-      size="icon"
-      className={cn("h-7 w-7", className)}
-      onClick={(event) => {
-        onClick?.(event)
-        toggleSidebar()
-      }}
-      {...props}
-    >
-      <PanelLeftIcon />
-      <span className="sr-only">Abrir ou fechar o menu lateral</span>
-    </Button>
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <Button
+          data-sidebar="trigger"
+          data-slot="sidebar-trigger"
+          variant="ghost"
+          size="icon"
+          aria-keyshortcuts="Control+B Meta+B"
+          className={cn("h-7 w-7", className)}
+          onClick={(event) => {
+            onClick?.(event)
+            toggleSidebar()
+          }}
+          {...props}
+        >
+          <PanelLeftIcon />
+          <span className="sr-only">Abrir ou fechar o menu lateral</span>
+        </Button>
+      </TooltipTrigger>
+      <TooltipContent side="bottom">
+        Abrir ou fechar o menu lateral (
+        {shortcutLabel(SIDEBAR_KEYBOARD_SHORTCUT, isApple)})
+      </TooltipContent>
+    </Tooltip>
   )
 }
 
