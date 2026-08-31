@@ -180,6 +180,92 @@ describe('contraste dos pares que viram texto', () => {
     });
 });
 
+describe('contraste dos objetos gráficos de estado', () => {
+    /**
+     * O terceiro par, e o que faltava: **objeto gráfico × superfície**.
+     *
+     * WCAG 2.2 SC 1.4.11 pede 3:1 para o que comunica significado sem ser
+     * texto. O toast usa os tokens de estado em duas marcas gráficas, e as
+     * duas são o único sinal de severidade que quem não lê o texto recebe:
+     *
+     * - a borda esquerda de 4px (`lib/toast-config.ts` + `.toast-*` em
+     *   `app.css`), que fica sobre `--card`;
+     * - o disco do ícone, que só aparece nos tipos `success` e `error` — em
+     *   `warning`/`info` a lib não desenha indicador nenhum (tipo `blank`), e
+     *   por isso eles NÃO entram na tabela do glifo abaixo.
+     *
+     * Este bloco não é herança do ctvitrine: de lá veio o argumento (6 contas
+     * de contraste certas em comentário, e nenhum teste). O artefato é o
+     * daqui, estendido.
+     */
+    const MINIMO_NAO_TEXTUAL = 3;
+
+    /** Marca de severidade sobre a superfície do card. */
+    const marcas: Array<[string, string]> = [
+        ['--success', '--card'],
+        ['--destructive', '--card'],
+        ['--warning', '--card'],
+        ['--info', '--card'],
+    ];
+
+    /** Glifo desenhado DENTRO do disco — só onde existe disco. */
+    const glifos: Array<[string, string]> = [
+        ['--success-foreground', '--success'],
+        ['--destructive-foreground', '--destructive'],
+    ];
+
+    /** Arco do spinner de `toast.promise` sobre o card. */
+    const spinner: Array<[string, string]> = [['--muted-foreground', '--card']];
+
+    /**
+     * Pares que REPROVAM hoje, medidos. São a mesma dívida do
+     * `DIVIDA_DESTRUCTIVE_ESCURO`: o token faz dois trabalhos ao mesmo tempo
+     * (preenchimento de disco e marca sobre o card) e não há valor único que
+     * sirva aos dois. A cura é o F3, que separa `--state-*`; até lá isto é
+     * CATRACA — não conserta, mas impede piorar.
+     *
+     * O valor é o PISO da medição (2.1476… → 2.14), não o arredondado: piso
+     * para cima transforma a catraca em teste vermelho no primeiro commit.
+     */
+    const DIVIDA: Record<string, number> = {
+        'claro --warning x --card': 2.14,
+        'claro --info x --card': 2.77,
+        'escuro --success-foreground x --success': 2.27,
+    };
+
+    describe.each([
+        ['claro', new Map<string, string>()],
+        ['escuro', darkVars],
+    ])('tema %s', (tema, scope) => {
+        it.each([...marcas, ...glifos, ...spinner])('%s destaca contra %s (3:1)', (mark, surface) => {
+            const ratio = contrast(resolveToken(mark, scope), resolveToken(surface, scope));
+            const divida = DIVIDA[`${tema} ${mark} x ${surface}`];
+
+            if (divida === undefined) {
+                expect(ratio).toBeGreaterThanOrEqual(MINIMO_NAO_TEXTUAL);
+
+                return;
+            }
+
+            expect(ratio).toBeGreaterThanOrEqual(divida);
+            expect(ratio, `se passou de 3:1, o F3 chegou — tire "${tema} ${mark} x ${surface}" da tabela de dívida`).toBeLessThan(MINIMO_NAO_TEXTUAL);
+        });
+    });
+
+    it('não deixa a tabela de dívida sobreviver aos pares que ela justifica', () => {
+        // Dívida que não corresponde a nenhum par medido é dívida esquecida:
+        // ela passa a autorizar um contraste que ninguém mais verifica.
+        const medidos = new Set(
+            [
+                ['claro', new Map<string, string>()],
+                ['escuro', darkVars],
+            ].flatMap(([tema]) => [...marcas, ...glifos, ...spinner].map(([mark, surface]) => `${tema} ${mark} x ${surface}`)),
+        );
+
+        expect(Object.keys(DIVIDA).filter((chave) => !medidos.has(chave))).toEqual([]);
+    });
+});
+
 describe('contraste do anel de foco', () => {
     /**
      * Todos os primitivos desligam o anel nativo do browser (`outline-none`) e

@@ -1,3 +1,4 @@
+import { toastPromiseOptions } from '@/lib/toast-config';
 import type { PermissionActionHandlers } from '@/types/permissions';
 import { router, useForm } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
@@ -53,6 +54,7 @@ export function usePermissionActions(options: UsePermissionActionsOptions = {}):
                     success: 'Permissões salvas com sucesso!',
                     error: 'Erro ao salvar permissões. Por favor, tente novamente.',
                 },
+                toastPromiseOptions,
             );
         },
         [put, options],
@@ -86,6 +88,7 @@ export function usePermissionActions(options: UsePermissionActionsOptions = {}):
                     success: 'Cargo atribuído com sucesso!',
                     error: 'Erro ao atribuir cargo. Por favor, tente novamente.',
                 },
+                toastPromiseOptions,
             );
         },
         [options],
@@ -115,6 +118,7 @@ export function usePermissionActions(options: UsePermissionActionsOptions = {}):
                     success: 'Cargo removido com sucesso!',
                     error: 'Erro ao remover cargo. Por favor, tente novamente.',
                 },
+                toastPromiseOptions,
             );
         },
         [options],

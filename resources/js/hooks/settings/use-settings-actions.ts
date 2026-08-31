@@ -1,3 +1,4 @@
+import { toastPromiseOptions } from '@/lib/toast-config';
 import type { UseSettingsActionsOptions, UseSettingsActionsReturn } from '@/types/settings';
 import { router } from '@inertiajs/react';
 import { useCallback, useState } from 'react';
@@ -46,6 +47,7 @@ export function useSettingsActions(options: UseSettingsActionsOptions = {}): Use
                     success: 'Perfil atualizado com sucesso!',
                     error: 'Erro ao atualizar perfil. Por favor, tente novamente.',
                 },
+                toastPromiseOptions,
             );
         },
         [options],
@@ -86,6 +88,7 @@ export function useSettingsActions(options: UseSettingsActionsOptions = {}): Use
                     success: 'Senha atualizada com sucesso!',
                     error: 'Erro ao atualizar senha. Por favor, tente novamente.',
                 },
+                toastPromiseOptions,
             );
         },
         [options],

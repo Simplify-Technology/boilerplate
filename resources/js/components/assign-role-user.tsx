@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { usePermissions } from '@/hooks/use-permissions';
-import { toastErrorOptions } from '@/lib/toast-config';
+import { toastErrorOptions, toastPromiseOptions } from '@/lib/toast-config';
 import { Role } from '@/types';
 import { useForm } from '@inertiajs/react';
 import { Shield, X } from 'lucide-react';
@@ -65,6 +65,7 @@ export default function AssignRoleUser({ userId, roles, onClose, currentRole, cu
                 success: (message) => String(message),
                 error: (error) => String(error),
             },
+            toastPromiseOptions,
         );
     };
 

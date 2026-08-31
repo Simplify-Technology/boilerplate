@@ -134,6 +134,13 @@
     --destructive-foreground: white;
     --success: #16a34a;
     --success-foreground: white;
+    /* --warning-foreground e --info-foreground estao SEM consumidor desde que
+       o iconTheme morto de aviso/info saiu de lib/toast-config.ts (aviso e
+       info sao toast tipo `blank`, que nao desenha disco para colorir). Ficam
+       porque o par --X/--X-foreground e o contrato que o F2 exporta ao levar
+       --success/--warning/--info para o @theme; e ficam MEDIDOS: --warning
+       sobre --card da 2.15:1 e --info 2.77:1 no tema claro, os dois abaixo dos
+       3:1 de 1.4.11. Ver styles/theme-tokens.test.ts. */
     --warning: #f59e0b;
     --warning-foreground: white;
     --info: #0ea5e9;
