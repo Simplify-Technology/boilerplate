@@ -48,7 +48,7 @@ jobs:
       # Publica o SARIF no GitHub Code Scanning (aba Security)
       # Em PRs de forks, o token geralmente não tem permissão para security-events:write
       - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@5595ccaf912efad79be6eef63a5619ff05969be3 # v3
+        uses: github/codeql-action/upload-sarif@ff2f1c621b7f889edc0d3c761ac2e6a3f8cdb0dd # v3
         if: >
           always() &&
           (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
