@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (12/70 células) · **31 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12, E28, F32, E26) · **zero PR aberto**
+- **Situação:** Fase 0 concluída · varredura em andamento (12/70 células) · **31 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12, E28, F32, E26) · **1 PR aberto: [#119](https://github.com/Simplify-Technology/boilerplate/pull/119) (V6S-1+V6T14+V6T13)**
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -82,7 +82,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 12/70 células (17%) · BACKLOG: **38 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25, E21, E12, E28, F32)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 12/70 células (17%) · BACKLOG: **41 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25, E21, E12, E28, F32, V6T13, V6T14, V6S-1)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -173,6 +173,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **E28** — fix(a11y): estado de envio no Button (`loading`/`aria-busy`) | [#105](https://github.com/Simplify-Technology/boilerplate/issues/105) | `105-harvest-v2-botao-em-envio` | ✅ (ver invocação 11) | ✅ ambos exit 0 | [#106](https://github.com/Simplify-Technology/boilerplate/pull/106) | ✅ **MESCLADO** 2026-08-17 |
 | **F32** — fix(ui): poda do CSS morto de toast | [#107](https://github.com/Simplify-Technology/boilerplate/issues/107) | `107-harvest-v2-poda-css-toast` | ✅ (ver invocação 11) | ✅ ambos exit 0 | [#108](https://github.com/Simplify-Technology/boilerplate/pull/108) | ✅ **MESCLADO** 2026-08-17 |
 | **E26** — fix(a11y): guarda do atalho global + atalho exposto | [#111](https://github.com/Simplify-Technology/boilerplate/issues/111) | `111-harvest-v2-guarda-atalho-sidebar` | ✅ 19 testes + **9 mutações** | ✅ ambos exit 0 (416/2046 · 39/297) | [#112](https://github.com/Simplify-Technology/boilerplate/pull/112) | ✅ **MESCLADO** 2026-08-21 00:04 UTC |
+| **V6S-1+V6T14+V6T13** — fix(a11y): severidade do toast em `toast.promise` + `iconTheme` morto + par gráfico | [#118](https://github.com/Simplify-Technology/boilerplate/issues/118) | `118-harvest-v2-severidade-toast-promise` | ✅ 29 testes novos + **9 mutações** | ✅ ambos exit 0 (416/2046 · **40/326**) | [#119](https://github.com/Simplify-Technology/boilerplate/pull/119) | 🟡 **ABERTO** 2026-08-31 |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -669,6 +670,45 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 
 ## Próxima unidade
 
+### Fatia V6S-1 + V6T14 + V6T13 — aplicada (2026-08-31)
+
+Issue [#118](https://github.com/Simplify-Technology/boilerplate/issues/118) · PR [#119](https://github.com/Simplify-Technology/boilerplate/pull/119) **aberto, aguardando merge do dono**. 29 testes novos (front foi de 39/297 para **40/326**), **9 mutações, todas mortas**, os dois gates exit 0.
+
+**O que entrou.** `toastPromiseOptions` em `lib/toast-config.ts` + os 6 call sites; `iconTheme` morto removido de aviso e info com asserção simétrica no lugar; terceiro par (objeto gráfico × superfície, 3:1) no `theme-tokens.test.ts` com catraca datada de 3 dívidas; guarda de call site nova (`test/lib/toast-promise-call-sites.test.ts`); `.ai/rules/css.md` e `.ai/rules/js.md` corrigidas/estendidas; comentário em `app.css` sobre os dois tokens que a fatia orfanou.
+
+**Quatro fatos que esta fatia produziu, e três são de método:**
+
+1. **A prova de que o `<Toaster>` não alcança `ariaProps` está no merge, não na doc.** `createToast` grava `ariaProps: {role:'status','aria-live':'polite'}` no PRÓPRIO toast e o merge do provider é `{...defaults, ...defaults[type], ...toast}` — o toast é o último spread e sempre vence. Isso significa que **nenhuma configuração de provider** pode consertar severidade: o canal é por chamada, e só. Vale como fato reutilizável para toda fatia futura que quiser "centralizar" comportamento de toast — só `style` (que é merge de um nível) e `duration` (que tem cadeia própria de fallback) são centralizáveis.
+2. **A morte do `iconTheme` de warning/info é DUPLA, e isso muda o conserto.** `ToastIcon` sai pelo ramo do `icon` antes de olhar `iconTheme`, E devolve `null` no tipo `blank`. Como aviso/info têm as duas condições, apagar o emoji para "ativar" o `iconTheme` não funcionaria — deixaria o toast sem ícone nenhum. Foi por isso que a fatia acrescentou a asserção que **preserva o emoji**: sem ela, a próxima pessoa lê "iconTheme é o canal certo" na regra e apaga a coisa errada.
+3. **⚠️ Catraca de dívida grava o PISO da medição, nunca o arredondado.** Escrevi `2.15` (o número que o BACKLOG cita) para um par que mede `2.1476…`, e `2.28` para um que mede `2.2786…`. As duas catracas nasceram **vermelhas**, porque `toBeGreaterThanOrEqual(2.15)` reprova 2.1476. O valor certo é `Math.floor(medido * 100) / 100`. **O número que a célula de varredura publica é arredondado para leitura; o teste precisa do piso.** Isto vale para toda dívida datada que as fatias do F1/F2/F3 forem acrescentar.
+4. **A asserção de simetria pegou erro meu que nenhum outro teste pegaria.** Escrevi uma tabela de dívida com 5 linhas e uma tabela de pares medidos que, corretamente, excluía warning/info do glifo (eles não desenham disco). Duas linhas de dívida ficaram órfãs — autorizando contraste que ninguém mede. A asserção "toda chave de dívida corresponde a um par medido" ficou vermelha e me mandou apagar as duas. **Toda tabela de exceção precisa de uma asserção que a amarre à tabela que ela excepciona**; sem isso a dívida sobrevive ao par e vira licença permanente.
+
+**Efeito colateral registrado, não escondido:** `--warning-foreground` e `--info-foreground` ficaram **sem consumidor** (o `iconTheme` morto era o único). Ficaram no `app.css` com comentário, porque o par `--X`/`--X-foreground` é o contrato que o **F2** exporta ao levar `--success`/`--warning`/`--info` para o `@theme`. É insumo do F2, não dívida nova.
+
+### Próxima unidade sugerida: **F1** (decisão, não só fila)
+
+O BACKLOG e a secagem da dimensão 6 concordam: a ordem é **F1 → F2 → F3 → resto da dimensão 6**. O F1 precisa ser *decidido*, não só enfileirado, porque o F3 depende dele — `@utility` emite dentro de `@layer utilities`, a camada mais fraca do arquivo, que perde para os 46 `!important` fora de layer e para os 812 KB do Radix não-layerizado.
+
+Esta fatia deixou dois insumos prontos para o F2/F3: os dois tokens órfãos comentados no `app.css`, e a tabela de dívida do par gráfico já medida e amarrada.
+
+**Alternativas:**
+
+- **Dimensão 1 (Segurança) do cuidari ou do ctvitrine** — as duas com inventário e ponteiros já listados.
+- **Fatia de deps** — ver a reconciliação abaixo: o dependabot **já abriu** a PR de composer minor/patch (#116) e a de npm (#117), que era o grosso do que o levantamento de 2026-08-20 planejava. O que sobra de nosso é o pin `typescript ^6.0.3 → ~6.0.3` do PLAYBOOK §4 — fatia minúscula, e agora quase autossuficiente demais para gastar uma unidade.
+
+### Reconciliação da 14ª invocação (2026-08-31)
+
+Feita ANTES de qualquer ação.
+
+- **PR #112 (E26) confirmado MESCLADO**; `origin/main` em **`beb848e`**, o mesmo da 13ª invocação. A rodada entrou nesta invocação com **zero PR de fatia aberto e zero fatia em andamento** ⇒ Prioridade 1 do protocolo (fatia pronta do BACKLOG) era a unidade correta, e a fatia recomendada pela secagem da dimensão 6 (V6T13+V6T14+V6S-1) foi executada inteira.
+- **⚠️ Novidade que o STATE não previa: TRÊS PRs de dependabot estão ABERTAS** — #114 (`actions-minor-patch`, codeql 4.37.6→4.37.7), **#116 (`composer-minor-patch`, 7 pacotes)** e **#117 (`npm-minor-patch`, 16 pacotes)**; #113 e #115 foram fechadas por superseding. **Consequência direta para a prioridade 3 do protocolo:** o levantamento de deps de 2026-08-20 planejava uma fatia nossa de composer minor/patch, e o dependabot a cobriu sozinho. Sobra o pin `typescript ^6.0.3 → ~6.0.3` (mina do PLAYBOOK §4), que o dependabot **não** faz. As três PRs são do dono para mesclar; não abrir fatia concorrente sobre os mesmos lockfiles.
+- **Sexto drift do spinmax e do ctvitrine:** spinmax em **`fdd499e`** (era `9fd04be`; pin `e4ec01e`), ctvitrine em **`f9f17f6`** (era `c62438a`; pin `53d7d9a`). Os outros 5 idênticos aos pinados. Pin inalterado — commits novos das fontes ficam para a próxima harvest, registrados no RELATORIO como "evoluiu durante a rodada".
+- **Alvo estável durante a célula:** `origin/main` era `beb848e` no início E no fim da fatia (a prática que a 13ª invocação mandou adotar depois de o alvo andar no meio da dimensão 6). Nenhum candidato precisou de re-conferência.
+- **Worktree principal:** o WIP do dono em `docs/migration/PLAYBOOK.md` e `docs/migration/projects/transitado-em-julgado.md` (+ `.claude/commands/` não rastreado) seguia presente e **não foi commitado** — `git add` explícito por caminho, os 10 arquivos da fatia. Conferido antes do `git switch -c` que `origin/main` não tocava nenhum dos dois caminhos.
+- **Hooks rodaram de verdade** neste worktree (lint-staged no pre-commit, os dois `ci:check` no pre-push). Sem `SKIP_GIT_HOOKS`.
+
+---
+
 ### Dimensão 6 (UI) do ctvitrine — célula ✅ (2026-08-20)
 
 **45 candidatos · 30 sobrevivem · 15 derrubados.** Material em `ctvitrine.md` (o arquivo foi a 961 KB); candidatos priorizados em `BACKLOG.md`. Custo total da célula **~6,6M tokens de subagente** em duas passadas — a mais cara da rodada, e a única que precisou de retomada.
@@ -685,7 +725,7 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 
 **Fact-check meu antes de gravar:** re-medi as afirmações capazes de inverter decisão e **todas reproduzem** — 6 call-sites de `toast.promise`; defaults `#61d345`/`#ff4b4b`/`#616161` da lib instalada; `DIVIDA_DESTRUCTIVE_ESCURO = 3.67` com a catraca `toBeLessThan(4.5)`; a dupla emissão de `.font-title` (byte 44.554 dentro de `@layer utilities{`, que abre em 16.742, × byte 815.278 **fora de qualquer layer**, com `!important`); 46 `!important`; 159 `color-mix(in oklab`; e o 14.38:1 que a secagem marcou como não medido.
 
-**Próxima unidade sugerida: a fatia V6T13 + V6T14 + V6S-1** — prioridade 1 do protocolo (fatia pronta), e a própria secagem argumenta que ela vai **antes do F1**. Mesma família (tokens de estado × os canais que os consomem), os três P, os três executando política já escrita e já furada (`.ai/rules/css.md:12` manda acrescentar a linha na tabela do teste no mesmo commit do token). Separá-los faz o V6T13 travar contraste de tokens que o V6T14 vai apagar, e deixa o V6S-1 travando um canal que o V6T13 acabou de justificar. Fecha a Definition of Done sem gate de browser: é teste de estilo lendo CSS + teste de componente, os dois idiomas que o boilerplate já tem.
+~~**Próxima unidade sugerida: a fatia V6T13 + V6T14 + V6S-1**~~ ✅ **executada na 14ª invocação (2026-08-31) — PR [#119](https://github.com/Simplify-Technology/boilerplate/pull/119)**. Era prioridade 1 do protocolo (fatia pronta), e a própria secagem argumentava que ela ia **antes do F1**. Mesma família (tokens de estado × os canais que os consomem), os três P, os três executando política já escrita e já furada (`.ai/rules/css.md:12` manda acrescentar a linha na tabela do teste no mesmo commit do token). Separá-los faz o V6T13 travar contraste de tokens que o V6T14 vai apagar, e deixa o V6S-1 travando um canal que o V6T13 acabou de justificar. Fecha a Definition of Done sem gate de browser: é teste de estilo lendo CSS + teste de componente, os dois idiomas que o boilerplate já tem.
 
 Depois dela, na ordem: **F1** (decisão, não só fila — o F3 depende dela) → **F2** → **F3** → o resto da dimensão 6.
 

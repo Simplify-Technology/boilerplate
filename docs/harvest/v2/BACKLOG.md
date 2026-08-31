@@ -727,21 +727,29 @@ Esta é a resposta que represava o F3 desde 2026-08-12. **Fontes concorrentes �
 
 **Em uma palavra:** copiar o ctfinance inteiro embarca 3 reprovações de AA; escrever do zero joga fora o único trio bem desenhado da família; e fazer qualquer um dos dois sem contar o `toast.promise` deixa o pior contraste da casa exatamente onde ele está.
 
-### ⭐ Fatia recomendada ANTES do F1 — V6T13 + V6T14 + V6S-1 (uma fatia só)
+### ~~⭐ Fatia recomendada ANTES do F1 — V6T13 + V6T14 + V6S-1 (uma fatia só)~~ ✅ APLICADA (2026-08-31, PR [#119](https://github.com/Simplify-Technology/boilerplate/pull/119))
 
 Mesma família (tokens de estado × os canais que os consomem), os três **P**, os três executando política **já escrita e já furada** (`.ai/rules/css.md:12` manda acrescentar a linha na tabela do teste no mesmo commit do token). Separá-los faz o V6T13 travar contraste de tokens que o V6T14 vai apagar, e deixa o V6S-1 travando um canal que o V6T13 acabou de justificar.
 
 - **V6T14 · `[guard-rail]`** — `iconTheme` de `warning` e `info` é config **morta**, e a morte é dupla: `react-hot-toast` 2.6.0 não emite disco para `type:'blank'`, e não há tipo `warning`/`info` na lib. Mesma família da PR #108 (poda de CSS de toast) — e **o teste que a #108 escreveu trava as duas**. Passou pelas 3 lentes **ampliado**: a lente de risco achou a **terceira** cópia da afirmação falsa, em `.ai/rules/css.md:20-21`.
 - **V6T13 · `[guard-rail]`** — o ctvitrine acerta **6 de 6** contas de contraste em comentário, **sem um único teste**. É o argumento mais limpo a favor do artefato que o boilerplate já tem; a fatia estende a tabela de pares.
+
+**Fechamento dos três (PR #119, 29 testes novos, 9 mutações mortas):** o escopo saiu como estava escrito, com três correções minhas durante a execução, e todas viraram fato para as fatias seguintes do F1/F2/F3:
+
+1. **A catraca grava o PISO da medição, não o número arredondado do BACKLOG.** `2.15` e `2.28` (os valores citados acima) fazem a catraca nascer VERMELHA — os pares medem `2.1476…` e `2.2786…`. O teste usa `2.14` e `2.27`. Vale para toda dívida datada que o F2/F3 acrescentar.
+2. **O par do glifo NÃO inclui warning/info.** Eles são tipo `blank`: a lib não desenha disco nenhum, então medir `--warning-foreground × --warning` seria inventar contrato para canal que não existe — exatamente o pecado que o V6T14 pune. O par deles é só a borda esquerda sobre `--card`.
+3. **`--warning-foreground` e `--info-foreground` ficaram órfãos** (o `iconTheme` morto era o único consumidor). Ficam no `app.css` comentados, como **insumo do F2**: são metade do par que o F2 exporta ao levar `--success`/`--warning`/`--info` para o `@theme`, e a V6D-5 já avisa que exportá-los como estão entrega par a 2.15:1.
+
+**Fato reutilizável achado no `dist/`:** o merge do `<Toaster>` é `{...defaults, ...defaults[type], ...toast}` e `createToast` sempre grava `ariaProps` no toast — então **nenhuma configuração de provider alcança `ariaProps`**. Só `style` (merge de um nível) e `duration` (cadeia própria de fallback) são centralizáveis. Qualquer candidato futuro que proponha "centralizar comportamento de toast" precisa passar por aqui.
 - **V6S-1 · `[guard-rail]`** — `toast.promise` escapa de **tudo**: cor, `iconTheme`, `ariaProps` e duração. São 6 call-sites (`assign-role-user.tsx:47`, `use-permission-actions.ts:31,64,97`, `use-settings-actions.ts:20,59`) que anulam, em silêncio, a decisão de severidade documentada e testada na PR #102. Pior contraste da casa: **1.92:1**.
 
 ### Os 30 sobreviventes — priorizados
 
 | ID | Título curto | Classe | Tam. | Risco | Nota da lente |
 | -- | ------------ | ------ | ---- | ----- | ------------- |
-| **V6T14** | `iconTheme` de warning/info é config morta (3 cópias da afirmação falsa) | `[guard-rail]` | P | baixo | **passou sem redução — ampliado** |
-| **V6S-1** | `toast.promise` escapa de cor/ARIA/duração — 6 call-sites, 1.92:1 | `[guard-rail]` | P | baixo | escopo ordenado por mim |
-| **V6T13** | 6 contas de contraste certas e zero teste — estende a tabela de pares | `[guard-rail]` | P | baixo | — |
+| **V6T14** | `iconTheme` de warning/info é config morta (3 cópias da afirmação falsa) | `[guard-rail]` | P | baixo | **passou sem redução — ampliado** | · ✅ aplicado #119
+| **V6S-1** | `toast.promise` escapa de cor/ARIA/duração — 6 call-sites, 1.92:1 | `[guard-rail]` | P | baixo | escopo ordenado por mim | · ✅ aplicado #119
+| **V6T13** | 6 contas de contraste certas e zero teste — estende a tabela de pares | `[guard-rail]` | P | baixo | — | · ✅ aplicado #119
 | **V6F-4** | 79 KB de fonte duplicada por artefato de Finder vivem no `origin/main` **daqui** | `[absorver]` | P | baixo | **passou intacto — o mais limpo da rodada** |
 | **V6D-11** | follow-up do E28: 3 idiomas de spinner, regra sem trava | `[guard-rail]` | P | baixo | **ampliado de 9 para 15 infratores** |
 | **V6P-1** | `SidebarInset` sem `min-w-0` — risco latente, não bug vivo | `[absorver]` | P | baixo | severidade corrigida pelo caçador |
