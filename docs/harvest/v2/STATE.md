@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (12/70 células) · **31 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12, E28, F32, E26) · **1 PR aberto: [#119](https://github.com/Simplify-Technology/boilerplate/pull/119) (V6S-1+V6T14+V6T13)**
+- **Situação:** Fase 0 concluída · varredura em andamento (12/70 células) · **32 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12, E28, F32, E26, V6S-1+V6T14+V6T13) · **0 PR aberto** · fatia em andamento: **F2+F3** (ver checkpoints)
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -173,7 +173,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **E28** — fix(a11y): estado de envio no Button (`loading`/`aria-busy`) | [#105](https://github.com/Simplify-Technology/boilerplate/issues/105) | `105-harvest-v2-botao-em-envio` | ✅ (ver invocação 11) | ✅ ambos exit 0 | [#106](https://github.com/Simplify-Technology/boilerplate/pull/106) | ✅ **MESCLADO** 2026-08-17 |
 | **F32** — fix(ui): poda do CSS morto de toast | [#107](https://github.com/Simplify-Technology/boilerplate/issues/107) | `107-harvest-v2-poda-css-toast` | ✅ (ver invocação 11) | ✅ ambos exit 0 | [#108](https://github.com/Simplify-Technology/boilerplate/pull/108) | ✅ **MESCLADO** 2026-08-17 |
 | **E26** — fix(a11y): guarda do atalho global + atalho exposto | [#111](https://github.com/Simplify-Technology/boilerplate/issues/111) | `111-harvest-v2-guarda-atalho-sidebar` | ✅ 19 testes + **9 mutações** | ✅ ambos exit 0 (416/2046 · 39/297) | [#112](https://github.com/Simplify-Technology/boilerplate/pull/112) | ✅ **MESCLADO** 2026-08-21 00:04 UTC |
-| **V6S-1+V6T14+V6T13** — fix(a11y): severidade do toast em `toast.promise` + `iconTheme` morto + par gráfico | [#118](https://github.com/Simplify-Technology/boilerplate/issues/118) | `118-harvest-v2-severidade-toast-promise` | ✅ 29 testes novos + **9 mutações** | ✅ ambos exit 0 (416/2046 · **40/326**) | [#119](https://github.com/Simplify-Technology/boilerplate/pull/119) | 🟡 **ABERTO** 2026-08-31 |
+| **V6S-1+V6T14+V6T13** — fix(a11y): severidade do toast em `toast.promise` + `iconTheme` morto + par gráfico | [#118](https://github.com/Simplify-Technology/boilerplate/issues/118) | `118-harvest-v2-severidade-toast-promise` | ✅ 29 testes novos + **9 mutações** | ✅ ambos exit 0 (416/2046 · **40/326**) | [#119](https://github.com/Simplify-Technology/boilerplate/pull/119) | ✅ **MESCLADO** (confirmado 2026-09-03) |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -669,6 +669,17 @@ Depois disso: `git add`, os **dois `ci:check`** no merge (não só na fatia — 
 **Repetiu na mesma tarde, como previsto.** Mesclado o #94, o #96 conflitou de novo no mesmo arquivo — agora contra as duas seções do `EmptyState`. Mesma resolução pelos estágios do índice, mesmo resultado (3 linhas acrescentadas, zero removida), gates verdes na árvore mesclada (33 arquivos / 224 testes). **O `rerere` NÃO ajudou**: ele casa o conflito exato, e cada merge novo traz um lado diferente. O custo real é um merge de `main` por PR por leva — o que confirma a leitura de que isto é estrutural e não vale tentar evitar com truque de ferramenta.
 
 ## Próxima unidade
+
+### Reconciliação da 15ª invocação (2026-09-03)
+
+Feita ANTES de qualquer ação.
+
+- **PR #119 (V6S-1+V6T14+V6T13) confirmado MESCLADO** pelo dono; o STATE o dava como aberto — corrigido acima. **As três PRs de dependabot também entraram:** #114 (actions), #116 (composer minor/patch, 7 pacotes) e #117 (npm minor/patch, 16 pacotes). `origin/main` em **`5b40183`**. A rodada entrou nesta invocação com **zero PR aberto e zero fatia em andamento** ⇒ Prioridade 1 do protocolo (fatia pronta do BACKLOG).
+- **Consequência para a prioridade 3 (deps):** com #116/#117 mesclados, o levantamento de 2026-08-20 está coberto; sobra só o pin `typescript ^6.0.3 → ~6.0.3` (PLAYBOOK §4). Re-levantar `composer outdated`/`pnpm outdated` antes de abrir fatia de deps, porque os lockfiles andaram.
+- **Sétimo drift do spinmax:** working tree em **`7726363`** (era `fdd499e`; pin `e4ec01e`). ctvitrine segue em `f9f17f6` (pin `53d7d9a`). Os outros 5 idênticos aos pinados. Pins inalterados.
+- **Worktree principal:** estava na branch `118-…` (já mesclada) com o WIP do dono em `docs/migration/PLAYBOOK.md` e `docs/migration/projects/transitado-em-julgado.md` (+ `.claude/commands/` não rastreado). Conferido que `origin/main` não toca esses caminhos (branch 118 e `origin/main` idênticos neles) antes do `git switch -c`. Nada do dono é commitado — `git add` por caminho.
+- **Trap de ferramenta nova, e é do shell desta sessão:** `grep` é uma **função de shell** (do snapshot do zsh) e devolve vazio para padrões que o `/usr/bin/grep` casa — a listagem de cabeçalhos do STATE.md voltou vazia três vezes até trocar para `/usr/bin/grep`. Em script de medição, usar `/usr/bin/grep` explícito (ou `git grep`), nunca `grep` seco.
+- **Unidade escolhida: fatia F2+F3** (tokens de estado). A "decisão do F1" que a 14ª invocação pediu antes dela foi **medida em vez de assumida** — ver a seção da fatia abaixo: o que `@utility` herda de cascata é exatamente o que `text-destructive` já tem hoje, e o Defeito 3 do F1 (Radix × `--color-background`) não alcança nenhum token do trio.
 
 ### Fatia V6S-1 + V6T14 + V6T13 — aplicada (2026-08-31)
 
