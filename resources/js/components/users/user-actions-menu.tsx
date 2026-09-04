@@ -121,9 +121,12 @@ export function UserActionsMenu({
                     <DropdownMenuItem
                         onClick={() => onToggleActive(user)}
                         aria-label={user.is_active ? 'Desativar usuário' : 'Ativar usuário'}
+                        variant={user.is_active ? 'destructive' : 'default'}
                         className={cn(
                             'cursor-pointer',
-                            user.is_active ? 'text-destructive focus:text-destructive' : 'text-success focus:text-success',
+                            // `text-success` cru e a cor SOLIDA como texto (3.30:1 no claro);
+                            // o texto em cor de estado e o `fg` do trio.
+                            !user.is_active && 'text-state-success focus:bg-state-success focus:text-state-success',
                         )}
                     >
                         {user.is_active ? (

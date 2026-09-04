@@ -49,6 +49,19 @@
     --color-destructive: var(--destructive);
     --color-destructive-foreground: var(--destructive-foreground);
 
+    /* Os tres pares abaixo existiam em :root/.dark e NAO chegavam aqui, entao
+       `text-success`, `bg-warning`, `border-info`… nao existiam no CSS
+       compilado (0 ocorrencias) enquanto `text-destructive` existia — o
+       call site que escrevia `text-success` saia sem cor nenhuma. Sao o
+       SOLIDO de cada estado; o texto em cor de estado e outro token, ver o
+       trio `--state-*` e os utilitarios `*-state-*` mais abaixo. */
+    --color-success: var(--success);
+    --color-success-foreground: var(--success-foreground);
+    --color-warning: var(--warning);
+    --color-warning-foreground: var(--warning-foreground);
+    --color-info: var(--info);
+    --color-info-foreground: var(--info-foreground);
+
     --color-border: var(--border);
     --color-input: var(--input);
     --color-ring: var(--ring);
@@ -130,21 +143,52 @@
     --muted-foreground: var(--brand-navy-soft);
     --accent: var(--brand-cyan-light);
     --accent-foreground: var(--brand-navy-dark);
+    /* Cores de estado. Cada status faz DOIS trabalhos que puxam para lados
+       opostos, e por isso tem dois conjuntos de token:
+
+       - o SOLIDO (`--X` + `--X-foreground`): preenchimento de botao, badge e
+         disco do icone do toast. O rotulo em cima precisa de 4.5:1, e a
+         propria cor, como marca sobre o card (borda esquerda do toast),
+         precisa de 3:1 (WCAG 1.4.11);
+       - o trio `--state-X-{bg,fg,border}`: callout suave e TEXTO em cor de
+         estado sobre canvas, card e popover. O `fg` precisa de 4.5:1 sobre o
+         proprio `bg` E sobre o canvas.
+
+       No claro o rotulo do solido e branco, entao o solido e escuro o
+       bastante para AA (green-700 5.02, amber-700 5.02, sky-700 5.93,
+       rose-600 4.70). Os valores anteriores (green-600, amber-500, sky-500)
+       reprovavam como marca sobre o card (3.30 / 2.15 / 2.77) e como
+       preenchimento com rotulo branco. Os `bg` suaves saem de
+       color-mix(in oklab) sobre o card — o idioma do Tailwind 4 instalado — e
+       os `fg` sao literais calculados (>= 6:1 sobre o bg, >= 7:1 sobre o
+       branco). Tudo medido em styles/theme-tokens.test.ts; token novo entra
+       na tabela de la no mesmo commit. A forma do trio vem do ctfinance; os
+       numeros nao (3 dos 4 percentuais de la reprovam nesta paleta). */
     --destructive: #e11d48;
     --destructive-foreground: white;
-    --success: #16a34a;
+    --success: #15803d;
     --success-foreground: white;
-    /* --warning-foreground e --info-foreground estao SEM consumidor desde que
-       o iconTheme morto de aviso/info saiu de lib/toast-config.ts (aviso e
-       info sao toast tipo `blank`, que nao desenha disco para colorir). Ficam
-       porque o par --X/--X-foreground e o contrato que o F2 exporta ao levar
-       --success/--warning/--info para o @theme; e ficam MEDIDOS: --warning
-       sobre --card da 2.15:1 e --info 2.77:1 no tema claro, os dois abaixo dos
-       3:1 de 1.4.11. Ver styles/theme-tokens.test.ts. */
-    --warning: #f59e0b;
+    --warning: #b45309;
     --warning-foreground: white;
-    --info: #0ea5e9;
+    --info: #0369a1;
     --info-foreground: white;
+    /* O card vem PRIMEIRO na mistura de proposito: o polyfill de color-mix que
+       o Tailwind aplica ao arquivo cai na primeira cor em browser sem
+       color-mix — com o card na frente o callout perde o tom, mas o texto
+       continua legivel sobre a superficie; com o solido na frente ficaria
+       texto escuro sobre fundo escuro. */
+    --state-success-bg: color-mix(in oklab, var(--card) 88%, var(--success));
+    --state-success-fg: #166534;
+    --state-success-border: color-mix(in oklab, var(--card) 60%, var(--success));
+    --state-warning-bg: color-mix(in oklab, var(--card) 88%, var(--warning));
+    --state-warning-fg: #92400e;
+    --state-warning-border: color-mix(in oklab, var(--card) 60%, var(--warning));
+    --state-info-bg: color-mix(in oklab, var(--card) 88%, var(--info));
+    --state-info-fg: #075985;
+    --state-info-border: color-mix(in oklab, var(--card) 60%, var(--info));
+    --state-destructive-bg: color-mix(in oklab, var(--card) 88%, var(--destructive));
+    --state-destructive-fg: #9f1239;
+    --state-destructive-border: color-mix(in oklab, var(--card) 60%, var(--destructive));
     --border: var(--brand-gray);
     --input: var(--brand-gray);
     /* Anel de foco: 4.72:1 contra o fundo e 3.81:1 contra --input. O
@@ -191,14 +235,33 @@
     --muted-foreground: #e6e7e8;
     --accent: #a5d8f3;
     --accent-foreground: var(--brand-navy-dark);
-    --destructive: #f43f5e;
-    --destructive-foreground: #ffffff;
+    /* No escuro o solido e um tom claro e o rotulo e o navy da marca, como ja
+       era em --primary, --warning e --info: rose-400 5.44, green-500 6.42,
+       amber-400 8.77, sky-400 6.83. O --destructive era #f43f5e, que dava
+       3.67:1 com branco e 3.99:1 com navy — nenhum valor unico servia de
+       preenchimento E de texto, e por isso o texto em cor de estado tem token
+       proprio (--state-*-fg). Era a divida DIVIDA_DESTRUCTIVE_ESCURO do
+       teste; o --success-foreground branco dava 2.28:1 no disco do toast. */
+    --destructive: #fb7185;
+    --destructive-foreground: var(--brand-navy-dark);
     --success: #22c55e;
-    --success-foreground: #ffffff;
+    --success-foreground: var(--brand-navy-dark);
     --warning: #fbbf24;
     --warning-foreground: var(--brand-navy-dark);
     --info: #38bdf8;
     --info-foreground: var(--brand-navy-dark);
+    --state-success-bg: color-mix(in oklab, var(--card) 82%, var(--success));
+    --state-success-fg: #86efac;
+    --state-success-border: color-mix(in oklab, var(--card) 60%, var(--success));
+    --state-warning-bg: color-mix(in oklab, var(--card) 82%, var(--warning));
+    --state-warning-fg: #fcd34d;
+    --state-warning-border: color-mix(in oklab, var(--card) 60%, var(--warning));
+    --state-info-bg: color-mix(in oklab, var(--card) 82%, var(--info));
+    --state-info-fg: #7dd3fc;
+    --state-info-border: color-mix(in oklab, var(--card) 60%, var(--info));
+    --state-destructive-bg: color-mix(in oklab, var(--card) 82%, var(--destructive));
+    --state-destructive-fg: #fda4af;
+    --state-destructive-border: color-mix(in oklab, var(--card) 60%, var(--destructive));
     --border: var(--brand-navy-soft);
     --input: var(--brand-navy-soft);
     /* Aqui o ciano claro e o tom certo: 7.93:1 contra o fundo navy e 5.18:1
@@ -220,6 +283,95 @@
     --sidebar-accent-foreground: #ffffff;
     --sidebar-border: #1e3a4f;
     --sidebar-ring: var(--brand-cyan-light);
+}
+
+/* -------------------------------------------------------------------------- */
+/* UTILITARIOS DE ESTADO                                                      */
+/* -------------------------------------------------------------------------- */
+/*
+ * Cada status expoe o trio pelo papel, nao pelo valor: `bg-state-X` e o fundo
+ * suave, `text-state-X` e o texto legivel sobre canvas/card/popover E sobre o
+ * proprio fundo suave, `border-state-X` e a borda, e `state-X-soft` aplica os
+ * tres de uma vez (callout). O SOLIDO continua sendo `bg-X text-X-foreground`.
+ *
+ * `text-X` cru (a cor solida como texto) so serve para marca e icone (3:1):
+ * como texto corrido ele reprova AA no claro em tres dos quatro estados.
+ *
+ * Sao `@utility` — e nao `@layer components` — para aceitarem variante
+ * (`hover:`, `focus:`, `dark:`, `*:`) como qualquer utilitario. Entram na
+ * `@layer utilities`, a mesma camada de `text-destructive`: nao ganham nem
+ * perdem cascata em relacao ao que ja existia.
+ */
+@utility state-success-soft {
+    border-color: var(--state-success-border);
+    background-color: var(--state-success-bg);
+    color: var(--state-success-fg);
+}
+
+@utility bg-state-success {
+    background-color: var(--state-success-bg);
+}
+
+@utility text-state-success {
+    color: var(--state-success-fg);
+}
+
+@utility border-state-success {
+    border-color: var(--state-success-border);
+}
+
+@utility state-warning-soft {
+    border-color: var(--state-warning-border);
+    background-color: var(--state-warning-bg);
+    color: var(--state-warning-fg);
+}
+
+@utility bg-state-warning {
+    background-color: var(--state-warning-bg);
+}
+
+@utility text-state-warning {
+    color: var(--state-warning-fg);
+}
+
+@utility border-state-warning {
+    border-color: var(--state-warning-border);
+}
+
+@utility state-info-soft {
+    border-color: var(--state-info-border);
+    background-color: var(--state-info-bg);
+    color: var(--state-info-fg);
+}
+
+@utility bg-state-info {
+    background-color: var(--state-info-bg);
+}
+
+@utility text-state-info {
+    color: var(--state-info-fg);
+}
+
+@utility border-state-info {
+    border-color: var(--state-info-border);
+}
+
+@utility state-destructive-soft {
+    border-color: var(--state-destructive-border);
+    background-color: var(--state-destructive-bg);
+    color: var(--state-destructive-fg);
+}
+
+@utility bg-state-destructive {
+    background-color: var(--state-destructive-bg);
+}
+
+@utility text-state-destructive {
+    color: var(--state-destructive-fg);
+}
+
+@utility border-state-destructive {
+    border-color: var(--state-destructive-border);
 }
 
 /* -------------------------------------------------------------------------- */

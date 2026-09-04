@@ -15,7 +15,7 @@ import { type HTMLAttributes } from 'react';
  */
 export default function InputError({ message, className = '', ...props }: HTMLAttributes<HTMLParagraphElement> & { message?: string }) {
     return message?.trim() ? (
-        <p {...props} role="alert" data-slot="input-error" className={cn('text-sm text-red-600 dark:text-red-400', className)}>
+        <p {...props} role="alert" data-slot="input-error" className={cn('text-state-destructive text-sm', className)}>
             {message}
         </p>
     ) : null;

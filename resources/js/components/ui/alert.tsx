@@ -9,8 +9,15 @@ const alertVariants = cva(
     variants: {
       variant: {
         default: "bg-background text-foreground",
+        /*
+         * `text-destructive-foreground` aqui era texto BRANCO sobre o fundo
+         * branco do tema claro: a variante nao pintava fundo nenhum. O trio de
+         * estado resolve os tres de uma vez (fundo suave, borda e texto medido
+         * sobre o proprio fundo); a descricao herda o mesmo `fg` em vez do
+         * `text-muted-foreground` do slot.
+         */
         destructive:
-          "text-destructive-foreground [&>svg]:text-current *:data-[slot=alert-description]:text-destructive-foreground/80",
+          "state-destructive-soft [&>svg]:text-current *:data-[slot=alert-description]:text-state-destructive",
       },
     },
     defaultVariants: {
