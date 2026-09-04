@@ -54,6 +54,16 @@
 
     <title inertia >{{ config('app.name', 'Laravel') }}</title >
 
+    {{--
+        Ícones da aba. O favicon.ico carrega 16, 32 e 48 px, então não há PNG de
+        16/32 ao lado dele; o apple-touch-icon é o 180 px do iOS. Sem manifest e
+        sem theme-color de propósito: o primeiro é a fatia PWA, o segundo tem de
+        seguir a troca de tema. tests/Unit/Views/PublicAssetsTest.php cobra que
+        todo href daqui exista em public/ e que public/ não carregue órfão.
+    --}}
+    <link rel="icon" href="/favicon.ico" sizes="any" >
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" sizes="180x180" >
+
     {{-- Preload fonts for immediate availability --}}
     {{-- Aptos: UI, menus e navegação --}}
     <link rel="preload" href="/fonts/woff2/aptos/aptos.woff2" as="font" type="font/woff2" crossorigin="anonymous">
@@ -63,8 +73,6 @@
     <link rel="preload" href="/fonts/woff2/montserrat/montserrat-v31-latin-800.woff2" as="font" type="font/woff2" crossorigin="anonymous">
     {{-- Merriweather Sans: Subtítulos e textos de apoio --}}
     <link rel="preload" href="/fonts/woff2/merriweather-sans/merriweather-sans-v28-latin-regular.woff2" as="font" type="font/woff2" crossorigin="anonymous">
-
-    <link rel="preconnect" href="https://fonts.bunny.net" >
 
     @routes
     @viteReactRefresh
