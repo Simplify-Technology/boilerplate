@@ -538,14 +538,16 @@ Fonte: ctfinance @ `b8c6d57` × boilerplate `main` @ `fb3eb67`. **66 sobrevivent
 - **Guard-rail que nasce junto (F4):** teste Vitest lendo `resources/css/app.css` que falha se **qualquer `--color-*` for declarado fora do bloco `@theme`**, mais a asserção de que todo `@import` de folha de terceiro carrega `layer(...)`.
 - **Não copiar do ctfinance:** ele tem a mesma colisão (`app.css:119-126`) e não a resolveu. A prova do mecanismo vem de `app.css:299-311`, onde ele remapeia `--color-cyan-*` no `:root` **de propósito**, por saber que o não-layerizado vence.
 
-### F2 · `[absorver]` os 6 pares `--color-success/warning/info(-foreground)` não estão no `@theme` · P · risco baixo · **viaja com F1**
+### ~~F2~~ ✅ APLICADO · PR [#121](https://github.com/Simplify-Technology/boilerplate/pull/121) (2026-09-04) · `[absorver]` os 6 pares `--color-success/warning/info(-foreground)` não estão no `@theme` · P · risco baixo
 
 - **Classe morta com call-site vivo:** no CSS compilado (832 KB) há **0** ocorrências de `.text-success`, `.bg-success`, `.text-warning`, `.text-info`, e **0** de `--color-success`. Controle positivo: `.text-destructive` existe. `users/user-actions-menu.tsx:125` escreve `text-success focus:text-success` e a classe é descartada. Hoje os 6 tokens só são lidos pelo CSS de toast (`app.css:615-654`).
 - **Escopo:** as 6 linhas de export, no molde de `ctfinance app.css:49-54`. **Tem de vir junto do `@theme inline` do F1**, senão o mapeamento herda o bug.
 - **⚠️ Sozinho isso entrega utilitário que reprova em AA no claro:** `text-warning` (#f59e0b sobre branco) **2.15:1**, `text-info` **2.77:1**, `text-success` **3.30:1** — no escuro ficam bons (6.42 / 8.77 / 6.83). Ou vem com o F3, ou os valores claros escurecem antes de virar cor de texto.
 - Adoção que justifica: **159** ocorrências de `(bg|text|border|ring)-(success|warning|info)` em produção no ctfinance (o caçador disse 72 — não reproduz).
 
-### F3 · `[absorver]` trio `--state-{status}-{bg,fg,border}` — separar preenchimento de texto · M · risco médio · **viaja com F1+F2**
+### ~~F3~~ ✅ APLICADO · PR [#121](https://github.com/Simplify-Technology/boilerplate/pull/121) (2026-09-04) · `[absorver]` trio `--state-{status}-{bg,fg,border}` — separar preenchimento de texto · M · risco médio
+
+- **Como entrou:** forma do ctfinance, valores daqui, `@utility` por papel (`bg-state-X`, `text-state-X`, `border-state-X`, `state-X-soft`), `color-mix(in oklab, var(--card) N%, var(--X))` com o **card primeiro** (o polyfill do Tailwind cai na primeira cor). Sólidos recalibrados: claro green-700/amber-700/sky-700 + rose-600 com rótulo branco; escuro green-500/amber-400/sky-400/**rose-400** com rótulo navy. As três dívidas do teste (`DIVIDA_DESTRUCTIVE_ESCURO`, `--warning`/`--info` × card, glifo de sucesso) foram pagas e a tabela `DIVIDA` ficou vazia. A dependência "F3 depende do F1 estar decidido" caiu por medição: `@utility` vive na mesma `@layer utilities` de `text-destructive`.
 
 - **O problema real:** um token achatado por status faz dois trabalhos incompatíveis. `ui/button.tsx:15` usa `bg-destructive text-white` = **3.67:1** no escuro. Clarear `--destructive` para servir de texto piora o botão; escurecer para servir de botão piora o texto.
 - **Absorver a FORMA** (`ctfinance app.css:185-196` claro, `:281-292` escuro, classes em `:378-400`), **via `@utility`, não `@layer components`**.
@@ -565,7 +567,7 @@ Fonte: ctfinance @ `b8c6d57` × boilerplate `main` @ `fb3eb67`. **66 sobrevivent
 
 **Achado que muda o E27:** `ui/navigation-menu.tsx` usa um TERCEIRO idioma de foco (`ring-ring/10 dark:ring-ring/20` + `outline-ring/50`), pior que o de 50%, e é **código morto** — nada importa `layouts/app/app-header-layout.tsx`, único consumidor de `components/app-header.tsx`, único de `navigation-menu`. Os três arquivos somam à lista do E27. Estão em allowlist verificada nos dois sentidos no teste novo, então a limpeza do E27 tem de removê-la junto.
 
-### F9b · `[absorver]` `<Alert variant="destructive">` é texto branco em fundo branco no tema claro · P · risco baixo · **bug visível**
+### ~~F9b~~ ✅ APLICADO · PR [#121](https://github.com/Simplify-Technology/boilerplate/pull/121) (2026-09-04) · `[absorver]` `<Alert variant="destructive">` é texto branco em fundo branco no tema claro · P · risco baixo · **bug visível** — entrou como `state-destructive-soft` (o trio), não como o `bg-card text-destructive` do shadcn. **Irmão achado na aplicação:** o item `destructive` do `DropdownMenu` (`user-actions-menu.tsx:156`, "Excluir") tinha o MESMO branco sobre branco; corrigido junto.
 
 - **⚠️ E o remédio proposto também estava errado:** `bg-destructive/10 text-destructive` dá **4.00:1**, abaixo de AA. A forma correta, que é a do shadcn atual: `border-destructive/30 bg-card text-destructive` — `#e11d48` sobre branco = **4.70:1**.
 - Teste: renderizar a variante e exigir que a className resolvida contenha classe de background.
@@ -586,8 +588,8 @@ Foi para isto que a dimensão 6 foi varrida antes de aplicar a fila da 5. Paream
 
 | Fatia da dim. 5 | Metade visual que entra no MESMO PR | Dependência |
 | --------------- | ----------------------------------- | ----------- |
-| **E6** (`input-error.tsx`) | `text-red-600 dark:text-red-400` → `text-destructive`; é a mesma linha 6, diff de ~10 linhas | ⚠️ `--destructive` no escuro dá **3.99:1** como texto — **se F3 não entrar antes, o E6 regride a acessibilidade**; nesse caso entra sem a troca de className |
-| **E12+E21** (`delete-confirmation-dialog.tsx`) | 35 literais de cor → tokens de estado; levar junto `settings/delete-account-info-dialog.tsx` | depende de `--color-warning` (F2) |
+| ~~**E6** (`input-error.tsx`)~~ ✅ PR #121 | `text-red-600 dark:text-red-400` → **`text-state-destructive`** (o `fg` do trio, não `text-destructive`) | entrou com o F3 (2026-09-04) |
+| **E12+E21** (`delete-confirmation-dialog.tsx`) | 35 literais de cor → tokens de estado (`state-X-soft`/`text-state-X`); levar junto `settings/delete-account-info-dialog.tsx` | **destravado** — F2/F3 mesclando no PR #121; acrescentar os dois arquivos à lista de limpos do `state-color-consumers.test.ts` |
 | **E14+E15** (`empty-state.tsx`) | corpo `@radix-ui/themes` → Tailwind + `<h3>` + ícone em chip com `aria-hidden`; toca 3 arquivos (`role-users-table.tsx:137,141` é call-site) | nenhuma. **NÃO** acoplar o escopo do CSS do Radix (F6) aqui |
 | **E16 fatia A** (piso de toque) | `--radius-control`/`--touch-target-comfort` no `@theme` + `<InfoTrigger>` | ⚠️ o CVA `icon: size-9→size-11` muda **1 call-site vivo** — quase no-op; o valor está no `<InfoTrigger>` e na regra |
 | **E18+E23+E25** (`search-bar.tsx`, `toast-config.ts`) | variantes `toolbar`/`toolbarActive` + `buttonVariants()` como fábrica; botões-ícone reusam `buttonVariants` | mesmo par de arquivos que `filter-toggle.tsx`; se a recalibração de `toolbarActive` depender do F1, corte o escopo |
@@ -601,7 +603,7 @@ Foi para isto que a dimensão 6 foi varrida antes de aplicar a fila da 5. Paream
 | # | Candidato | Classe | Nota decisiva |
 | - | --------- | ------ | ------------- |
 | F4 | teste de contrato lendo o CSS como texto | guard-rail M | absorver a IDEIA, trocar as asserções: o do ctfinance lista nomes e apodrece. A asserção que vale é "nenhum `--color-*` fora do `@theme`". Nasce com o F1 |
-| F6 | `@radix-ui/themes/styles.css` global: **812–832 KB em toda página**, inclusive as de auth que não usam Radix | guard-rail M | **bloqueado pelo F1 defeito 3**. NÃO viaja com E14+E15 |
+| F6 / **V6T5** | `@radix-ui/themes/styles.css` global: **812–832 KB em toda página**, inclusive as de auth que não usam Radix — e o **Defeito 3 do F1 é bug visual vivo**: medido no browser em 2026-09-04, com `.dark` no `<html>` a folha do Radix (sem layer) redeclara `--color-background: var(--gray-1)` e **o `body` pinta `#111111`, `bg-background` dentro do `<Theme>` pinta `#111113`, enquanto `var(--background)` é `#0f2a44`** — o canvas escuro do app não é o navy da marca, só o que usa `bg-card` é | guard-rail M → **absorver, prioridade alta, risco ALTO** | caminhos: `@theme inline` só no bloco de cores (o F1 mediu 2 consumidores que quebram, ambos com conserto de uma linha) × `layer()` na folha × abandonar `@radix-ui/themes` (F27/V6P-9). **Decisão do dono**; sem suíte browser o gate é screenshot + `getComputedStyle`. NÃO viaja com E14+E15 |
 | F7 | cor de marca `cyan-*` hardcoded em **229 literais / 90 linhas / 23 arquivos** — e não é o `--primary` | guard-rail G | **decisão de marca do dono**; isolar para poder ser recusada sem derrubar o resto. Depois do F1 |
 | F17 | **nenhuma página autenticada renderiza `<h1>`**; `--font-title` usado 2× | guard-rail M | resolve com o `SectionHeader`, o único primitivo só-do-ctfinance que generaliza sem dep nova |
 | F18 | `page-header.tsx` monta className por interpolação — gradiente nunca gerado | guard-rail P | morto nos dois projetos; a exclusão vai no PR do `SectionHeader`, sobra só a regra |

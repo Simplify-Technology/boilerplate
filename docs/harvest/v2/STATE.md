@@ -5,7 +5,7 @@ Estado retomável da rodada. **Toda iteração termina atualizando este arquivo.
 - **Issue-âncora:** #50 · **Branch de estado:** `50-harvest-v2-rodada` · **Worktree:** `../boilerplate-harvest-state`
 - **Rodada aberta em:** 2026-08-11
 - **Direção:** projetos → boilerplate (inverso do PLAYBOOK de migração)
-- **Situação:** Fase 0 concluída · varredura em andamento (12/70 células) · **32 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12, E28, F32, E26, V6S-1+V6T14+V6T13) · **0 PR aberto** · fatia em andamento: **F2+F3** (ver checkpoints)
+- **Situação:** Fase 0 concluída · varredura em andamento (12/70 células) · **32 fatias MESCLADAS** (A1, A3, A6, D2, D3, D4, D5, E17, E2+E13, F1, F5, F22, F42+F35, F23, S1, S2, S4, S5, C4, S3, E6+E20, E14+E15, E30, E22+E24, E27+E29, E18+E23+E25, E21+E12, E28, F32, E26, V6S-1+V6T14+V6T13) · **1 PR aberto: [#121](https://github.com/Simplify-Technology/boilerplate/pull/121) (F2+F3+F9b)**
 
 ## Fase 0 — Preflight (2026-08-11)
 
@@ -82,7 +82,7 @@ Legenda: ⬜ pendente · 🔍 em andamento · ✅ concluída
 | 6 | cuidari | ✅ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 | 7 | transitado-em-julgado | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ |
 
-**Progresso:** 12/70 células (17%) · BACKLOG: **41 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25, E21, E12, E28, F32, V6T13, V6T14, V6S-1)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
+**Progresso:** 12/70 células (17%) · BACKLOG: **44 aplicados (A1, A3, A6, D2, D3, D4, D5, E17, E2, E13, F1, F5, F22, F42, F35, F23, S1, S2, S4, S5, C4, S3, E6, E20, E14, E15, E30, E22, E24, E27, E29, E18, E23, E25, E21, E12, E28, F32, V6T13, V6T14, V6S-1, F2, F3, F9b)**, 1 realocado (A2), **~110 aplicáveis** (8 de dim. 1–3 · 27 de dim. 5 · **69 de dim. 6: F1–F42 + secagem** · 11 da dim. 1 do spinmax), 7 adiados, **11 rejeitados**, 9 sem veredito (dim. 4), **4 achados internos (C1, C2, C3, C4)**, **2 `[dep-nova]` novos** (`jest-axe`, `knip`). Decisão do dono sobre o canal de flash: **resolvida em 2026-08-11 (nativo)**.
 
 > **Onde está o quê no BACKLOG:** a dimensão 5 foi APENDADA ao fim do arquivo (E1–E25, depois secagem E26–E30, depois os rejeitados e a §Decisões). As seções de dim. 1–4 continuam no topo. Ordem do arquivo ≠ ordem de prioridade.
 
@@ -174,6 +174,7 @@ Segundo padrão confirmado: **nenhum candidato passou intacto pelas 3 lentes, e 
 | **F32** — fix(ui): poda do CSS morto de toast | [#107](https://github.com/Simplify-Technology/boilerplate/issues/107) | `107-harvest-v2-poda-css-toast` | ✅ (ver invocação 11) | ✅ ambos exit 0 | [#108](https://github.com/Simplify-Technology/boilerplate/pull/108) | ✅ **MESCLADO** 2026-08-17 |
 | **E26** — fix(a11y): guarda do atalho global + atalho exposto | [#111](https://github.com/Simplify-Technology/boilerplate/issues/111) | `111-harvest-v2-guarda-atalho-sidebar` | ✅ 19 testes + **9 mutações** | ✅ ambos exit 0 (416/2046 · 39/297) | [#112](https://github.com/Simplify-Technology/boilerplate/pull/112) | ✅ **MESCLADO** 2026-08-21 00:04 UTC |
 | **V6S-1+V6T14+V6T13** — fix(a11y): severidade do toast em `toast.promise` + `iconTheme` morto + par gráfico | [#118](https://github.com/Simplify-Technology/boilerplate/issues/118) | `118-harvest-v2-severidade-toast-promise` | ✅ 29 testes novos + **9 mutações** | ✅ ambos exit 0 (416/2046 · **40/326**) | [#119](https://github.com/Simplify-Technology/boilerplate/pull/119) | ✅ **MESCLADO** (confirmado 2026-09-03) |
+| **F2+F3+F9b** — feat(tema): trio de tokens de estado + pares no `@theme` + `Alert destructive` | [#120](https://github.com/Simplify-Technology/boilerplate/issues/120) | `120-harvest-v2-tokens-de-estado` | ✅ 60 testes novos (front 40/326 → **42/386**) + **12 mutações** | ✅ ambos exit 0 (416/2046 · 42/386), também no `pre-push` | [#121](https://github.com/Simplify-Technology/boilerplate/pull/121) | 🟡 **ABERTO** 2026-09-04 |
 
 **Reconciliação de 2026-08-11 (2ª invocação):** `gh pr list` mostrou **#64 já mesclado** — o STATE dizia "aguardando merge". Corrigido acima antes de executar qualquer unidade. Seguem abertos só **#60 (D5)** e **#62 (D4)**. `main` local avançada para `9814f46`.
 
@@ -681,6 +682,35 @@ Feita ANTES de qualquer ação.
 - **Trap de ferramenta nova, e é do shell desta sessão:** `grep` é uma **função de shell** (do snapshot do zsh) e devolve vazio para padrões que o `/usr/bin/grep` casa — a listagem de cabeçalhos do STATE.md voltou vazia três vezes até trocar para `/usr/bin/grep`. Em script de medição, usar `/usr/bin/grep` explícito (ou `git grep`), nunca `grep` seco.
 - **Unidade escolhida: fatia F2+F3** (tokens de estado). A "decisão do F1" que a 14ª invocação pediu antes dela foi **medida em vez de assumida** — ver a seção da fatia abaixo: o que `@utility` herda de cascata é exatamente o que `text-destructive` já tem hoje, e o Defeito 3 do F1 (Radix × `--color-background`) não alcança nenhum token do trio.
 
+### Fatia F2+F3+F9b — aplicada (2026-09-04)
+
+Issue [#120](https://github.com/Simplify-Technology/boilerplate/issues/120) · PR [#121](https://github.com/Simplify-Technology/boilerplate/pull/121) **aberto, aguardando merge do dono**. Commit `4acc22b` sobre `origin/main` = `5b40183`. 60 testes novos (front 40/326 → **42/386**), **12 mutações, todas mordem**, os dois gates exit 0 (rodados também pelo `pre-push`, sem `SKIP_GIT_HOOKS`).
+
+**O que entrou.** F2: os 6 pares `--color-success/warning/info(-foreground)` no `@theme`. F3: sólidos recalibrados (claro: green-700/amber-700/sky-700, rótulo branco; escuro: rose-400 no lugar de `#f43f5e`, rótulo navy em todos, como já era em `--primary`) + trio `--state-{success,warning,info,destructive}-{bg,fg,border}` nos dois temas + 16 `@utility` por PAPEL (`bg-state-X`, `text-state-X`, `border-state-X`, `state-X-soft`). F9b: `Alert destructive` vira o callout do trio. Metade visual do **E6** (`InputError` → `text-state-destructive`). `Button`/`Badge` destrutivos consomem o par em vez de `text-white`; item `destructive` do `DropdownMenu` deixa de ser branco sobre branco; `delete-user`, `user-actions-menu` e `role-users-table` migram do literal para o token. `theme-tokens.test.ts` ganhou avaliador de `color-mix(in oklab)` e o contrato do trio; `state-color-consumers.test.ts` (novo, teste de fonte) trava o papel de cada token no call site; `.ai/rules/css.md` e `js.md` com as regras.
+
+**Seis fatos que esta fatia produziu:**
+
+1. **A "decisão do F1" que represava o F3 era um falso pré-requisito, e foi medida em vez de assumida.** `@utility` emite na `@layer utilities` — a mesma de `text-destructive` — então o trio herda exatamente a cascata que todo utilitário já tinha; o que está fora de layer (46 `!important`, Radix) sombreia `text-state-X` tanto quanto sombreia `text-destructive` hoje. Isso é a V6T4/V6T6, não condição do F3. Conferido no compilado: `focus:text-state-success` @76033 sai depois de `focus:text-accent-foreground` @75843 (e `focus:bg-state-success` depois de `focus:bg-accent`), então o foco do item de menu vence sem configurar `tailwind-merge`.
+2. **⚠️ O Defeito 3 do F1 (Radix × `--color-background`) é um BUG VISUAL VIVO no escuro, e ninguém tinha medido no browser.** Com `.dark` no `<html>`, a folha do Radix (sem layer) redeclara `--color-background: var(--gray-1)` em `:is(.dark, .dark-theme)` e em `:is(.dark,.dark-theme) :where(.radix-themes:not(.light,.light-theme))`. Medido por `getComputedStyle` na página real: **`body` pinta `#111111`, `bg-background` dentro do `<Theme>` pinta `#111113`, e `var(--background)` é `#0f2a44`.** O canvas escuro do app não é o navy da marca — só o que usa `bg-card` é. No claro os dois valem `white` e o defeito é invisível. Toda medição "× navy" do teste de tokens para superfícies que usam `bg-background` está, na prática, medindo contra `#111` (direção segura: fundo mais escuro sobe o contraste de texto claro). **Vira fatia própria (V6T5/F6) com prioridade alta e risco ALTO** — a cura de menor raio é `@theme inline` só para o bloco de cores (o F1 mediu que `inline` quebra `var(--font-sans)` do toast e `var(--color-border, currentColor)` do preflight; os dois têm conserto de uma linha), e `hasBackground` do `<Theme>` também merece decisão. Registrado no BACKLOG.
+3. **O polyfill de `color-mix` do Tailwind cai na PRIMEIRA cor da mistura.** `--state-success-bg: var(--success)}@supports (color:color-mix(in lab, red, red)){:root{--state-success-bg:color-mix(…)}}` — com o sólido na frente, browser sem `color-mix` pintaria texto verde-escuro sobre verde-escuro. O card vem primeiro em todas as 16 misturas e o teste trava a ordem. Regra que vale para qualquer token derivado por `color-mix`.
+4. **O avaliador de OKLab do teste reproduz o browser hex a hex** (8/8: `#e5f0e7`, `#a9ccaf`, `#f8eae3`, `#e3edf4`, `#ffe8e8`, `#12444d`, `#156555`, `#37444b`). Fecha o ponto cego que a lente de risco apontou ("`color-mix` é invisível ao gate"): agora é medido, desde que fique em token e não em `bg-[color-mix(…)]` no JSX.
+5. **Achado colateral que a fatia corrigiu de carona:** o item "Excluir" do menu de usuários (`user-actions-menu.tsx:156`, `variant="destructive"`) pintava `text-destructive-foreground` = **branco sobre o popover branco** no claro — invisível, mesma família do F9b, sem registro em lugar nenhum. E `dropdown-menu.tsx` e `alert.tsx` vendorizados carregam a versão antiga do shadcn (`-foreground` onde o upstream atual usa `text-destructive`): vale conferir os outros primitivos por esse padrão na V6 restante.
+6. **Trap de ferramenta:** `grep` é função de shell no snapshot desta sessão e devolve vazio para padrão que `/usr/bin/grep` casa. E as regras do browser proíbem digitar senha, então a evidência visual saiu por injeção de markup na página pública `/login` dentro do `.radix-themes` (cascata real) — é o caminho para toda fatia de UI enquanto não houver suíte browser.
+
+**Divergências deliberadas da origem:** nome `destructive` (não `error` como no ctfinance); `@utility` por papel (não `.state-X-soft` em `@layer components`); valores calculados aqui (3 dos 4 percentuais do ctfinance reprovam nesta paleta); o par emerald das telas de auth (14.38:1) **não** foi trocado — `state-success-soft` entrega 6–7:1 (AAA) e trocar 14 por 7 é escolha de desenho, decisão separada.
+
+### Próxima unidade sugerida (após F2+F3)
+
+Com o F3 aplicado, **destravou uma leva de fatias P que estavam represadas**, todas de prioridade 1:
+
+1. **Metade visual do E12+E21** — `delete-confirmation-dialog.tsx` (13 literais) + `settings/delete-account-info-dialog.tsx` → trio; era "depende de `--color-warning` (F2)". Entra na lista de arquivos limpos do `state-color-consumers.test.ts`.
+2. **V6F-4 + V6T10/V6D-3 + V6D-2/V6F-1 (F38)** — poda de `public/` (fonte duplicada de 79 KB, `preconnect` bunny, favicons órfãos e `<head>` sem ícone): P, risco baixo, o mais limpo da rodada.
+3. **V6D-11** (trava do follow-up do E28: 3 idiomas de spinner) e **V6P-1** (`min-w-0` no `SidebarInset`), **V6S-2/V6S-4/V6P-5/V6P-6/V6F-6/V6F-7** — P, autossuficientes.
+4. **V6T5/F6 (Radix × `--color-background`)** — agora com o bug do canvas escuro medido (fato 2 acima). É a fatia de maior impacto visual pendente e a de maior risco sem suíte browser: **decisão do dono** sobre o caminho (`@theme inline` no bloco de cores × `layer()` × abandonar `@radix-ui/themes`, que é a `[proposta-adr]` F27/V6P-9).
+5. **F20** (catraca de literais de cor) — a lista de arquivos limpos já nasceu no teste de fonte desta fatia; a catraca de contagem decrescente entra quando a leva acima secar.
+
+Alternativas: **dimensão 1 (Segurança) do cuidari ou do ctvitrine** (as duas com inventário e ponteiros), ou **inventário do sorteiopix** (matriz em 12/70; 3 projetos ainda sem célula 0).
+
 ### Fatia V6S-1 + V6T14 + V6T13 — aplicada (2026-08-31)
 
 Issue [#118](https://github.com/Simplify-Technology/boilerplate/issues/118) · PR [#119](https://github.com/Simplify-Technology/boilerplate/pull/119) **aberto, aguardando merge do dono**. 29 testes novos (front foi de 39/297 para **40/326**), **9 mutações, todas mortas**, os dois gates exit 0.
@@ -696,7 +726,7 @@ Issue [#118](https://github.com/Simplify-Technology/boilerplate/issues/118) · P
 
 **Efeito colateral registrado, não escondido:** `--warning-foreground` e `--info-foreground` ficaram **sem consumidor** (o `iconTheme` morto era o único). Ficaram no `app.css` com comentário, porque o par `--X`/`--X-foreground` é o contrato que o **F2** exporta ao levar `--success`/`--warning`/`--info` para o `@theme`. É insumo do F2, não dívida nova.
 
-### Próxima unidade sugerida: **F1** (decisão, não só fila)
+### ~~Próxima unidade sugerida: **F1** (decisão, não só fila)~~ — superada em 2026-09-04: a decisão foi medida dentro da fatia F2+F3 (ver acima)
 
 O BACKLOG e a secagem da dimensão 6 concordam: a ordem é **F1 → F2 → F3 → resto da dimensão 6**. O F1 precisa ser *decidido*, não só enfileirado, porque o F3 depende dele — `@utility` emite dentro de `@layer utilities`, a camada mais fraca do arquivo, que perde para os 46 `!important` fora de layer e para os 812 KB do Radix não-layerizado.
 
