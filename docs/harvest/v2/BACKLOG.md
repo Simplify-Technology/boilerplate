@@ -245,7 +245,7 @@ Candidato cujo tema aparece em mais de um projeto só vira fatia depois que as c
 | Tema | Fontes conhecidas | Células que faltam | Vencedor | Porquê |
 | ---- | ----------------- | ------------------ | -------- | ------ |
 | Dinheiro | `MoneyHelper` (ctfinance, **já perdeu** para o kit do boilerplate) × `currency.ts` (sorteiopix) × `MoneyCast` (cuidari) × `Money.php` (spinmax) × kit atual do boilerplate | sorteiopix, cuidari, spinmax | parcial: boilerplate > ctfinance | VO com ~25 métodos + cast + rule contra 2 funções estáticas |
-| PWA | ctfinance (`vite-plugin-pwa`, `lib/pwa-registration.ts`, `pwa/pwa-chrome.tsx`, `navigateFallback` com denylist) × sorteiopix | sorteiopix | — | — |
+| PWA | ctfinance (`vite-plugin-pwa`, `lib/pwa-registration.ts`, `pwa/pwa-chrome.tsx`, `navigateFallback` com denylist) × sorteiopix | sorteiopix | — | — | **Nota 2026-09-04 (#125):** o `site.webmanifest` e os `android-chrome-*` são deste tema — o `vite-plugin-pwa` do ctfinance GERA o manifest, então a #125 podou os dois PNG em vez de escrever um manifest à mão; quando a comparação sair, o manifest vem com `AddType application/manifest+json` no `.htaccess` (o `nosniff` incondicional do `SecurityHeaders` recusa `application/octet-stream`) e com a decisão do V6F-6 (`display: standalone` × safe-area).
 | Billing / cliente Asaas | ctfinance (`AsaasService`, `VerifyAsaasSignature`, `EnsureSubscriptionActive`, `BillingWebhookLog`) × ctvitrine × enum de provider (cuidari) | ctvitrine, cuidari | — | — |
 | Webhooks | assinatura HMAC + log de tentativa inválida (ctfinance) × inbox `webhook_events` (spinmax) | spinmax | — | — |
 | Multi-tenant | ctjuris × cuidari | ambas | — | — |
@@ -622,7 +622,7 @@ Foi para isto que a dimensão 6 foi varrida antes de aplicar a fila da 5. Paream
 | F14 | `<meta name="theme-color">` por esquema | absorver P | absorver corrigindo o erro do ctfinance |
 | F15 | cor da barra de progresso do Inertia hardcoded fora da paleta | absorver P | carona em qualquer PR que toque `app.tsx` |
 | F37 | identidade: PNG **2084×2120 servido a 40px** dentro de chip preto, ícone do starter kit da Laravel na sidebar, `logo.svg` órfão de 26 KB | absorver M | — |
-| F38 | o `<head>` não declara ícone nenhum: **5 arquivos (126 KB) órfãos** em `public/`, e o `preconnect` para fonts.bunny.net abre TLS com terceiro sem baixar nada | absorver P | — |
+| ~~F38~~ ✅ **APLICADO** (PR [#125](https://github.com/Simplify-Technology/boilerplate/pull/125), 2026-09-04) | o `<head>` não declara ícone nenhum: **5 arquivos (126 KB) órfãos** em `public/`, e o `preconnect` para fonts.bunny.net abre TLS com terceiro sem baixar nada | absorver P | poda de 5 arquivos (−190 KB), 2 links de ícone, teste de 3 contratos com dívida datada (`logo.svg` → F37). **Modernização registrada, fatia própria:** mover as 21 faces de `public/fonts` para `resources/fonts` e `url('../fonts/…')` no `_fonts.css` — o Rollup passa a falhar em referência inexistente e a não emitir órfão; custo: os 5 `<link rel="preload">` passam a precisar de `Vite::asset()`, e o `AddLinkHeadersForPreloadedAssets` já registrado em `bootstrap/app.php` passa a enxergá-los |
 | F41 | o seletor de tema fala **inglês** num produto pt-BR e não anuncia qual opção está escolhida | absorver P | metade é dimensão 7 |
 | F42 | `errors/500.blade.php` pinta fundo escuro **diferente** do canvas do app, e o guard do D4 só olha um dos dois arquivos | guard-rail P | fecha buraco de fatia já mesclada |
 | F34 | `eslint-plugin-jsx-a11y` | `[dep-nova]` | **⚠️ a dimensão 5 já REJEITOU** por incompatibilidade de peer (plugin declara até ESLint 9; o boilerplate roda 10.8.0). Esta célula o ressuscitou sem refutar aquilo — **a rejeição vale**; a alternativa segue sendo `jest-axe` |
@@ -752,16 +752,16 @@ Mesma família (tokens de estado × os canais que os consomem), os três **P**, 
 | **V6T14** | `iconTheme` de warning/info é config morta (3 cópias da afirmação falsa) | `[guard-rail]` | P | baixo | **passou sem redução — ampliado** | · ✅ aplicado #119
 | **V6S-1** | `toast.promise` escapa de cor/ARIA/duração — 6 call-sites, 1.92:1 | `[guard-rail]` | P | baixo | escopo ordenado por mim | · ✅ aplicado #119
 | **V6T13** | 6 contas de contraste certas e zero teste — estende a tabela de pares | `[guard-rail]` | P | baixo | — | · ✅ aplicado #119
-| **V6F-4** | 79 KB de fonte duplicada por artefato de Finder vivem no `origin/main` **daqui** | `[absorver]` | P | baixo | **passou intacto — o mais limpo da rodada** |
+| **V6F-4** | 79 KB de fonte duplicada por artefato de Finder vivem no `origin/main` **daqui** | `[absorver]` | P | baixo | **passou intacto — o mais limpo da rodada** | · ✅ aplicado #125
 | **V6D-11** | follow-up do E28: 3 idiomas de spinner, regra sem trava | `[guard-rail]` | P | baixo | **ampliado de 9 para 15 infratores** |
 | **V6P-1** | `SidebarInset` sem `min-w-0` — risco latente, não bug vivo | `[absorver]` | P | baixo | severidade corrigida pelo caçador |
 | **V6T4** | `.font-title` emitida 2× e a de fora de layer vence — `--font-*` órfãos | `[guard-rail]` | M | médio | manchete corrigida (2 órfãos, não 3) + regressão em `error-page.tsx:35` |
 | **V6T2** | token declarado sem consumidor — asserção simétrica no teste | `[guard-rail]` | P | baixo | pode nascer vermelho aqui: **não medido no alvo** |
 | **V6T12** | `--brand` + `color-mix(in oklab)` — a arquitetura que o F3 procura | `[absorver forma]` | M | médio | **insumo do F3** |
 | **V6T11** | correção de fato: as "34 `@font-face`" do inventário são **23** | correção | — | — | 11 matches estavam numa URL da MDN em comentário |
-| **V6T10** | `preconnect` para `fonts.bunny.net` que nunca baixa nada — nos dois | `[absorver]` | P | baixo | mesmo gênero do F32 |
-| **V6D-3** | o mesmo `preconnect`, do lado da blade | `[absorver]` | P | baixo | par do V6T10 |
-| **V6D-2** / **V6F-1** | a blade raiz **não linka favicon nenhum**, e 6 ícones versionados não são referenciados | `[absorver]` | P | baixo | par confirmado pelos dois caçadores |
+| **V6T10** | `preconnect` para `fonts.bunny.net` que nunca baixa nada — nos dois | `[absorver]` | P | baixo | mesmo gênero do F32 | · ✅ aplicado #125
+| **V6D-3** | o mesmo `preconnect`, do lado da blade | `[absorver]` | P | baixo | par do V6T10 | · ✅ aplicado #125
+| **V6D-2** / **V6F-1** | a blade raiz **não linka favicon nenhum**, e 6 ícones versionados não são referenciados | `[absorver]` | P | baixo | par confirmado pelos dois caçadores | · ✅ aplicado #125 — **sem manifest** (tema PWA multi-fonte; os `android-chrome-*` saíram e voltam de `e0d8ded:public/` se a fatia PWA quiser) e **sem `theme-color`** (F14); 16/32 podados, não linkados (o `.ico` tem 16/32/48)
 | **V6D-5** | `--success`/`--warning`/`--info`: exportá-los como estão entrega par a **2.15:1** | `[guard-rail]` | P | baixo | **trava o F2** |
 | **V6D-4** | 44 `<img>` sem `width`/`height`; servidor comprime upload e serve 6,7 MiB cru | `[guard-rail]` | P | baixo | — |
 | **V6D-6** | `page-header`/`page-info`: subárvore morta cuja prop monta classe por interpolação | `[guard-rail]` | P | baixo | resolve a inconsistência do E21 |
