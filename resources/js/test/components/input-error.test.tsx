@@ -35,6 +35,18 @@ describe('InputError', () => {
         expect(container).toBeEmptyDOMElement();
     });
 
+    it('paints the message with the state token, not a palette literal', () => {
+        // `text-red-600 dark:text-red-400` era literal fora de qualquer
+        // contrato: `--state-destructive-fg` é medido nos dois temas contra o
+        // canvas em `styles/theme-tokens.test.ts`, o literal não era.
+        render(<InputError message="Campo obrigatório." />);
+
+        const alerta = screen.getByRole('alert');
+
+        expect(alerta).toHaveClass('text-state-destructive');
+        expect(alerta.className).not.toMatch(/text-red-/);
+    });
+
     it('carries the slot marker and keeps forwarded props', () => {
         render(<InputError id="campo-erro" message="Campo obrigatório." />);
 

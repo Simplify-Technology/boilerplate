@@ -115,10 +115,7 @@ export function RoleUsersTable({ users, roleLabel, assignableRoles = [], onRevok
                                                             {user.role?.name && (
                                                                 <>
                                                                     <DropdownMenuSeparator />
-                                                                    <DropdownMenuItem
-                                                                        onClick={() => onRevokeRole(user)}
-                                                                        className="text-red-600 focus:bg-red-50 focus:text-red-700 dark:text-red-400 dark:focus:bg-red-950/20 dark:focus:text-red-400"
-                                                                    >
+                                                                    <DropdownMenuItem onClick={() => onRevokeRole(user)} variant="destructive">
                                                                         <UserX className="mr-2 h-4 w-4" />
                                                                         Remover Cargo
                                                                     </DropdownMenuItem>
