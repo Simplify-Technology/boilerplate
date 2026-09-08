@@ -13,7 +13,7 @@ export default function AppSidebarLayout({ children, breadcrumbs = [] }: PropsWi
     };
 
     return (
-        <AppShell variant="sidebar">
+        <AppShell>
             {/*
              * Primeiro focável da página, escondido até receber foco. O alvo é o
              * `<main>` do `SidebarInset`, três componentes abaixo: `AppContent`
@@ -29,7 +29,7 @@ export default function AppSidebarLayout({ children, breadcrumbs = [] }: PropsWi
                 Pular para o conteúdo
             </a>
             <AppSidebar />
-            <AppContent variant="sidebar" id="conteudo" tabIndex={-1}>
+            <AppContent id="conteudo" tabIndex={-1}>
                 <ImpersonateBanner
                     active={auth?.impersonating?.active || false}
                     originalUserName={auth?.impersonating?.originalUserName || null}

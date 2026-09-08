@@ -1,8 +1,6 @@
 // @vitest-environment node
-import { readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { readSources } from '../support/sources';
 
 /*
  * `<button>` é conteúdo interativo, e o HTML proíbe conteúdo interativo dentro
@@ -24,24 +22,7 @@ import { describe, expect, it } from 'vitest';
  * `components/users/user-table-row.test.tsx`.
  */
 
-const jsRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-
-function applicationSourceFiles(dir: string = jsRoot): string[] {
-    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-        const full = join(dir, entry.name);
-
-        if (entry.isDirectory()) {
-            return entry.name === 'test' ? [] : applicationSourceFiles(full);
-        }
-
-        return /\.tsx$/.test(entry.name) ? [full] : [];
-    });
-}
-
-const sources = applicationSourceFiles().map((path) => ({
-    path: relative(jsRoot, path),
-    body: readFileSync(path, 'utf8'),
-}));
+const sources = readSources(/\.tsx$/);
 
 /** Ocorrências de `<X …>` seguido direto de `<Y`, tolerando props em várias linhas. */
 function nestedIn(body: string, outer: string, inner: string): number {
