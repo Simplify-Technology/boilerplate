@@ -57,6 +57,17 @@ export type DeleteConfirmationDialogProps = {
     confirmationNote?: ReactNode;
 };
 
+/*
+ * Severidade → token do PAPEL, nunca literal da paleta: o callout suave é
+ * `state-X-soft` (fundo, borda e texto de uma vez; ícone e parágrafo herdam
+ * por `currentColor`), o chip é `bg-state-X` + `text-state-X`. Os pares estão
+ * medidos nos dois temas em `test/styles/theme-tokens.test.ts`.
+ */
+const calloutBySeverity = {
+    danger: 'state-destructive-soft',
+    warning: 'state-warning-soft',
+} as const;
+
 export function DeleteConfirmationDialog({
     open,
     onOpenChange,
@@ -78,14 +89,21 @@ export function DeleteConfirmationDialog({
 }: DeleteConfirmationDialogProps) {
     const variantConfig = {
         danger: {
-            iconBg: 'bg-red-100 dark:bg-red-900/40',
-            iconColor: 'text-red-600 dark:text-red-300',
+            iconBg: 'bg-state-destructive',
+            iconColor: 'text-state-destructive',
             buttonVariant: 'destructive' as const,
+            buttonClassName: '',
         },
         warning: {
-            iconBg: 'bg-orange-100 dark:bg-orange-900/40',
-            iconColor: 'text-orange-600 dark:text-orange-400',
+            iconBg: 'bg-state-warning',
+            iconColor: 'text-state-warning',
             buttonVariant: 'default' as const,
+            /*
+             * O `Button` não tem variante `warning`; sobre a `default` vai o
+             * sólido de aviso com o rótulo do PRÓPRIO par — nunca `text-white`,
+             * que no escuro dava 2.69:1 sobre o sólido claro.
+             */
+            buttonClassName: 'bg-warning text-warning-foreground hover:bg-warning/90',
         },
     };
 
@@ -96,7 +114,7 @@ export function DeleteConfirmationDialog({
             <DialogContent className="sm:max-w-[500px]" role="alertdialog">
                 <DialogHeader>
                     <DialogTitle className="flex items-center gap-3">
-                        <div className={cn('rounded-lg p-2', config.iconBg)}>
+                        <div data-slot="delete-dialog-icon" className={cn('rounded-lg p-2', config.iconBg)}>
                             <Icon className={cn('h-5 w-5', config.iconColor)} />
                         </div>
                         <span>{title}</span>
@@ -111,8 +129,11 @@ export function DeleteConfirmationDialog({
                     {itemName && (
                         <div className="bg-muted/50 dark:bg-muted/30 border-border/50 space-y-3 rounded-lg border p-4">
                             <div className="flex items-start gap-3">
-                                <div className="bg-primary/10 dark:bg-primary/30 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg">
-                                    <Info className="text-primary h-4 w-4 dark:text-blue-400" />
+                                <div
+                                    data-slot="delete-dialog-item-icon"
+                                    className="bg-state-info flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
+                                >
+                                    <Info className="text-state-info h-4 w-4" />
                                 </div>
                                 <div className="min-w-0 flex-1">
                                     <p className="text-muted-foreground mb-1 text-xs font-medium tracking-wide uppercase">
@@ -165,29 +186,11 @@ export function DeleteConfirmationDialog({
                             {warnings.map((warning, index) => (
                                 <div
                                     key={index}
-                                    className={cn(
-                                        'flex gap-2 rounded-lg border p-3',
-                                        warning.severity === 'danger'
-                                            ? 'border-red-200 bg-red-50 dark:border-red-800/50 dark:bg-red-900/30'
-                                            : 'border-orange-200 bg-orange-50 dark:border-orange-800/50 dark:bg-orange-900/30',
-                                    )}
+                                    data-slot="delete-dialog-warning"
+                                    className={cn('flex gap-2 rounded-lg border p-3', calloutBySeverity[warning.severity])}
                                 >
-                                    <AlertTriangle
-                                        className={cn(
-                                            'h-4 w-4 shrink-0',
-                                            warning.severity === 'danger' ? 'text-red-600 dark:text-red-300' : 'text-orange-600 dark:text-orange-300',
-                                        )}
-                                    />
-                                    <p
-                                        className={cn(
-                                            'text-sm',
-                                            warning.severity === 'danger'
-                                                ? 'text-red-900 dark:text-red-50/90'
-                                                : 'text-orange-900 dark:text-orange-50/90',
-                                        )}
-                                    >
-                                        {warning.message}
-                                    </p>
+                                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                                    <p className="text-sm">{warning.message}</p>
                                 </div>
                             ))}
                         </div>
@@ -198,14 +201,10 @@ export function DeleteConfirmationDialog({
 
                     {/* Confirmation Message */}
                     <div
-                        className={cn(
-                            'rounded-lg p-3',
-                            variant === 'danger'
-                                ? 'bg-muted dark:bg-muted/50'
-                                : 'border border-orange-200 bg-orange-50 dark:border-orange-800/50 dark:bg-orange-900/20',
-                        )}
+                        data-slot="delete-dialog-note"
+                        className={cn('rounded-lg p-3', variant === 'danger' ? 'bg-muted dark:bg-muted/50' : 'state-warning-soft border')}
                     >
-                        <p className={cn('text-sm', variant === 'danger' ? 'text-foreground' : 'text-orange-900 dark:text-orange-50/90')}>
+                        <p className={cn('text-sm', variant === 'danger' && 'text-foreground')}>
                             <span className="font-semibold">Atenção:</span>{' '}
                             {confirmationNote ??
                                 (variant === 'danger'
@@ -229,10 +228,7 @@ export function DeleteConfirmationDialog({
                             variant={config.buttonVariant}
                             onClick={onConfirm}
                             disabled={processing}
-                            className={cn(
-                                'gap-2',
-                                variant === 'warning' && 'bg-orange-600 text-white hover:bg-orange-700 dark:bg-orange-600 dark:hover:bg-orange-700',
-                            )}
+                            className={cn('gap-2', config.buttonClassName)}
                         >
                             {processing ? (
                                 <>

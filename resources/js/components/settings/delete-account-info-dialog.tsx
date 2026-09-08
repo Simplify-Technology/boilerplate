@@ -15,12 +15,12 @@ export function DeleteAccountInfoDialog({ open, onOpenChange }: DeleteAccountInf
         {
             title: 'O que acontece ao excluir',
             icon: AlertTriangle,
-            iconColor: 'text-red-600 dark:text-red-400',
+            iconColor: 'text-state-destructive',
             content: (
                 <div className="space-y-2 text-sm leading-relaxed">
                     <p>
                         Ao excluir sua conta, todas as suas informações e dados serão permanentemente removidos do sistema. Esta ação é{' '}
-                        <strong className="text-red-600 dark:text-red-400">irreversível</strong>.
+                        <strong className="text-state-destructive">irreversível</strong>.
                     </p>
                     <ul className="space-y-1.5 text-sm">
                         <li>• Todos os seus dados pessoais serão deletados</li>
@@ -34,7 +34,7 @@ export function DeleteAccountInfoDialog({ open, onOpenChange }: DeleteAccountInf
         {
             title: 'Processo de Exclusão',
             icon: Trash2,
-            iconColor: 'text-red-600 dark:text-red-400',
+            iconColor: 'text-state-destructive',
             content: (
                 <div className="space-y-2 text-sm leading-relaxed">
                     <p>Para confirmar a exclusão, você precisará:</p>
@@ -50,7 +50,7 @@ export function DeleteAccountInfoDialog({ open, onOpenChange }: DeleteAccountInf
         {
             title: 'Segurança',
             icon: Shield,
-            iconColor: 'text-green-600 dark:text-green-400',
+            iconColor: 'text-state-success',
             content: (
                 <ul className="space-y-1.5 text-sm">
                     <li>• É necessário confirmar com sua senha para segurança</li>
@@ -63,7 +63,7 @@ export function DeleteAccountInfoDialog({ open, onOpenChange }: DeleteAccountInf
         {
             title: 'Antes de Excluir',
             icon: Zap,
-            iconColor: 'text-yellow-600 dark:text-yellow-400',
+            iconColor: 'text-state-warning',
             content: (
                 <ul className="space-y-1.5 text-sm">
                     <li>• Certifique-se de que realmente deseja excluir sua conta</li>
@@ -83,8 +83,8 @@ export function DeleteAccountInfoDialog({ open, onOpenChange }: DeleteAccountInf
             title="Informações sobre Exclusão de Conta"
             description="Entenda o processo e as consequências da exclusão permanente da sua conta."
             icon={Trash2}
-            iconBgColor="bg-red-100 dark:bg-red-900/40"
-            iconColor="text-red-600 dark:text-red-300"
+            iconBgColor="bg-state-destructive"
+            iconColor="text-state-destructive"
             sections={sections}
         />
     );

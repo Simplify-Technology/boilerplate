@@ -82,6 +82,8 @@ describe('quem usa cor de estado usa o token do papel certo', () => {
     const limpos = [
         'components/input-error.tsx',
         'components/delete-user.tsx',
+        'components/delete-confirmation-dialog.tsx',
+        'components/settings/delete-account-info-dialog.tsx',
         'components/users/user-actions-menu.tsx',
         'components/ui/alert.tsx',
         'components/ui/badge.tsx',
