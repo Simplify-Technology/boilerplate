@@ -29,3 +29,8 @@ yarn-error.log
 .DS_Store
 .history
 identifier.sqlite
+
+# Claude Code — estado local do gate e overrides pessoais (o compartilhado é .claude/settings.json)
+.claude/.ci-gate/
+.claude/settings.local.json
+.claude/claude-security-guidance.local.md
