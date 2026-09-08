@@ -807,3 +807,20 @@ Mesma família (tokens de estado × os canais que os consomem), os três **P**, 
 | V6F-6 (metade "ativar") | Sem página pública que justifique, e sidebar/overlays são `fixed` |
 | V6F-7 (metade "família pública") | Layout sem call-site recria o código morto que a poda anterior removeu |
 | V6S-3 | Já registrado (`ctfinance.md:151` + linha de i18n com 3 fontes); vira medição anexa |
+
+## Tooling de agente — candidatos da rodada agent-tooling (#133, 2026-09-08)
+
+Colhidos na Fase A daquela rodada (inventário read-only dos 7 derivados, nos SHAs abaixo). Nenhum foi aplicado lá: a dimensão de tooling **do boilerplate** foi resolvida nos PRs #135/#137/#139/#142, e estes são o que os derivados têm e o boilerplate não. Passam pelas 3 lentes como qualquer candidato; a lente de ATUALIDADE aqui é a doc do Claude Code e a fonte do Boost 2.5.5.
+
+| # | Origem (path@SHA) | O que é | Veredito preliminar |
+| - | ----------------- | ------- | ------------------- |
+| T1 | ctfinance `.cursor/skills/rbac-change-safely/SKILL.md@583e721` | skill para mudanças seguras em RBAC/permissões | `[absorver]` como skill de casa em `.ai/skills/` (o Boost espelha para cada ferramenta; `config('boost.skills.exclude')` nunca exclui as próprias): o boilerplate tem o mesmo RBAC e nenhuma skill própria |
+| T2 | ctfinance `.cursor/rules/98-no-screenshots-evidence.mdc@583e721` | "screenshot não é evidência de smoke" | `[guard-rail]` — uma linha em `.ai/rules/tests.md`, via `record-rule` |
+| T3 | ctvitrine `.claude/commands/executar-spec.md` + `conferir-spec.md@f9f17f6` | comandos finos que apontam para a spec como fonte única em vez de repetir convenção | `[adiado]` até o boilerplate adotar fluxo por spec; o padrão "comando fino que cita a fonte" já vale para os commands que #137 versionou |
+| T4 | ctvitrine `CLAUDE.md@f9f17f6` L162-177 "Regra de sincronia (fato copiado apodrece)" | política para fato duplicado entre o repo e ferramentas externas (atualizar a fonte e abrir item de re-colagem no mesmo commit) | `[adiado]` — decidir na lente onde mora (CLAUDE.md, seção Git, ou `.ai/rules`); o problema real que ela descreve (AGENTS.md em 3 cópias) #137 já eliminou |
+| T5 | spinmax `.husky/pre-commit@552efaa` | gate no commit: fix → re-stage NUL-safe só do staged → `--test` → testes, com o incidente que o motivou documentado no hook | `[adiado]` — dimensão 8 compara com `lint-staged` (pre-commit) + gate determinístico no Stop (#139), que já fecha o buraco "agente encerra com teste vermelho" |
+| T6 | transitado `.ai/rules/conteudo.md@7749a1e` | conteúdo com contrato de segurança 100% server-side, recado agendado com a data no nome do arquivo | `[rejeitado]` para o boilerplate (não tem conteúdo gated); o padrão fica anotado para quem tiver |
+
+Rejeitados na própria rodada, motivo em uma linha: mapas "Deeper references"/"Required reading" (ctfinance, transitado) e "regra roteadora" (sorteiopix) — substituídos pelo carregamento determinístico das rules (#135) e pela seção "Project Rules" que o Boost 2.5.5 põe no AGENTS.md (#137); `REQUIRE_ISSUE_ID` default 0 (ctfinance) — já rejeitado acima; regras de domínio (sorteiopix ×14, MEI do ctfinance) — não generalizam.
+
+Higiene por projeto (vai para os gap-reports em #141, não para cá): `boost.json` sem `claude_code` (6/6 com Boost); AGENTS.md defasado (cuidari e a cópia do ctvitrine em Inertia v2, sorteiopix sem Horizon, ctjuris nunca regenerado — o Boost 2.5.5 deixou de fixar versões, então um `boost:update` resolve de vez); `.cursor/mcp.json` com `SITE_PATH` de outra máquina (sorteiopix, spinmax); `mcp-instructions.mdc` citando servers inexistentes (6/7); ctjuris com `.gitignore` ignorando `.claude/` inteiro e CI `.disabled`; ctfinance com `.cursor/mcp.laravel-boost.json` órfão (Boost não é dependência lá).
