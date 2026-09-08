@@ -216,6 +216,12 @@ Não vieram de projeto-fonte, então não têm origem `projeto/path@SHA`. Ficam 
 - Conserto candidato: limiter nomeado por `user()->id` na rota, ou o mesmo padrão `email|ip` do `LoginRequest` dentro de um FormRequest próprio (o controller hoje usa `Request` cru, contra a convenção da casa). Fatia própria, de dimensão 1.
 - **Não é o mesmo caso do `POST logout`**, que também não tem throttle: lá não há segredo a adivinhar.
 
+### C5 · `@headlessui/react` em `dependencies` com zero importadores desde o starter kit · P · risco baixo · **medido em 2026-09-08**
+
+- **Evidência:** `origin/main:package.json:61` → `"@headlessui/react": "^2.2.10"`; `git grep -n 'headlessui' -- ':!pnpm-lock.yaml'` devolve **só a linha do `package.json`** (o outro match é o `public/vendor/log-viewer/app.js` publicado pelo pacote PHP, que carrega o próprio bundle). Medido quote-agnóstico, junto com os 34 `dependencies`: é o segundo pacote de runtime sem consumidor, ao lado do `@radix-ui/react-navigation-menu` que a V6P-2 já apontava — e nenhuma célula o tinha visto porque a receita de aspas simples enche o resultado de falso positivo.
+- **Estado:** travado por `resources/js/test/lib/dependency-importers.test.ts` (PR #132) como **dívida datada**; a guarda falha no dia em que o pacote sair do `package.json` sem sair da dívida, ou ganhar importador sem sair dela.
+- **Fatia:** remover na próxima **fatia de deps**, junto com o `navigation-menu` — depois de #128 (dependabot npm) mesclar, porque os dois mudam o `pnpm-lock.yaml`. Apagar as duas entradas da dívida no mesmo commit.
+
 ## Adiados / rescopados para prioridade baixa
 
 | # | Candidato | Tipo | Por quê ficou para depois |
@@ -754,7 +760,7 @@ Mesma família (tokens de estado × os canais que os consomem), os três **P**, 
 | **V6T13** | 6 contas de contraste certas e zero teste — estende a tabela de pares | `[guard-rail]` | P | baixo | — | · ✅ aplicado #119
 | **V6F-4** | 79 KB de fonte duplicada por artefato de Finder vivem no `origin/main` **daqui** | `[absorver]` | P | baixo | **passou intacto — o mais limpo da rodada** | · ✅ aplicado #125
 | **V6D-11** | follow-up do E28: 3 idiomas de spinner, regra sem trava | `[guard-rail]` | P | baixo | **ampliado de 9 para 15 infratores** |
-| **V6P-1** | `SidebarInset` sem `min-w-0` — risco latente, não bug vivo | `[absorver]` | P | baixo | severidade corrigida pelo caçador |
+| **V6P-1** | `SidebarInset` sem `min-w-0` — risco latente, não bug vivo | `[absorver]` | P | baixo | severidade corrigida pelo caçador | · ✅ aplicado #132 (no call-site `AppContent`, não no vendorizado; teste jsdom)
 | **V6T4** | `.font-title` emitida 2× e a de fora de layer vence — `--font-*` órfãos | `[guard-rail]` | M | médio | manchete corrigida (2 órfãos, não 3) + regressão em `error-page.tsx:35` |
 | **V6T2** | token declarado sem consumidor — asserção simétrica no teste | `[guard-rail]` | P | baixo | pode nascer vermelho aqui: **não medido no alvo** |
 | **V6T12** | `--brand` + `color-mix(in oklab)` — a arquitetura que o F3 procura | `[absorver forma]` | M | médio | **insumo do F3** |
@@ -769,7 +775,7 @@ Mesma família (tokens de estado × os canais que os consomem), os três **P**, 
 | **V6P-4** | entrada por chips — primitivo genérico ausente aqui | `[absorver]` | M | médio | com o bug de closure já pago documentado na fonte |
 | **V6P-5** | ícone de marca: 2 SVGs inline **sem atributo de a11y** | `[guard-rail]` | P | baixo | metade (b) |
 | **V6P-6** | `appearance-tabs`: seletor sem papel/estado ARIA, em inglês | `[guard-rail]` | P | baixo | **defeito daqui** |
-| **V6P-2** | resíduo da poda: dep npm com zero importadores + componente morto | `[guard-rail]` | P | baixo | não traz código da fonte |
+| **V6P-2** | resíduo da poda: dep npm com zero importadores + componente morto | `[guard-rail]` | P | baixo | não traz código da fonte | · ✅ aplicado #132 (componente apagado, guarda quote-agnóstica com dívida datada; **a remoção dos pacotes** fica para a fatia de deps depois de #128 — e são DOIS: `navigation-menu` + `@headlessui/react`, ver C5)
 | **V6P-9** | evidência de que `ui/table` dá conta — a regra daqui manda o contrário | `[proposta-adr]` | — | — | anexo a proposta já aberta |
 | **V6S-2** | resíduo que a #108 não varreu: 28 linhas de CSS de scrollbar, 1 seletor morto | `[absorver]` | P | baixo | byte a byte nos dois | · ✅ aplicado #130 (CSS compilado −681 B, diff = exatamente as 5 regras)
 | **V6S-4** | `SheetHeader` FORA do `SheetContent`: 2 frases `sr-only` permanentes no corpo | `[guard-rail]` | P | baixo | medido na lib Radix instalada |
@@ -777,7 +783,7 @@ Mesma família (tokens de estado × os canais que os consomem), os três **P**, 
 | **V6F-2** | `.env.example` liga o SSR e nenhum caminho sobe servidor SSR | `[guard-rail]` | P | baixo | **reescrito**: o "502" não existe (fallback client-side) |
 | **V6F-5** | `AppShell` semeia sidebar do `localStorage`; o cookie que o primitivo grava não é lido | `[guard-rail]` | P | baixo | **reescrito**: sem mismatch (é `createRoot`, não `hydrateRoot`) |
 | **V6F-6** (metade) | `env(safe-area-inset-*)` sem `viewport-fit=cover` resolve a `0px` — **só apagar** | `[absorver]` | P | baixo | metade "ativar" derrubada | · ✅ aplicado #130 (com `SafeAreaOptInTest`: inset só com opt-in, opt-in só com consumidor). A metade "ativar" fica como **fatia própria condicionada** a página pública ou PWA instalável — idioma atual: `max(…, env(safe-area-max-inset-*, 0px))` no elemento que encosta na borda, nunca no `body`, e plano para os `fixed` (sidebar, portais Radix, `Toaster`)
-| **V6F-7** (metade) | `variant="header"` morto nos dois repositórios — **só a poda** | `[absorver]` | P | baixo | metade "família pública" derrubada |
+| **V6F-7** (metade) | `variant="header"` morto nos dois repositórios — **só a poda** | `[absorver]` | P | baixo | metade "família pública" derrubada | · ✅ aplicado #132 (prop `variant` removida inteira, não só o default)
 | **V6D-9** | duas famílias de layout por enum: **mecanismo portável, costura com a blade não** | `[absorver parcial]` | M | médio | — |
 
 ### `[rejeitado]` da dimensão 6 — motivo em uma linha, para não se re-descobrir
