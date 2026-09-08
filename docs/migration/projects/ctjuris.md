@@ -58,10 +58,12 @@ ctjuris é a **fonte** de boa parte da harvest — não re-portar, apenas reconc
 
 - [ ] ⬜ Fatia 0 — Baseline (CI reativado, service PostgreSQL)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate pgsql, smoke browser)
-- [ ] ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.19.0, dependabot, `.ai/rules` antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
+- [ ] ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.19.0, dependabot, `.ai/rules` antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19) **+ kit de agente** (rodada agent-tooling #133: `.claude/` do boilerplate — settings, hooks, rules por symlink, security-patterns —, `config/boost.php`, `@AGENTS.md` no CLAUDE.md; ver PLAYBOOK §3 Fatia 2)
 - [ ] ⬜ Fatia 3b — Inertia 2→3 (estreia da receita `fad56c0`)
 - [ ] ⬜ Fatia 4 — Hardening (CSP report-only, EnsureUserIsActive, error pages)
 - [ ] ⬜ Fatia 5 — Kit BR/dedupe (⚠️ compat `CpfHasher` antes do merge)
 - [ ] ⬜ Fatia 6 — Convenções (rate limiters, Form Requests, RBAC sync)
 
-Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)
+**Tooling de agente (Fase A da rodada agent-tooling, 2026-09-08):** HEAD `3897a86`: CLAUDE.md de 256 linhas (não importa AGENTS.md); AGENTS.md do Boost 2.4.6 nunca regenerado; **`.gitignore` ignora `.claude/` inteiro e `/.ai/`** — liberar antes de versionar o kit; CI 100% `.disabled`; 435 allows locais em settings.local.json; pre-push completo (sem PHPStan).
+
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps) · 2026-09-08: kit de agente registrado (rodada agent-tooling #133), fatias inalteradas

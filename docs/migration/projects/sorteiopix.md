@@ -60,11 +60,13 @@ sorteiopix é **fonte** de vários itens da harvest — não re-portar, apenas r
 
 - [ ] ⬜ Fatia 0 — Baseline (reconciliar ci.yml: SHA-pin, concurrency, security job)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate MySQL, smoke browser do sorteio/pagamento)
-- [ ] ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.19.0, dependabot, `.ai/rules` antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
+- [ ] ⬜ Fatia 2 — Tooling/CI (mise, pnpm 11.19.0, dependabot, `.ai/rules` antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19) **+ kit de agente** (rodada agent-tooling #133: `.claude/` do boilerplate — settings, hooks, rules por symlink, security-patterns —, `config/boost.php`, `@AGENTS.md` no CLAUDE.md; ver PLAYBOOK §3 Fatia 2)
 - [ ] ⬜ Fatia 3a — Laravel 12→13 (compat Reverb/Horizon/webpush/Socialite/auditing)
 - [ ] ⬜ Fatia 3b — Inertia 2→3 (receita `fad56c0` herdada do ctjuris)
 - [ ] ⬜ Fatia 4 — Hardening (CSP report-only c/ wss, EnsureUserIsActive, strict+report, Sentry)
 - [ ] ⬜ Fatia 5 — Kit BR/dedupe (⚠️ diff `currency.ts`/centavos antes do merge)
 - [ ] ⬜ Fatia 6 — Convenções (rate limiters, Form Requests, RBAC sync, composer name)
 
-Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)
+**Tooling de agente (Fase A da rodada agent-tooling, 2026-09-08):** HEAD `b98327b`: sem CLAUDE.md e sem `.claude/`; AGENTS.md do Boost 2.2.2 (sem Horizon no texto) sem `claude_code`; 25 rules do Cursor (14 de domínio) e `mcp-instructions.mdc` órfã; `.cursor/mcp.json` com `SITE_PATH` de outra máquina; pre-push completo (sem PHPStan); settings.local.json protegido só por gitignore global.
+
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps) · 2026-09-08: kit de agente registrado (rodada agent-tooling #133), fatias inalteradas

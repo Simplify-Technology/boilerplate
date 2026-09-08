@@ -95,11 +95,13 @@ Vale também o que a §3.4 já diz do kit BR: reconciliar **por diff**, adotar a
 - [ ] ⬜ Pré-requisito — smoke de checkout completo verde (bloqueia todas as fatias)
 - [ ] ⬜ Fatia 0 — Baseline (SHA-pinning, reconciliar ci.yml, documentar suíte)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline; gate MySQL e browser já existem)
-- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, pre-push, `.ai/rules` antecipado; pnpm → 11.19.0; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, pre-push, `.ai/rules` antecipado; pnpm → 11.19.0; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19) **+ kit de agente** (rodada agent-tooling #133: `.claude/` do boilerplate — settings, hooks, rules por symlink, security-patterns —, `config/boost.php`, `@AGENTS.md` no CLAUDE.md; ver PLAYBOOK §3 Fatia 2)
 - [ ] ⬜ Fatia 3a — Laravel 12→13 (Horizon/auditing compat, janela de baixo tráfego)
 - [ ] ⬜ Fatia 3b — Inertia 2→3 (receita `fad56c0` madura, SSR, sdk MP)
 - [ ] ⬜ Fatia 4 — Hardening (CSP report-only + allowlist Mercado Pago)
 - [ ] ⬜ Fatia 5 — Kit BR/dedupe (⚠️ compat do hash de CPF antes do merge)
 - [ ] ⬜ Fatia 6 — Convenções (Form Requests, rate limiters, exceção auditing/Resend; **devolver §4.2**: bug do `?->` em `getAllPermissions`, `unsetRelation`, a11y do dialog de exclusão)
 
-Última atualização: 2026-08-11 (§4 nova — drift bidirecional do RBAC, após a harvest reversa PRs #36/#39/#41/#43/#45)
+**Tooling de agente (Fase A da rodada agent-tooling, 2026-09-08):** HEAD `552efaa`: sem CLAUDE.md; AGENTS.md do Boost 2.5.3 sem `claude_code`; sem `pre-push` (o gate mora no pre-commit) e `composer ci:check` = Pint + Pest (sem Rector/PHPStan); `.cursor/mcp.json` com `SITE_PATH` de outra máquina; `mcp-instructions.mdc` cita servers inexistentes. Pré-requisito do kit: `ci:check` completo e pre-push.
+
+Última atualização: 2026-08-11 (§4 nova — drift bidirecional do RBAC, após a harvest reversa PRs #36/#39/#41/#43/#45) · 2026-09-08: kit de agente registrado (rodada agent-tooling #133), fatias inalteradas

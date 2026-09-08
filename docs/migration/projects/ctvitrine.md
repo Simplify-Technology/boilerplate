@@ -60,10 +60,12 @@ Projeto **#3** na ordem do [PLAYBOOK](../PLAYBOOK.md) (§2). Fork direto deste b
 ## 5. Estado
 
 - [ ] ⬜ Fatia 0 — Baseline (paridade do CI + baseline documentado)
-- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, mise, `.ai/rules` + CLAUDE.md antecipados; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, mise, `.ai/rules` + CLAUDE.md antecipados; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19) **+ kit de agente** (rodada agent-tooling #133: `.claude/` do boilerplate — settings, hooks, rules por symlink, security-patterns —, `config/boost.php`, `@AGENTS.md` no CLAUDE.md; ver PLAYBOOK §3 Fatia 2)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan baseline, gate MySQL, smoke browser)
 - [ ] ⬜ Fatia 4 — Hardening (CSP report-only → enforce, middlewares, PiiScrubber)
 - [ ] ⬜ Fatia 5 — Kit BR/dedupe (masks/format/clipboard)
 - [ ] ⬜ Fatia 6 — Convenções (validação inline, limiters, lang/pt_BR, RBAC sync)
 
-Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)
+**Tooling de agente (Fase A da rodada agent-tooling, 2026-09-08):** HEAD `f9f17f6`: CLAUDE.md de 177 linhas (não importa AGENTS.md); AGENTS.md do Boost 2.4.10 com cópia `.github/copilot-instructions.md` divergente (Inertia v2) e `.codex/skills` 3/5; 2 commands versionados (`executar-spec`, `conferir-spec` — candidato T3); rules do Cursor ainda dizem "neste boilerplate"; pre-push completo (sem PHPStan); settings.local.json protegido só por gitignore global.
+
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps) · 2026-09-08: kit de agente registrado (rodada agent-tooling #133), fatias inalteradas

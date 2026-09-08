@@ -62,11 +62,13 @@ Projeto #6 na ordem do [PLAYBOOK](../PLAYBOOK.md) (§2): penúltimo, deliberadam
 
 - [ ] ⬜ Fatia 0 — Baseline (paridade de CI + documentação da suíte)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan + baseline, gate MySQL, smoke billing/LGPD)
-- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, minimumReleaseAge, pnpm 11, `.ai/rules` antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, minimumReleaseAge, pnpm 11, `.ai/rules` antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19) **+ kit de agente** (rodada agent-tooling #133: `.claude/` do boilerplate — settings, hooks, rules por symlink, security-patterns —, `config/boost.php`, `@AGENTS.md` no CLAUDE.md; ver PLAYBOOK §3 Fatia 2)
 - [ ] ⬜ Fatia 3a — Upgrade Laravel 12→13
 - [ ] ⬜ Fatia 3b — Upgrade Inertia 2→3
 - [ ] ⬜ Fatia 4 — Hardening (CSP report-only→enforce, PiiScrubber, Sentry, strict mode)
 - [ ] ⬜ Fatia 5 — Kit BR / dedupe (com testes de paridade monetária)
 - [ ] ⬜ Fatia 6 — Convenções (Form Requests, limiters nomeados, decisão de auditoria)
 
-Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)
+**Tooling de agente (Fase A da rodada agent-tooling, 2026-09-08):** HEAD `583e721`: sem Boost/AGENTS.md; `.claude/` fora do git e não ignorado (settings.json com `ponytail`, settings.local.json com 36 allows); `.cursor/mcp.laravel-boost.json` órfão (Boost não é dependência); pre-push roda `ci:backend` (sem Rector) + `pnpm ci:check`; `REQUIRE_ISSUE_ID` default 0; 15 rules e 14 skills do Cursor (candidatos T1/T2 no BACKLOG do harvest v2). Pré-requisito do kit: `composer ci:check` completo.
+
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps) · 2026-09-08: kit de agente registrado (rodada agent-tooling #133), fatias inalteradas
