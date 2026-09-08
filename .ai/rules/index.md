@@ -26,3 +26,4 @@ Before planning or editing, find the row whose globs match the file's path and r
 | tests/** | .ai/rules/tests.md |
 | app/Traits/** | .ai/rules/traits.md |
 | app/ValueObjects/** | .ai/rules/value-objects.md |
+| package.json, composer.json | .ai/rules/dependencies.md |
