@@ -397,7 +397,10 @@
             'Aptos', var(--font-sans), ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
             'Noto Color Emoji' !important;
         font-weight: 400;
-        padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        /* Sem `env(safe-area-inset-*)` aqui: sem `viewport-fit=cover` na meta
+           viewport valem 0px, e com ele o inset vai no elemento que encosta na
+           borda (max() com safe-area-max-inset-*), nunca no body — sidebar,
+           portais e Toaster são fixed. tests/Unit/Views/SafeAreaOptInTest.php. */
     }
 
     /* Override Tailwind's font-sans utility to ensure Aptos is used */
@@ -717,34 +720,11 @@ ul li span.text-sm {
     background: rgba(229, 231, 235, 0.5);
 }
 
-/* Global scrollbar for dialogs and modals in dark mode */
-.dark [data-slot='dialog-content'],
-.dark [data-slot='dialog-content'] .custom-scrollbar {
-    scrollbar-color: rgba(229, 231, 235, 0.4) transparent;
-}
-
-.dark [data-slot='dialog-content']::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
-}
-
-.dark [data-slot='dialog-content']::-webkit-scrollbar-track {
-    background: transparent;
-    border-radius: 5px;
-}
-
-.dark [data-slot='dialog-content']::-webkit-scrollbar-thumb {
-    background: rgba(229, 231, 235, 0.3);
-    border-radius: 5px;
-    border: 2px solid transparent;
-    background-clip: padding-box;
-    transition: background 0.2s ease;
-}
-
-.dark [data-slot='dialog-content']::-webkit-scrollbar-thumb:hover {
-    background: rgba(229, 231, 235, 0.5);
-    background-clip: padding-box;
-}
+/* O DialogContent já carrega `.custom-scrollbar` na className base
+   (ui/dialog.tsx), então as regras acima o cobrem; um bloco só para
+   `[data-slot='dialog-content']` repetia os mesmos valores na mesma
+   especificidade, e o seletor descendente `… .custom-scrollbar` não casava
+   nada (a classe mora no próprio elemento). Podado — ver .ai/rules/css.md. */
 
 /* iOS Safari: prevent auto-zoom on form fields */
 @supports (-webkit-touch-callout: none) {
