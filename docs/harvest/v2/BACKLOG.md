@@ -771,12 +771,12 @@ Mesma família (tokens de estado × os canais que os consomem), os três **P**, 
 | **V6P-6** | `appearance-tabs`: seletor sem papel/estado ARIA, em inglês | `[guard-rail]` | P | baixo | **defeito daqui** |
 | **V6P-2** | resíduo da poda: dep npm com zero importadores + componente morto | `[guard-rail]` | P | baixo | não traz código da fonte |
 | **V6P-9** | evidência de que `ui/table` dá conta — a regra daqui manda o contrário | `[proposta-adr]` | — | — | anexo a proposta já aberta |
-| **V6S-2** | resíduo que a #108 não varreu: 28 linhas de CSS de scrollbar, 1 seletor morto | `[absorver]` | P | baixo | byte a byte nos dois |
+| **V6S-2** | resíduo que a #108 não varreu: 28 linhas de CSS de scrollbar, 1 seletor morto | `[absorver]` | P | baixo | byte a byte nos dois | · ✅ aplicado #130 (CSS compilado −681 B, diff = exatamente as 5 regras)
 | **V6S-4** | `SheetHeader` FORA do `SheetContent`: 2 frases `sr-only` permanentes no corpo | `[guard-rail]` | P | baixo | medido na lib Radix instalada |
 | **V6F-3** | a guarda de tema daqui pega o defeito da fonte — e **não viaja no playbook** | `[guard-rail]` | P | baixo | insumo do rollout |
 | **V6F-2** | `.env.example` liga o SSR e nenhum caminho sobe servidor SSR | `[guard-rail]` | P | baixo | **reescrito**: o "502" não existe (fallback client-side) |
 | **V6F-5** | `AppShell` semeia sidebar do `localStorage`; o cookie que o primitivo grava não é lido | `[guard-rail]` | P | baixo | **reescrito**: sem mismatch (é `createRoot`, não `hydrateRoot`) |
-| **V6F-6** (metade) | `env(safe-area-inset-*)` sem `viewport-fit=cover` resolve a `0px` — **só apagar** | `[absorver]` | P | baixo | metade "ativar" derrubada |
+| **V6F-6** (metade) | `env(safe-area-inset-*)` sem `viewport-fit=cover` resolve a `0px` — **só apagar** | `[absorver]` | P | baixo | metade "ativar" derrubada | · ✅ aplicado #130 (com `SafeAreaOptInTest`: inset só com opt-in, opt-in só com consumidor). A metade "ativar" fica como **fatia própria condicionada** a página pública ou PWA instalável — idioma atual: `max(…, env(safe-area-max-inset-*, 0px))` no elemento que encosta na borda, nunca no `body`, e plano para os `fixed` (sidebar, portais Radix, `Toaster`)
 | **V6F-7** (metade) | `variant="header"` morto nos dois repositórios — **só a poda** | `[absorver]` | P | baixo | metade "família pública" derrubada |
 | **V6D-9** | duas famílias de layout por enum: **mecanismo portável, costura com a blade não** | `[absorver parcial]` | M | médio | — |
 
