@@ -1,13 +1,15 @@
+@AGENTS.md
+
 # CLAUDE.md
 
-Guia para agentes de IA neste repositório. Complementa o `AGENTS.md` (guidelines do Laravel Boost — versões da stack, skills e regras de Laravel/Inertia/Pest/Tailwind valem integralmente); aqui ficam só as convenções específicas deste boilerplate.
+Guia para agentes de IA neste repositório. O `AGENTS.md` importado acima é gerado pelo Laravel Boost (`php artisan boost:update`) e vale integralmente: versões da stack, skills, regras de Laravel/Inertia/Pest/Tailwind e o índice de regras por área em `.ai/rules`. Aqui ficam só as convenções específicas deste boilerplate.
 
 ## Comandos
 
 `pnpm` **não está no PATH** dos agentes — use sempre `corepack pnpm`.
 
 ```bash
-composer ci:check                          # Pint --test + Rector --dry-run + Pest
+composer ci:check                          # Pint --test + Rector --dry-run + PHPStan + Pest
 corepack pnpm ci:check                     # ESLint + Prettier check + tsc + Vitest + build
 vendor/bin/pest tests/Feature/Foo.php      # um arquivo de teste
 vendor/bin/pint --dirty                    # formatar só o que mudou
@@ -22,7 +24,7 @@ Fora do `composer dev`, o Vitest precisa de `LARAVEL_BYPASS_ENV_CHECK=1` (o scri
 Uma mudança só está pronta quando:
 
 1. Tem teste cobrindo o comportamento (feliz **e** negação — 403/422 quando houver autorização/validação) e ele passa.
-2. `composer ci:check` passa (Pint, Rector, Pest).
+2. `composer ci:check` passa (Pint, Rector, PHPStan, Pest).
 3. `corepack pnpm ci:check` passa (ESLint, Prettier, types, Vitest, build) quando tocar frontend.
 
 Rode os dois `ci:check` antes de finalizar qualquer tarefa.
@@ -55,3 +57,4 @@ Rode os dois `ci:check` antes de finalizar qualquer tarefa.
 ## Git
 
 - Nunca commite em `main`/`develop`; branch precisa de ID de issue (`123-feature`). Hooks do husky rodam lint-staged (pre-commit) e os dois `ci:check` (pre-push); `SKIP_GIT_HOOKS=1` só com intenção explícita.
+- Mensagem de commit: `[<issue>]: tipo(escopo): resumo` — Conventional Commits em português, com o escopo do módulo ou camada (ex.: `[124]: fix(views): public/ e o <head> só carregam o que se usa`). O `prepare-commit-msg` prefixa o `[<issue>]` a partir do nome da branch se faltar; o `tipo(escopo): resumo` é com você.
