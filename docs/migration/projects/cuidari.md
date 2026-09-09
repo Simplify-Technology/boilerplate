@@ -55,9 +55,11 @@ Fork direto do boilerplate (`composer.json` ainda se chama `simplify-technology/
 
 - [ ] ⬜ Fatia 0 — Baseline (paridade do ci.yml: SHA-pinning, concurrency, job security)
 - [ ] ⬜ Fatia 1 — Redes de segurança (Larastan + baseline, gate MySQL, smoke browser)
-- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, .mise.toml, minimumReleaseAge, .ai/rules antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19)
+- [ ] ⬜ Fatia 2 — Tooling/CI (dependabot, .mise.toml, minimumReleaseAge, .ai/rules antecipado; toolchain de teste → alvo novo: Pest 5, Vitest 4, ESLint 10, TS ~6.0, Node 24, pnpm 11.19) **+ kit de agente** (rodada agent-tooling #133: `.claude/` do boilerplate — settings, hooks, rules por symlink, security-patterns —, `config/boost.php`, `@AGENTS.md` no CLAUDE.md; ver PLAYBOOK §3 Fatia 2)
 - [ ] ⬜ Fatia 4 — Hardening (headers, PiiScrubber, EnsureUserIsActive, error pages, Sentry)
 - [ ] ⬜ Fatia 5 — Kit BR / dedupe (Support/Br + utils/format + masked-input, deletar locais)
 - [ ] ⬜ Fatia 6 — Convenções (validação inline restante, rate limiters, RBAC sync, rename do pacote)
 
-Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps)
+**Tooling de agente (Fase A da rodada agent-tooling, 2026-09-08):** HEAD `0bb97f8`: CLAUDE.md de 58 linhas (cita AGENTS.md sem importar); AGENTS.md do Boost 2.4.10 diz Inertia v2 (lock em v3); sem `.ai/rules`; `.gitignore` já cobre settings.local.json; pre-push completo (sem PHPStan).
+
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps) · 2026-09-08: kit de agente registrado (rodada agent-tooling #133), fatias inalteradas

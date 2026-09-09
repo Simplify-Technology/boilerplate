@@ -76,6 +76,7 @@ Ordem recomendada: **0 → 1 → 2 → 4 → 5 → 6** (3a/3b puladas).
 - [x] ✅ Fatia 2 — Tooling/CI (dependabot, mise, minimumReleaseAge, SHA-pinning, `.ai/rules` antecipado) (2026-08-10)
   - **Nota (2026-08-10, alvo re-congelado pós-update de deps):** a fatia fechou contra o alvo antigo (Node 22/pnpm 11.5.3, Pest 4/Vitest 3) — como a Fatia 0. O delta virou a **Fatia 2b** abaixo (fatias fechadas não reabrem).
 - [ ] ⬜ Fatia 2b — Realinhamento de toolchain ao alvo re-congelado: Pest ^5.1 + PHPUnit 13.2 (migração sem breaking no boilerplate), Vitest ^4, ESLint 10, TypeScript ~6.0 (remover `baseUrl` do tsconfig; NÃO usar TS 7 — typescript-eslint exige <6.1), Node 24 LTS + pnpm 11.19.0 (packageManager, `.mise.toml`, CI matrix e `corepack prepare` juntos)
+- [ ] ⬜ Fatia 2c — Kit de agente (rodada agent-tooling #133: `.claude/` do boilerplate — settings, hooks, rules por symlink, security-patterns —, `config/boost.php`, `@AGENTS.md` no CLAUDE.md; ver PLAYBOOK §3 Fatia 2). Bloqueado até as Fatias 0–2b entrarem em `main`.
 - [ ] ⬜ Fatia 4 — Hardening (pacote completo, CSP report-only primeiro) **+ smoke browser adiado da Fatia 1** (instalar `pest-plugin-browser`/Playwright faz parte desta fatia)
 - [ ] ⬜ Fatia 5 — Kit BR / dedupe frontend
 - [ ] ⬜ Fatia 6 — Convenções (lang/pt_BR, rate limiters, kebab-case, sync trait RBAC)
@@ -117,4 +118,6 @@ No mesmo lote o boilerplate ganhou `Roles::isSelectable()` (tira "Visitante" do 
 
 Também **saíram do boilerplate** `lang/pt_BR.json`, `lang/pt_BR/actions.php` e `lang/pt_BR/http-statuses.php` (zero referências). O §3 acima registra "sem `lang/`" como gap deste projeto: quando a fatia de i18n rodar, o alvo a copiar é `auth.php`, `pagination.php`, `passwords.php` e `validation.php` — **não** mais o `pt_BR.json`.
 
-Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps; Fatia 2 concluída — próxima: Fatia 4 — Hardening + smoke browser adiado da Fatia 1)
+**Tooling de agente (Fase A da rodada agent-tooling, 2026-09-08):** HEAD `7749a1e`: CLAUDE.md de 88 linhas em inglês, reescrita total (não importa AGENTS.md); AGENTS.md do Boost 2.4.13 sem `claude_code`; `.ai/rules` com 20 arquivos adaptados (+ `conteudo.md`); `composer ci:check` com PHPStan e pre-push completo — único candidato ao kit hoje. **As Fatias 0–2 vivem em `chore/8-fatia-2-tooling`/`chore/9-fatia-2b-toolchain`, não em `main`**, e a 2b está sem commit: o kit espera o merge (ou empilha na 2b, por decisão do dono).
+
+Última atualização: 2026-08-10 (alvo re-congelado pós-update de deps; Fatia 2 concluída — próxima: Fatia 4 — Hardening + smoke browser adiado da Fatia 1) · 2026-09-08: kit de agente registrado (rodada agent-tooling #133), fatias inalteradas
