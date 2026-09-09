@@ -1,0 +1,52 @@
+{
+  "patterns": [
+    {
+      "rule_name": "eloquent_raw_sql",
+      "regex": "(DB::(raw|select|statement|unprepared)|->(whereRaw|selectRaw|orderByRaw|havingRaw|groupByRaw|fromRaw)\\()",
+      "paths": ["**/app/**", "**/routes/**", "**/database/**"],
+      "reminder": "SQL cru. Toda variável entra via bindings (?, :nome), nunca por interpolação; confirme que o valor não vem de request sem passar por binding. Em controller, DB:: já é proibido pelo Arch test (tests/Arch/ArchTest.php)."
+    },
+    {
+      "rule_name": "blade_unescaped",
+      "substrings": ["{!!"],
+      "paths": ["**/*.blade.php"],
+      "reminder": "Saída sem escape no Blade. Só com conteúdo já sanitizado pelo próprio app; nunca com dado de usuário."
+    },
+    {
+      "rule_name": "middleware_bypass",
+      "regex": "->withoutMiddleware\\(|Gate::before\\(|->withoutGlobalScopes?\\(",
+      "paths": ["**/app/**", "**/routes/**"],
+      "reminder": "Remoção de camada de proteção (middleware, gate global, global scope). Justifique no PR e cubra com teste de negação (403). Middleware que vale para a app inteira mora no grupo web em bootstrap/app.php (.ai/rules/middleware.md)."
+    },
+    {
+      "rule_name": "mass_assignment_open",
+      "regex": "\\$guarded\\s*=\\s*\\[\\s*\\]|Model::unguard\\(",
+      "paths": ["**/app/**", "**/database/**"],
+      "reminder": "Mass assignment aberto. Todo model declara $fillable explícito; nunca $guarded = [] (.ai/rules/models.md). unguard() só em seeder/factory."
+    },
+    {
+      "rule_name": "inline_throttle",
+      "regex": "throttle:\\d+,\\d+",
+      "paths": ["**/routes/**"],
+      "reminder": "Throttle inline com número literal. Toda rota com rate limit usa limiter nomeado definido em AppServiceProvider::configRateLimiting() (throttle:auth, throttle:impersonate, ...), com entrada no teste de contrato AuthRouteThrottleTest (.ai/rules/routes.md)."
+    },
+    {
+      "rule_name": "permission_cache_touch",
+      "regex": "(permission_role|permission_user|->permissions\\(\\)->(attach|detach|sync)|->update\\(\\[[^\\]]*'role_id')",
+      "paths": ["**/app/**"],
+      "exclude_paths": [
+        "**/app/Enum/**",
+        "**/app/Models/**",
+        "**/app/Traits/Models/HasRolesAndPermissions.php",
+        "**/app/Services/PermissionManagementService.php"
+      ],
+      "reminder": "Escrita direta em role/permissão fora do trait/serviço: o cache user:{id}:permissions (rememberForever) precisa ser invalidado para todos os usuários afetados. Use HasRolesAndPermissions (assignRole, revokeRole, givePermissionTo, revokePermissionTo) ou PermissionManagementService (refreshPermissionsCache) em vez de tocar o pivot (.ai/rules/traits.md)."
+    },
+    {
+      "rule_name": "impersonation_actor",
+      "regex": "\\b(assignRole|givePermissionTo|grantPermissionToUser|revokePermissionTo|revokePermissionFromUser|mutatePermissions|managePermissions)\\s*\\(",
+      "paths": ["**/app/Http/**"],
+      "reminder": "Concessão ou revogação de cargo/permissão a partir de controller ou request: o TETO (prioridade e superfície de concessão) mede o usuário ORIGINAL via ImpersonationService::getOriginalUser() / effectiveActor(), nunca a persona; quem concede passa a lista validada em Gate::authorize('mutatePermissions', [$user, $nomes]) (.ai/rules/policies.md)."
+    }
+  ]
+}
