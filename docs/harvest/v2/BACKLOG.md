@@ -629,7 +629,7 @@ Foi para isto que a dimensão 6 foi varrida antes de aplicar a fila da 5. Paream
 | F15 | cor da barra de progresso do Inertia hardcoded fora da paleta | absorver P | carona em qualquer PR que toque `app.tsx` |
 | F37 | identidade: PNG **2084×2120 servido a 40px** dentro de chip preto, ícone do starter kit da Laravel na sidebar, `logo.svg` órfão de 26 KB | absorver M | — |
 | ~~F38~~ ✅ **APLICADO** (PR [#125](https://github.com/Simplify-Technology/boilerplate/pull/125), 2026-09-04) | o `<head>` não declara ícone nenhum: **5 arquivos (126 KB) órfãos** em `public/`, e o `preconnect` para fonts.bunny.net abre TLS com terceiro sem baixar nada | absorver P | poda de 5 arquivos (−190 KB), 2 links de ícone, teste de 3 contratos com dívida datada (`logo.svg` → F37). **Modernização registrada, fatia própria:** mover as 21 faces de `public/fonts` para `resources/fonts` e `url('../fonts/…')` no `_fonts.css` — o Rollup passa a falhar em referência inexistente e a não emitir órfão; custo: os 5 `<link rel="preload">` passam a precisar de `Vite::asset()`, e o `AddLinkHeadersForPreloadedAssets` já registrado em `bootstrap/app.php` passa a enxergá-los |
-| F41 | o seletor de tema fala **inglês** num produto pt-BR e não anuncia qual opção está escolhida | absorver P | metade é dimensão 7 |
+| F41 | o seletor de tema fala **inglês** num produto pt-BR e não anuncia qual opção está escolhida | absorver P | metade é dimensão 7 | · ✅ aplicado #154 (junto com V6P-6)
 | F42 | `errors/500.blade.php` pinta fundo escuro **diferente** do canvas do app, e o guard do D4 só olha um dos dois arquivos | guard-rail P | fecha buraco de fatia já mesclada |
 | F34 | `eslint-plugin-jsx-a11y` | `[dep-nova]` | **⚠️ a dimensão 5 já REJEITOU** por incompatibilidade de peer (plugin declara até ESLint 9; o boilerplate roda 10.8.0). Esta célula o ressuscitou sem refutar aquilo — **a rejeição vale**; a alternativa segue sendo `jest-axe` |
 
@@ -774,7 +774,7 @@ Mesma família (tokens de estado × os canais que os consomem), os três **P**, 
 | **V6D-8** | quarto estado do assíncrono: "está demorando mais que o normal" | `[absorver]` | M | médio | — |
 | **V6P-4** | entrada por chips — primitivo genérico ausente aqui | `[absorver]` | M | médio | com o bug de closure já pago documentado na fonte |
 | **V6P-5** | ícone de marca: 2 SVGs inline **sem atributo de a11y** | `[guard-rail]` | P | baixo | metade (b) |
-| **V6P-6** | `appearance-tabs`: seletor sem papel/estado ARIA, em inglês | `[guard-rail]` | P | baixo | **defeito daqui** |
+| **V6P-6** | `appearance-tabs`: seletor sem papel/estado ARIA, em inglês | `[guard-rail]` | P | baixo | **defeito daqui** | · ✅ aplicado #154 (`ToggleGroup type="single"` + `aria-label="Tema"`, Claro/Escuro/Sistema, `value` intocados; teste assere `aria-checked`, não `aria-pressed`; leva o F41 junto)
 | **V6P-2** | resíduo da poda: dep npm com zero importadores + componente morto | `[guard-rail]` | P | baixo | não traz código da fonte | · ✅ aplicado #132 (componente apagado, guarda quote-agnóstica com dívida datada; **a remoção dos pacotes** fica para a fatia de deps depois de #128 — e são DOIS: `navigation-menu` + `@headlessui/react`, ver C5)
 | **V6P-9** | evidência de que `ui/table` dá conta — a regra daqui manda o contrário | `[proposta-adr]` | — | — | anexo a proposta já aberta |
 | **V6S-2** | resíduo que a #108 não varreu: 28 linhas de CSS de scrollbar, 1 seletor morto | `[absorver]` | P | baixo | byte a byte nos dois | · ✅ aplicado #130 (CSS compilado −681 B, diff = exatamente as 5 regras)
