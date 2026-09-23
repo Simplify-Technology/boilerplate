@@ -1,35 +1,51 @@
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Appearance, useAppearance } from '@/hooks/use-appearance';
-import { cn } from '@/lib/utils';
 import { LucideIcon, Monitor, Moon, Sun } from 'lucide-react';
-import { HTMLAttributes } from 'react';
+import { ComponentProps } from 'react';
 
-export default function AppearanceToggleTab({ className = '', ...props }: HTMLAttributes<HTMLDivElement>) {
+/*
+ * Escolha exclusiva entre três opções visíveis. Era uma <div> de três <button>
+ * cujo estado ativo vivia só na cor de fundo: quem usa leitor de tela sabia o
+ * nome de cada opção (é texto visível), mas não qual estava escolhida. O
+ * ToggleGroup type="single" entrega o par que faltava — raiz role="radiogroup",
+ * itens role="radio" + aria-checked — e o foco itinerante por setas, de graça.
+ *
+ * Os `value` são o dado persistido ('light' | 'dark' | 'system'): é o que
+ * useAppearance grava em localStorage e cookie, então o rótulo muda, o value não.
+ */
+const options: { value: Appearance; icon: LucideIcon; label: string }[] = [
+    { value: 'light', icon: Sun, label: 'Claro' },
+    { value: 'dark', icon: Moon, label: 'Escuro' },
+    { value: 'system', icon: Monitor, label: 'Sistema' },
+];
+
+const isAppearance = (value: string): value is Appearance => options.some((option) => option.value === value);
+
+type AppearanceTabsProps = Omit<ComponentProps<typeof ToggleGroup>, 'type' | 'value' | 'defaultValue' | 'onValueChange'>;
+
+export default function AppearanceTabs(props: AppearanceTabsProps) {
     const { appearance, updateAppearance } = useAppearance();
 
-    const tabs: { value: Appearance; icon: LucideIcon; label: string }[] = [
-        { value: 'light', icon: Sun, label: 'Light' },
-        { value: 'dark', icon: Moon, label: 'Dark' },
-        { value: 'system', icon: Monitor, label: 'System' },
-    ];
-
     return (
-        <div className={cn('inline-flex gap-1 rounded-lg bg-neutral-100 p-1 dark:bg-neutral-800', className)} {...props}>
-            {tabs.map(({ value, icon: Icon, label }) => (
-                <button
-                    key={value}
-                    type="button"
-                    onClick={() => updateAppearance(value)}
-                    className={cn(
-                        'flex items-center rounded-md px-3.5 py-1.5 transition-colors',
-                        appearance === value
-                            ? 'bg-white shadow-xs dark:bg-neutral-700 dark:text-neutral-100'
-                            : 'text-neutral-500 hover:bg-neutral-200/60 hover:text-black dark:text-neutral-400 dark:hover:bg-neutral-700/60',
-                    )}
-                >
-                    <Icon className="-ml-1 h-4 w-4" />
-                    <span className="ml-1.5 text-sm">{label}</span>
-                </button>
+        <ToggleGroup
+            type="single"
+            variant="outline"
+            aria-label="Tema"
+            value={appearance}
+            /* Seleção única não fica vazia: clicar de novo na opção ativa emite '' e é ignorado. */
+            onValueChange={(value) => {
+                if (isAppearance(value)) {
+                    updateAppearance(value);
+                }
+            }}
+            {...props}
+        >
+            {options.map(({ value, icon: Icon, label }) => (
+                <ToggleGroupItem key={value} value={value} className="px-3.5">
+                    <Icon />
+                    {label}
+                </ToggleGroupItem>
             ))}
-        </div>
+        </ToggleGroup>
     );
 }
