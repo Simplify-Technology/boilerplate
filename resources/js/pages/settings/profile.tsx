@@ -202,21 +202,13 @@ export default function Profile({ mustVerifyEmail, status }: ProfilePageProps) {
                                         <div className="flex items-center gap-4">
                                             <Button
                                                 type="submit"
-                                                disabled={actions.isUpdatingProfile}
+                                                loading={actions.isUpdatingProfile}
+                                                loadingText="Salvando..."
                                                 size="sm"
                                                 className="h-8 w-full shrink-0 gap-1.5 bg-cyan-600 text-white transition-all duration-200 ease-in-out hover:scale-105 hover:bg-cyan-700 active:scale-95 sm:w-auto dark:bg-cyan-600 dark:text-white dark:shadow-lg dark:hover:bg-cyan-700 dark:hover:shadow-xl"
                                             >
-                                                {actions.isUpdatingProfile ? (
-                                                    <>
-                                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                                        Salvando...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Save className="h-4 w-4" />
-                                                        Salvar Alterações
-                                                    </>
-                                                )}
+                                                <Save className="h-4 w-4" />
+                                                Salvar Alterações
                                             </Button>
                                         </div>
                                     </form>

@@ -203,20 +203,13 @@ export function AddPermissionDialog({ open, onOpenChange, user }: AddPermissionD
                         <Button
                             type="button"
                             onClick={handleSubmit}
-                            disabled={!selectedPermission || isSubmitting || availablePermissions.length === 0}
+                            loading={isSubmitting}
+                            loadingText="Concedendo..."
+                            disabled={!selectedPermission || availablePermissions.length === 0}
                             className="gap-2 bg-green-600 text-white hover:bg-green-700 dark:bg-green-600 dark:hover:bg-green-700"
                         >
-                            {isSubmitting ? (
-                                <>
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                    Concedendo...
-                                </>
-                            ) : (
-                                <>
-                                    <CheckCircle className="h-4 w-4" />
-                                    Conceder Permissão
-                                </>
-                            )}
+                            <CheckCircle className="h-4 w-4" />
+                            Conceder Permissão
                         </Button>
                     </div>
                 </DialogFooter>

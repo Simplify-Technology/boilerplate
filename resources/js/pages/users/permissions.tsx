@@ -158,21 +158,14 @@ export default function UserPermissions({ user, all_permissions }: UserPermissio
                                     </div>
                                     <Button
                                         onClick={handleSavePermissions}
-                                        disabled={!hasChanges || isSaving}
+                                        loading={isSaving}
+                                        loadingText="Salvando..."
+                                        disabled={!hasChanges}
                                         size="sm"
                                         className="h-8 w-full shrink-0 gap-1.5 bg-cyan-600 text-white transition-all duration-200 ease-in-out hover:scale-105 hover:bg-cyan-700 active:scale-95 sm:w-auto dark:bg-cyan-600 dark:text-white dark:shadow-lg dark:hover:bg-cyan-700 dark:hover:shadow-xl"
                                     >
-                                        {isSaving ? (
-                                            <>
-                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                                Salvando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Save className="h-4 w-4" />
-                                                Salvar Permissões
-                                            </>
-                                        )}
+                                        <Save className="h-4 w-4" />
+                                        Salvar Permissões
                                     </Button>
                                 </div>
                                 <Separator className="mt-4" />

@@ -1,6 +1,5 @@
 // Components
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 import TextLink from '@/components/text-link';
@@ -30,8 +29,7 @@ export default function VerifyEmail({ status }: { status?: string }) {
             )}
 
             <form onSubmit={submit} className="space-y-6 text-center">
-                <Button disabled={processing} variant="secondary" className="w-full">
-                    {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                <Button loading={processing} variant="secondary" className="w-full">
                     Enviar link de verificação novamente
                 </Button>
 
