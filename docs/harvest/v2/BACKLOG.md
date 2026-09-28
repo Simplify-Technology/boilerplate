@@ -216,7 +216,7 @@ Não vieram de projeto-fonte, então não têm origem `projeto/path@SHA`. Ficam 
 - Conserto candidato: limiter nomeado por `user()->id` na rota, ou o mesmo padrão `email|ip` do `LoginRequest` dentro de um FormRequest próprio (o controller hoje usa `Request` cru, contra a convenção da casa). Fatia própria, de dimensão 1.
 - **Não é o mesmo caso do `POST logout`**, que também não tem throttle: lá não há segredo a adivinhar.
 
-### C5 · `@headlessui/react` em `dependencies` com zero importadores desde o starter kit · P · risco baixo · **medido em 2026-09-08**
+### ~~C5~~ · ✅ **APLICADO** (PR [#158](https://github.com/Simplify-Technology/boilerplate/pull/158), 2026-09-28, fatia de deps) · `@headlessui/react` em `dependencies` com zero importadores desde o starter kit · P · risco baixo · **medido em 2026-09-08**
 
 - **Evidência:** `origin/main:package.json:61` → `"@headlessui/react": "^2.2.10"`; `git grep -n 'headlessui' -- ':!pnpm-lock.yaml'` devolve **só a linha do `package.json`** (o outro match é o `public/vendor/log-viewer/app.js` publicado pelo pacote PHP, que carrega o próprio bundle). Medido quote-agnóstico, junto com os 34 `dependencies`: é o segundo pacote de runtime sem consumidor, ao lado do `@radix-ui/react-navigation-menu` que a V6P-2 já apontava — e nenhuma célula o tinha visto porque a receita de aspas simples enche o resultado de falso positivo.
 - **Estado:** travado por `resources/js/test/lib/dependency-importers.test.ts` (PR #132) como **dívida datada**; a guarda falha no dia em que o pacote sair do `package.json` sem sair da dívida, ou ganhar importador sem sair dela.
