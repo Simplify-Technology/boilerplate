@@ -773,7 +773,7 @@ Mesma família (tokens de estado × os canais que os consomem), os três **P**, 
 | **V6D-6** | `page-header`/`page-info`: subárvore morta cuja prop monta classe por interpolação | `[guard-rail]` | P | baixo | resolve a inconsistência do E21 |
 | **V6D-8** | quarto estado do assíncrono: "está demorando mais que o normal" | `[absorver]` | M | médio | — |
 | **V6P-4** | entrada por chips — primitivo genérico ausente aqui | `[absorver]` | M | médio | com o bug de closure já pago documentado na fonte |
-| **V6P-5** | ícone de marca: 2 SVGs inline **sem atributo de a11y** | `[guard-rail]` | P | baixo | metade (b) |
+| **V6P-5** | ícone de marca: 2 SVGs inline **sem atributo de a11y** | `[guard-rail]` | P | baixo | metade (b) | · ✅ aplicado #156 (`aria-hidden` nos 2 + sweep `inline-svg-a11y.test.ts` com comentários apagados antes da varredura; a metade "glifo de marca" não entrou)
 | **V6P-6** | `appearance-tabs`: seletor sem papel/estado ARIA, em inglês | `[guard-rail]` | P | baixo | **defeito daqui** | · ✅ aplicado #154 (`ToggleGroup type="single"` + `aria-label="Tema"`, Claro/Escuro/Sistema, `value` intocados; teste assere `aria-checked`, não `aria-pressed`; leva o F41 junto)
 | **V6P-2** | resíduo da poda: dep npm com zero importadores + componente morto | `[guard-rail]` | P | baixo | não traz código da fonte | · ✅ aplicado #132 (componente apagado, guarda quote-agnóstica com dívida datada; **a remoção dos pacotes** fica para a fatia de deps depois de #128 — e são DOIS: `navigation-menu` + `@headlessui/react`, ver C5)
 | **V6P-9** | evidência de que `ui/table` dá conta — a regra daqui manda o contrário | `[proposta-adr]` | — | — | anexo a proposta já aberta |
