@@ -227,20 +227,12 @@ export function DeleteConfirmationDialog({
                             type="button"
                             variant={config.buttonVariant}
                             onClick={onConfirm}
-                            disabled={processing}
+                            loading={processing}
+                            loadingText={variant === 'warning' ? 'Removendo...' : 'Excluindo...'}
                             className={cn('gap-2', config.buttonClassName)}
                         >
-                            {processing ? (
-                                <>
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                    {variant === 'warning' ? 'Removendo...' : 'Excluindo...'}
-                                </>
-                            ) : (
-                                <>
-                                    {variant === 'warning' ? <Icon className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
-                                    {confirmText}
-                                </>
-                            )}
+                            {variant === 'warning' ? <Icon className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+                            {confirmText}
                         </Button>
                     </div>
                 </DialogFooter>

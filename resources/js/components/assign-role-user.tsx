@@ -193,20 +193,13 @@ export default function AssignRoleUser({ userId, roles, onClose, currentRole, cu
                         <Button
                             type="button"
                             onClick={assignRole}
-                            disabled={processing || !data.role}
+                            loading={processing}
+                            loadingText="Atribuindo..."
+                            disabled={!data.role}
                             className="gap-2 bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-700"
                         >
-                            {processing ? (
-                                <>
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                                    Atribuindo...
-                                </>
-                            ) : (
-                                <>
-                                    <Shield className="h-4 w-4" />
-                                    Atribuir
-                                </>
-                            )}
+                            <Shield className="h-4 w-4" />
+                            Atribuir
                         </Button>
                     </div>
                 </DialogFooter>

@@ -1,6 +1,5 @@
 // Components
 import { Head, useForm } from '@inertiajs/react';
-import { LoaderCircle } from 'lucide-react';
 import { FormEventHandler } from 'react';
 
 import InputError from '@/components/input-error';
@@ -52,8 +51,7 @@ export default function ForgotPassword({ status }: { status?: string }) {
                     </div>
 
                     <div className="my-6 flex items-center justify-start">
-                        <Button className="w-full" disabled={processing}>
-                            {processing && <LoaderCircle className="h-4 w-4 animate-spin" />}
+                        <Button className="w-full" loading={processing}>
                             Enviar link para redefinir sua senha
                         </Button>
                     </div>

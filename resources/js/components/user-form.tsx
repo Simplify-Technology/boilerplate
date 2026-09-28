@@ -361,19 +361,11 @@ export default function UserForm({
             <div className="flex items-center gap-4 pt-2">
                 <Button
                     type="submit"
-                    disabled={processing}
+                    loading={processing}
+                    loadingText="Salvando..."
                     className="bg-cyan-600 text-white transition-all duration-200 ease-in-out hover:scale-105 hover:bg-cyan-700 active:scale-95 dark:bg-cyan-600 dark:text-white dark:shadow-lg dark:hover:bg-cyan-700 dark:hover:shadow-xl"
                 >
-                    {processing ? (
-                        <>
-                            <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                            Salvando...
-                        </>
-                    ) : user ? (
-                        'Atualizar Usuário'
-                    ) : (
-                        'Criar Usuário'
-                    )}
+                    {user ? 'Atualizar Usuário' : 'Criar Usuário'}
                 </Button>
             </div>
         </form>

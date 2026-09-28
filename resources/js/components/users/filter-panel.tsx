@@ -160,15 +160,11 @@ export function FilterPanel({
                         onClick={onClearFilters}
                         className="hover:bg-muted/80 dark:hover:bg-muted/60 dark:hover:text-foreground dark:hover:border-border h-9 text-sm"
                         aria-label="Limpar todos os filtros"
-                        disabled={isSearching}
+                        loading={isSearching}
+                        loadingText="Limpar todos os filtros"
                     >
                         <X className="mr-2 h-4 w-4" />
                         Limpar todos os filtros
-                        {isSearching && (
-                            <span className="ml-2">
-                                <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
-                            </span>
-                        )}
                     </Button>
                 </div>
             )}
