@@ -60,9 +60,8 @@ const hasConsumer = (dep: string) => importedByJs(dep) || usedByCss(dep) || used
  * o pacote — a asserção de simetria abaixo cobra isso.
  */
 const DIVIDA_SEM_CONSUMIDOR: Record<string, string> = {
-    '@radix-ui/react-navigation-menu':
-        '2026-09-08 — resíduo da poda de app-header/navigation-menu (#100); sai na fatia de deps depois de #128 mesclar',
-    '@headlessui/react': '2026-09-08 — zero importadores desde o starter kit; sai na mesma fatia de deps',
+    // Vazia desde 2026-09-28: a fatia de deps (#157) removeu `@radix-ui/react-navigation-menu`
+    // e `@headlessui/react`. O mecanismo fica — a próxima entrada nasce com data e motivo.
 };
 
 describe('toda dependência de runtime tem quem a consuma', () => {
