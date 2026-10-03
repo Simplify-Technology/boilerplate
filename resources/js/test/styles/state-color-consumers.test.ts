@@ -1,8 +1,8 @@
 // @vitest-environment node
-import { readFileSync, readdirSync } from 'node:fs';
-import { dirname, join, relative, resolve } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { jsRoot, readSources } from '../support/sources';
 
 /*
  * Os tokens de estado têm dois conjuntos com papéis diferentes, e o erro que
@@ -22,20 +22,6 @@ import { describe, expect, it } from 'vitest';
  * ninguém monta em teste de componente.
  */
 
-const jsRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-
-function applicationSourceFiles(dir: string = jsRoot): string[] {
-    return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-        const full = join(dir, entry.name);
-
-        if (entry.isDirectory()) {
-            return entry.name === 'test' ? [] : applicationSourceFiles(full);
-        }
-
-        return /\.tsx?$/.test(entry.name) ? [full] : [];
-    });
-}
-
 /** Comentário fora: crase em prosa (`text-x`) não é template literal. */
 function stripComments(source: string): string {
     return source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
@@ -47,27 +33,27 @@ function stringLiterals(source: string): string[] {
 }
 
 const estados = 'success|warning|info|destructive';
-const files = applicationSourceFiles();
+const sources = readSources();
 
 describe('quem usa cor de estado usa o token do papel certo', () => {
     it('sólido de estado leva o rótulo do par, nunca text-white/text-black', () => {
-        const infratores = files.flatMap((file) =>
-            stringLiterals(readFileSync(file, 'utf8'))
+        const infratores = sources.flatMap(({ path, body }) =>
+            stringLiterals(body)
                 .filter((literal) => new RegExp(`(^|[\\s:])bg-(${estados})(?![\\w/-])`).test(literal))
                 .filter((literal) => /(^|[\s:])text-(white|black)(?![\w/-])/.test(literal))
-                .map((literal) => `${relative(jsRoot, file)}: "${literal.slice(0, 80)}"`),
+                .map((literal) => `${path}: "${literal.slice(0, 80)}"`),
         );
 
         expect(infratores).toEqual([]);
     });
 
     it('text-X-foreground só aparece junto do bg-X sólido correspondente', () => {
-        const infratores = files.flatMap((file) =>
-            stringLiterals(readFileSync(file, 'utf8')).flatMap((literal) =>
+        const infratores = sources.flatMap(({ path, body }) =>
+            stringLiterals(body).flatMap((literal) =>
                 [...literal.matchAll(new RegExp(`text-(${estados})-foreground(?![\\w-])`, 'g'))]
                     .map((m) => m[1])
                     .filter((estado) => !new RegExp(`(^|[\\s:])bg-${estado}(?![\\w/-])`).test(literal))
-                    .map((estado) => `${relative(jsRoot, file)}: text-${estado}-foreground sem bg-${estado} em "${literal.slice(0, 80)}"`),
+                    .map((estado) => `${path}: text-${estado}-foreground sem bg-${estado} em "${literal.slice(0, 80)}"`),
             ),
         );
 
