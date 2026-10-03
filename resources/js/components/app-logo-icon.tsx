@@ -1,8 +1,13 @@
 import { SVGAttributes } from 'react';
 
+/*
+ * Decorativo: o único consumidor (app-logo.tsx) escreve o nome da marca ao
+ * lado. O `aria-hidden` vem ANTES do spread para um consumidor futuro que use
+ * o ícone sozinho poder trocá-lo por `role="img"` + `aria-label`.
+ */
 export default function AppLogoIcon(props: SVGAttributes<SVGElement>) {
     return (
-        <svg {...props} viewBox="0 0 40 42" xmlns="http://www.w3.org/2000/svg">
+        <svg aria-hidden="true" {...props} viewBox="0 0 40 42" xmlns="http://www.w3.org/2000/svg">
             <path
                 fillRule="evenodd"
                 clipRule="evenodd"
