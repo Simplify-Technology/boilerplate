@@ -64,6 +64,7 @@ Tudo em `docs/harvest/v2/`, que vive num **branch dedicado de longa duração** 
 2. **Pin:** `git -C <path> rev-parse --short HEAD` para cada projeto → grave no STATE.md como SHA da rodada (anote working tree suja). Toda varredura/evidência/veredito refere-se a esse SHA. Commits posteriores estão FORA da rodada: registre "evoluiu durante a rodada" no RELATORIO.md e deixe para a próxima harvest. Célula/projeto ✅ jamais reabre por commit novo na fonte.
 3. **Ferramentas:** `gh auth status` e `git remote -v` verdes (senão pare e peça `gh auth login`); `corepack pnpm -v` responde.
 4. **Estado:** se `docs/harvest/v2/` não existe, crie issue + branch de estado (item acima) e os 3 arquivos-base. Se existe, **reconcilie antes de agir**: `git status`, `git branch --list '*harvest-v2*'`, `gh issue list --search harvest-v2`, `gh pr list --search harvest-v2` — divergência resolve-se a favor do git/GitHub e o STATE.md é corrigido ANTES de executar qualquer unidade.
+5. **Inbox:** issues com a label `harvest:inbox` (`gh issue list --label 'harvest:inbox'`) são specs vindas de outros projetos pela regra global `~/.claude/rules/boilerplate-core.md`. Entram no BACKLOG como candidatos externos, passam pelas 3 lentes normais da Fase A e **nunca reabrem célula**; o título `harvest-v2: [<projeto>] <tema>` já as inclui na busca do item 4.
 
 ## A matriz: Inventário + 8 dimensões (por projeto)
 
