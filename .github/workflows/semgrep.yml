@@ -39,7 +39,7 @@ jobs:
 
       # Publica como artifact para consulta
       - name: Upload Semgrep report
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: semgrep-report
@@ -48,7 +48,7 @@ jobs:
       # Publica o SARIF no GitHub Code Scanning (aba Security)
       # Em PRs de forks, o token geralmente não tem permissão para security-events:write
       - name: Upload SARIF to GitHub Code Scanning
-        uses: github/codeql-action/upload-sarif@1c5b675653bb5c22dbe9b12b556ec555138e09fd # v3
+        uses: github/codeql-action/upload-sarif@24c54180a607b1449ed407dd24f251e4e9147c8d # v3
         if: >
           always() &&
           (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
