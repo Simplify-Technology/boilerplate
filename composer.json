@@ -105,6 +105,13 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "policy": {
+            "abandoned": {
+                "ignore": {
+                    "dragon-code/*": "Transitivas do laravel-lang/* ^15, sem substituto dentro do range. Revisar ao subir o laravel-lang de major."
+                }
+            }
         }
     },
     "minimum-stability": "stable",
