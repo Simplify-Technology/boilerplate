@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 /*
  * Três buracos de navegação assistiva moravam aqui, e os três eram invisíveis
@@ -46,6 +46,7 @@ import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebarLayout from '@/layouts/app/app-sidebar-layout';
 import type { NavItem } from '@/types';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { LayoutGrid, Users } from 'lucide-react';
 
 const items: NavItem[] = [
@@ -147,5 +148,53 @@ describe('AppSidebarLayout — skip-link', () => {
         const { container } = render(<AppSidebarLayout>conteúdo</AppSidebarLayout>);
 
         expect(container.querySelectorAll('main')).toHaveLength(1);
+    });
+});
+
+/*
+ * O cabeçalho `sr-only` do drawer mobile (título + descrição do diálogo)
+ * morava como IRMÃO do `SheetContent`, filho direto do `<Sheet>`. O Root do
+ * Radix Dialog é um provider de contexto sem nó DOM e sem portal, então o
+ * cabeçalho renderizava no fluxo da página sempre que o `<Sidebar>` montava
+ * em viewport mobile — com o drawer fechado inclusive: "Menu lateral. Menu
+ * lateral de navegação." soltos no corpo de toda página autenticada abaixo
+ * de 768px. O nome acessível do diálogo nunca quebrou (`aria-labelledby` é
+ * IDREF e alcança o título onde ele estiver), por isso nenhum aviso de
+ * console denunciou. Dentro do `SheetContent` o cabeçalho viaja no portal e
+ * só existe com o drawer aberto — é a forma do upstream do shadcn.
+ *
+ * `useIsMobile` lê `window.innerWidth` (< 768), não o `matchMedia` mockado
+ * do setup, então basta estreitar a janela antes de montar.
+ */
+describe('Sidebar mobile — cabeçalho do drawer vive dentro do diálogo', () => {
+    const viewport = window as { innerWidth: number };
+    const desktopWidth = viewport.innerWidth;
+
+    beforeEach(() => {
+        viewport.innerWidth = 375;
+    });
+
+    afterEach(() => {
+        viewport.innerWidth = desktopWidth;
+    });
+
+    it('keeps the drawer title and description out of the page while the drawer is closed', () => {
+        render(<AppSidebarLayout>conteúdo</AppSidebarLayout>);
+
+        expect(screen.queryByText('Menu lateral')).not.toBeInTheDocument();
+        expect(screen.queryByText('Menu lateral de navegação.')).not.toBeInTheDocument();
+    });
+
+    it('names and describes the dialog once the trigger opens the drawer', async () => {
+        const user = userEvent.setup();
+        render(<AppSidebarLayout>conteúdo</AppSidebarLayout>);
+
+        await user.click(screen.getByRole('button', { name: 'Abrir ou fechar o menu lateral' }));
+
+        const dialog = await screen.findByRole('dialog');
+
+        expect(dialog).toHaveAccessibleName('Menu lateral');
+        expect(dialog).toHaveAccessibleDescription('Menu lateral de navegação.');
+        expect(dialog).toContainElement(screen.getByText('Menu lateral de navegação.'));
     });
 });
