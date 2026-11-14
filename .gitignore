@@ -11,8 +11,8 @@
 .eslintcache
 /.pnpm-store
 .env
-.env.backup
-.env.production
+.env.*
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 Homestead.json
@@ -34,3 +34,5 @@ identifier.sqlite
 .claude/.ci-gate/
 .claude/settings.local.json
 .claude/claude-security-guidance.local.md
+/.claude/worktrees/
+/.superpowers/
