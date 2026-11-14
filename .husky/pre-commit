@@ -5,10 +5,13 @@ if [ "${SKIP_GIT_HOOKS-}" = "1" ]; then
   exit 0
 fi
 
-REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || true)"
-if [ -n "$REPO_ROOT" ]; then
-  cd "$REPO_ROOT"
+if ! REPO_ROOT="$(git rev-parse --show-toplevel)"; then
+  echo "pre-commit: falha em git rev-parse; não foi possível localizar o repositório." >&2
+  exit 1
 fi
+cd "$REPO_ROOT"
+
+node scripts/git/check-sandbox-placeholders.mjs
 
 if ! command -v pnpm >/dev/null 2>&1; then
   echo "pre-commit: pnpm não encontrado. Rode: pnpm install" >&2
