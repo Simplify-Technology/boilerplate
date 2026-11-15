@@ -6,6 +6,7 @@ namespace App\Providers;
 
 use App\Enum\Permissions;
 use App\Enum\Roles;
+use App\Listeners\SanitizeFailedQueryException;
 use App\Models\User;
 use App\Policies\UserPolicy;
 use App\Resolvers\ActivityCauserResolver;
@@ -16,9 +17,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\LazyLoadingViolationException;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Queue\Events\JobFailed;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\URL;
@@ -32,7 +35,9 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // Antes do boot do Horizon, que persiste o evento em Redis. O método
+        // sanitize não é auto-descoberto (handle*/__invoke), evitando duplicação.
+        Event::listen(JobFailed::class, [SanitizeFailedQueryException::class, 'sanitize']);
     }
 
     public function boot(): void
