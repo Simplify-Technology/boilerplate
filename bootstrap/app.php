@@ -7,12 +7,14 @@ use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use App\Http\Middleware\SecurityHeaders;
 use App\Http\Middleware\SetSensitiveCacheHeaders;
+use App\Support\Logging\QueryExceptionSummary;
 use Illuminate\Contracts\Auth\Middleware\AuthenticatesRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -50,6 +52,20 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function(Exceptions $exceptions): void {
+        // Deve preceder integrações de tracking: mensagem, previous e trace
+        // da QueryException podem conter dados que o scrubber não reconhece.
+        $exceptions->report(function(Throwable $exception): ?bool {
+            $summary = QueryExceptionSummary::from($exception);
+
+            if ($summary === null) {
+                return null;
+            }
+
+            Log::error('Database query failed', $summary);
+
+            return false;
+        });
+
         // Respostas renderizadas pelo handler (login redirect do `auth`, 403,
         // 404, 500) saem por fora da pilha de middleware — carimbamos aqui os
         // mesmos headers de segurança via SecurityHeaders::stamp().
